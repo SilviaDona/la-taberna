@@ -226,8 +226,8 @@ export async function paredes(g: THREE.Group, ancho: number, v: Variante, panele
 // (durmiente, carrera, pies derechos cada metro y medio y tornapuntas en cruz), y en el centro una ventana con
 // marco de madera que deja ver el cielo de fuera a la hora real. Los laterales, igual, sin ventana.
 const ROBLE_OSCURO = '#3a2414';
-export function materialYeso() {
-  return mat('yeso', () => {
+export function materialYeso(tono = '#ffffff') {
+  return mat('yeso' + tono, () => {
     const { c, g } = lienzo(512, 512);
     g.fillStyle = '#e8d7b4'; g.fillRect(0, 0, 512, 512);
     // manchas suaves de cal y humo, más oscuras arriba (el humo de las velas sube)
@@ -235,17 +235,17 @@ export function materialYeso() {
     g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
     ensuciar(g, 512, 512, 0.18, 11);
     const t = texturaDe(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', roughness: 0.95, metalness: 0 });
+    return new THREE.MeshStandardMaterial({ map: t, color: tono, roughness: 0.95, metalness: 0 });
   });
 }
-export function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number, giro: number, ventana?: { x: number; y: number; w: number; h: number; puerta?: boolean }) {
-  const largo = x1 - x0; const madera = materialAcero(ROBLE_OSCURO);
+export function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number, giro: number, ventana?: { x: number; y: number; w: number; h: number; puerta?: boolean }, tono: { yeso?: string; madera?: string } = {}) {
+  const largo = x1 - x0; const madera = materialAcero(tono.madera ?? ROBLE_OSCURO);
   const grupo = new THREE.Group(); grupo.rotation.y = giro; grupo.position.z = z; g.add(grupo);
   const forma = new THREE.Shape([new THREE.Vector2(x0, 0), new THREE.Vector2(x1, 0), new THREE.Vector2(x1, ALTO), new THREE.Vector2(x0, ALTO)]);
   if (ventana) forma.holes.push(new THREE.Path([new THREE.Vector2(ventana.x - ventana.w / 2, ventana.y - ventana.h / 2), new THREE.Vector2(ventana.x - ventana.w / 2, ventana.y + ventana.h / 2), new THREE.Vector2(ventana.x + ventana.w / 2, ventana.y + ventana.h / 2), new THREE.Vector2(ventana.x + ventana.w / 2, ventana.y - ventana.h / 2)]));
   const geo = new THREE.ShapeGeometry(forma);
   const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 3, uv.getY(i) / 3);
-  const yeso = new THREE.Mesh(geo, materialYeso()); yeso.receiveShadow = true; yeso.userData.pared = true; grupo.add(yeso);
+  const yeso = new THREE.Mesh(geo, materialYeso(tono.yeso)); yeso.receiveShadow = true; yeso.userData.pared = true; grupo.add(yeso);
   const viga = (w: number, h: number, x: number, y: number, rz = 0) => { const b = caja(w, h, 0.16, madera, x, y, 0.08); b.rotation.z = rz; b.userData.pared = true; grupo.add(b); };
   // una viga a lo largo, partida por el hueco si es una puerta (durmiente y peto no la cruzan)
   const tramo = (h: number, y: number) => {

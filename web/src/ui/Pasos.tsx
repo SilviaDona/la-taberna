@@ -1,6 +1,6 @@
 // El panel de una sala de un paso del proceso de UX (shared/pasos.ts): el proyecto, las historias que están en ese
 // paso, trabajar en una con el aventurero de la sala (su skill, en la carpeta del proyecto), la puerta de calidad para
-// pasarla al siguiente (da oro) y, desde la Torre o el Salón, la vuelta a la Forja con los ACs que corregir.
+// pasarla al siguiente (da oro) y, desde la Torre o el Salón, la vuelta a la Cocina con los ACs que corregir.
 // En el Mostrador del BA, los supuestos se marcan a mano. Cada vista es su componente (con sus propios hooks).
 import React, { useEffect, useRef, useState } from 'react';
 import { juego } from './estadoJuego';
@@ -24,7 +24,7 @@ export function PanelDePaso({ salaId, sala, generales }: { salaId: string; sala:
     case 'nueva': return <NuevaHistoria volver={menu} alCrear={id => setVista({ v: 'historia', id })} />;
     case 'historia': return <HistoriaEnPaso salaId={salaId} id={vista.id} volver={menu} ir={setVista} />;
     case 'supuestos': return <AnadirSupuestos id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} />;
-    case 'volver': return <VolverAForja id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} hecho={menu} />;
+    case 'volver': return <VolverACocina id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} hecho={menu} />;
     default: return <MenuDePaso salaId={salaId} sala={sala} generales={generales} ir={setVista} />;
   }
 }
@@ -113,8 +113,8 @@ function AnadirSupuestos({ id, volver }: { id: string; volver: () => void }) {
   return <Texto rotulo="MOSTRADOR DEL BA · SUPUESTOS" etiqueta="Un supuesto por línea (los del plan del paso 1):" ejemplo={'¿El saldo se recalcula al cancelar?\n¿Puede aprobar quien solicita?'} boton="Añadir" volver={volver}
     alMandar={async texto => { await accion('historia.supuesto.anadir', { id, texto }); SFX.exitoCorto(); volver(); }} />;
 }
-function VolverAForja({ id, volver, hecho }: { id: string; volver: () => void; hecho: () => void }) {
-  return <Texto rotulo="VUELTA A LA FORJA" etiqueta="¿Qué ACs hay que corregir? (solo esos se vuelven a revisar)" ejemplo="AC3 y AC5: …" boton="Mandar a la Forja" volver={volver}
+function VolverACocina({ id, volver, hecho }: { id: string; volver: () => void; hecho: () => void }) {
+  return <Texto rotulo="VUELTA A LA COCINA" etiqueta="¿Qué ACs hay que corregir? (solo esos se vuelven a revisar)" ejemplo="AC3 y AC5: …" boton="Mandar a la Cocina" volver={volver}
     alMandar={async acs => { await accion('historia.volver', { id, acs }); SFX.exitoCorto(); hecho(); }} />;
 }
 
@@ -151,7 +151,7 @@ function HistoriaEnPaso({ salaId, id, volver, ir }: { salaId: string; id: string
       if (confirmar !== 'pasar') { setConfirmar('pasar'); return; }
       hacer('historia.pasar').then(r => { setAviso(r.oro ? `+${r.oro} de oro` : 'Pasada.'); setConfirmar(null); volver(); }).catch(() => setConfirmar(null));
     } }] : []),
-    ...(p && (p.id === 'torre' || p.id === 'salon') ? [{ texto: '↩ Hay que corregir: volver a la Forja con los ACs afectados…', f: () => ir({ v: 'volver', id }) }] : []),
+    ...(p && (p.id === 'torre' || p.id === 'salon') ? [{ texto: '↩ Hay que corregir: volver a la Cocina con los ACs afectados…', f: () => ir({ v: 'volver', id }) }] : []),
     { texto: confirmar === 'borrar' ? '¿Seguro? Enter otra vez para borrar la historia' : 'Borrar la historia', peligro: true, f: () => { if (confirmar !== 'borrar') { setConfirmar('borrar'); return; } hacer('historia.borrar').then(volver).catch(() => {}); } },
     { texto: 'Volver', f: volver },
   ];

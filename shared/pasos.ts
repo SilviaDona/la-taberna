@@ -5,14 +5,15 @@
 //
 //   1 Sala de Mapas          análisis de la historia         /ux-analysis (modo plan)
 //   2 Mostrador del BA       supuestos                       a mano: confirmado o pendiente del BA
-//   3 Forja                  prototipo y verificación (3–4)  la skill de prototipado del proyecto (se carga sola)
+//   3 Cocina                 prototipo y verificación (3–4)  la skill de prototipado del proyecto (se carga sola)
 //   5 Torre del Vigía        revisión de ACs y principios    /ux-analysis (modo revisión)
-//   6 Salón de Parroquianos  evaluación con participantes    /ux-testing
+//   6 Comedor de Peregrinos  evaluación con participantes    /ux-testing
 //   7 Puerta del Mensajero   documentos de handoff           /ux-edge-cases
 //   8 Libro del Tabernero    registro de la sesión           /session-log
 //
-// Cumplir la puerta de calidad de un paso pasa la historia al siguiente y da oro. Desde la Torre o el Salón, lo que
-// haya que corregir vuelve a la Forja con solo los ACs afectados, y luego solo se revisan esos.
+// El prototipo es el plato: se cocina en la Cocina y lo prueban los peregrinos en el Comedor. Cumplir la puerta de
+// calidad de un paso pasa la historia al siguiente y da oro. Desde la Torre o el Comedor, lo que haya que corregir
+// vuelve a la Cocina con solo los ACs afectados, y luego solo se revisan esos.
 import type { Decorado, PiezaDecorado } from './decorado.ts';
 import { aspectoDeFuente, type Aspecto } from './aspecto.ts';
 import { ORDEN_PASOS } from './disposicion.ts';
@@ -22,7 +23,7 @@ export const PASOS_IDS = ORDEN_PASOS as PasoId[];
 export const esPaso = (v: unknown): v is PasoId => (PASOS_IDS as unknown[]).includes(v);
 
 export interface Supuesto { id: string; texto: string; estado: 'sin revisar' | 'confirmado' | 'pendiente'; nota?: string }
-/** Una historia de usuario en el proceso: en qué paso está, sus supuestos y, si vuelve a la Forja, qué ACs corregir */
+/** Una historia de usuario en el proceso: en qué paso está, sus supuestos y, si vuelve a la Cocina, qué ACs corregir */
 export interface Historia {
   id: string; titulo: string; texto: string;      // texto: la historia y sus ACs, tal cual los pegó la Tabernera
   paso: PasoId | 'hecha';
@@ -113,7 +114,7 @@ const DECORADOS: Record<Exclude<PasoId, 'mapas'>, Decorado> = {
       carteles: [{ x: -1.6, y: 2.5, ancho: 0.9, titulo: 'SUPUESTOS', lineas: ['confirmado', 'pendiente BA'], fondo: '#3b2414', tinta: PERGAMINO }],
     }),
   forja: decorado({
-      subtitulo: 'PROTOTIPOS A FUEGO', acento: '#b0b4bc', resumen: 'Forja: yunque y tenazas donde se forja cada prototipo con las reglas del proyecto.',
+      subtitulo: 'EL PLATO DEL DÍA', acento: '#b0b4bc', resumen: 'Cocina: donde se cocina cada prototipo con la receta del proyecto y se cata antes de servirlo.',
       paredes: ['Wall_3', 'Wall_4', 'Wall_3'],
       pantallaRepo: { x: 0, y: 2.4, ancho: 2 },
       puesto: { x: -3.4, z: -1.3, pantalla: 'monitor', mesa: 'mueble/desk' },
@@ -155,7 +156,7 @@ const DECORADOS: Record<Exclude<PasoId, 'mapas'>, Decorado> = {
       carteles: [{ x: 2, y: 2.5, ancho: 1.1, titulo: 'REVISIÓN', lineas: ['6 estados', 'grav. 1–4'], fondo: AZUL, tinta: PERGAMINO, simbolo: 'ojo' }],
     }),
   salon: decorado({
-      subtitulo: 'PARROQUIANOS DE PRUEBA', acento: '#d96aa0', resumen: 'Salón de los Parroquianos: tarima, mesas y jarras para los participantes simulados.',
+      subtitulo: 'LOS PEREGRINOS PRUEBAN', acento: '#d96aa0', resumen: 'Comedor de los Peregrinos: mesas donde los peregrinos prueban el plato (el prototipo).',
       pantallaRepo: { x: -0.3, y: 2.4, ancho: 2 },
       puesto: { x: -3.4, z: -1.3, pantalla: 'monitor', mesa: 'mueble/table_medium' },
       pieza: { x: 2.6, z: -0.4, giro: 180, gestos: ['Cheering', 'Holding_B'] }, aficion: { x: 0.2, z: 0.2, giro: 180, gestos: ['Waving'] },
@@ -226,15 +227,15 @@ export const PASOS: Record<PasoId, Paso> = {
   mostrador: { id: 'mostrador', numero: '2', etapa: 'Supuestos', sala: 'Mostrador del BA', oro: 10,
     puerta: ['Cada supuesto está confirmado o marcado «Pendiente de confirmación del BA».'],
     aventurero: H('Dámaso', 'El Escribano', 'Rogue', 140, 'Lleva el libro de supuestos del mostrador. No deja salir una historia con una duda sin apuntar.'), decorado: DECORADOS.mostrador },
-  forja: { id: 'forja', numero: '3–4', etapa: 'Prototipo y verificación', sala: 'Forja', oro: 30,
+  forja: { id: 'forja', numero: '3–4', etapa: 'Prototipo y verificación', sala: 'Cocina', oro: 30,
     puerta: ['El prototipo cumple las reglas del proyecto: tokens, radios, colores de estado y comportamiento responsive.', 'La consola está limpia y las validaciones se han comprobado ejecutándolas.'],
-    aventurero: H('Eulogio', 'El Forjador', 'Knight', 95, 'Forja cada prototipo en un solo archivo, con las reglas del proyecto a fuego. Si una validación no la ha visto funcionar, no está hecha.'), decorado: DECORADOS.forja },
+    aventurero: H('Eulogio', 'El Cocinero', 'Knight', 95, 'Cocina cada prototipo como un plato: en un solo archivo y con la receta del proyecto al pie de la letra. No lo saca a la mesa sin probarlo antes él mismo.'), decorado: DECORADOS.forja },
   torre: { id: 'torre', numero: '5', etapa: 'Revisión de ACs y principios', sala: 'Torre del Vigía', comando: '/ux-analysis', oro: 25,
     puerta: ['Cada AC tiene uno de los seis estados, con su evidencia.', 'Cada hallazgo de principios tiene una gravedad del 1 al 4.'],
     aventurero: H('Casiano', 'El Vigía', 'Ranger', 105, 'Desde lo alto de la torre ve un AC sin evidencia a tres leguas, y un contraste flojo a cinco.'), decorado: DECORADOS.torre },
-  salon: { id: 'salon', numero: '6', etapa: 'Evaluación de usabilidad', sala: 'Salón de los Parroquianos', comando: '/ux-testing', oro: 30,
+  salon: { id: 'salon', numero: '6', etapa: 'Evaluación de usabilidad', sala: 'Comedor de los Peregrinos', comando: '/ux-testing', oro: 30,
     puerta: ['Cada tarea del alcance tiene éxito, éxito sin ayuda, errores, tiempo y satisfacción por subgrupo.'],
-    aventurero: H('Fabricio', 'El Posadero', 'Druid', 160, 'Sienta a cincuenta parroquianos por rol a probar cada prototipo y apunta quién se pierde y dónde.', { cara: 'cara.Helper_A', cejas: 'cejas.Helper_A', pelo: 'pelo.Rogue', sombrero: 'sombrero.Mage.Hat' }), decorado: DECORADOS.salon },
+    aventurero: H('Fabricio', 'El Posadero', 'Druid', 160, 'Sirve cada plato a cincuenta peregrinos por rol y apunta quién lo disfruta, quién se atraganta y dónde.', { cara: 'cara.Helper_A', cejas: 'cejas.Helper_A', pelo: 'pelo.Rogue', sombrero: 'sombrero.Mage.Hat' }), decorado: DECORADOS.salon },
   mensajero: { id: 'mensajero', numero: '7', etapa: 'Documentos de handoff', sala: 'Puerta del Mensajero', comando: '/ux-edge-cases', oro: 20,
     puerta: ['Cada caso límite sale de una regla de la fuente.', 'Lo que no está confirmado aparece como pregunta abierta.'],
     aventurero: H('Brunilda', 'La Mensajera', 'Engineer', 150, 'Lleva los planos al gremio de los constructores y al BA, cada uno en su idioma, sin que se pierda un caso límite.'), decorado: DECORADOS.mensajero },
@@ -243,7 +244,7 @@ export const PASOS: Record<PasoId, Paso> = {
     aventurero: H('Gonzalo', 'El Contable', 'Barbarian', 100, 'Apunta en el libro de cuentas lo que salió de cada paso. Cifras y etiquetas: nada más, nada menos.'), decorado: DECORADOS.libro },
 };
 
-/** El paso siguiente (la Forja hace el 3 y el 4; tras la Torre o el Salón, una corrección vuelve a la Forja) */
+/** El paso siguiente (la Cocina hace el 3 y el 4; tras la Torre o el Comedor, una corrección vuelve a la Cocina) */
 export function siguiente(p: PasoId): PasoId | 'hecha' {
   const i = PASOS_IDS.indexOf(p); return i < PASOS_IDS.length - 1 ? PASOS_IDS[i + 1] : 'hecha';
 }
@@ -309,7 +310,7 @@ export function accionHistoria(hs: Historia[], nombre: string, d: Record<string,
       return { oro: oro + (h.paso === 'hecha' ? 25 : 0) };   // y un premio por cerrar la historia entera
     }
     case 'volver': {
-      if (h.paso !== 'torre' && h.paso !== 'salon') throw new Error('Solo se vuelve a la Forja desde la Torre del Vigía o el Salón de los Parroquianos.');
+      if (h.paso !== 'torre' && h.paso !== 'salon') throw new Error('Solo se vuelve a la Cocina desde la Torre del Vigía o el Comedor de los Peregrinos.');
       const acs = txt(d.acs, 2000).trim(); if (!acs) throw new Error('Di qué ACs hay que corregir.');
       h.vuelta = { desde: h.paso, acs }; h.paso = 'forja'; return { oro: 0 };
     }

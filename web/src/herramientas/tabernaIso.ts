@@ -57,11 +57,14 @@ const torre = grupoEn(-L, 2 * L), salon = grupoEn(0, 2 * L), mensajero = grupoEn
 /** Luz en coordenadas de una sala */
 const luzEn = (g: THREE.Group, x: number, y: number, z: number, color: string, i: number, d: number, p = 0) => luz(g.position.x + x, y, g.position.z + z, color, i, d, p);
 
-async function suelo(g: THREE.Group) {
+// cada sala, su suelo: tarima, tarima oscura, losas de piedra o tierra pisada
+type Suelo = 'madera' | 'oscura' | 'piedra' | 'tierra';
+const SUELO: Record<Suelo, string> = { madera: 'floor_wood_large', oscura: 'floor_wood_large_dark', piedra: 'floor_tile_large', tierra: 'floor_dirt_large' };
+async function suelo(g: THREE.Group, tipo: Suelo = 'madera') {
   const { S } = en(g);
   const ps: Promise<unknown>[] = [];
   for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
-    ps.push(S(R.dun('floor_wood_large'), { pos: [-L / 2 + 2 + i * 4, 0, -L / 2 + 2 + j * 4], ancho: 4, ancla: 'techo', rot: ((i * 3 + j) % 2) * Math.PI, sombra: false }));
+    ps.push(S(R.dun(SUELO[tipo]), { pos: [-L / 2 + 2 + i * 4, 0, -L / 2 + 2 + j * 4], ancho: 4, ancla: 'techo', rot: ((i * 3 + j) % 2) * Math.PI, sombra: false }));
   await Promise.all(ps);
 }
 /** Las paredes de una sala. Fondo (z = -6) e izquierda (x = -6) son de entramado entero si dan afuera; las que dan a
@@ -69,18 +72,19 @@ async function suelo(g: THREE.Group) {
  *  desde esta cámara). `paso`: dónde se abre el hueco para pasar en ese murete (en x para fondo y delante, en z para los
  *  lados); `false`: sin pared ahí (la pone la sala vecina). */
 type Lado = 'entero' | false | { paso?: number };
-function paredes(g: THREE.Group, o: { ventana?: number; fondo?: Lado; izquierda?: Lado; derecha?: Lado; frente?: Lado }) {
-  const madera = materialAcero('#3a2414');
+function paredes(g: THREE.Group, o: { ventana?: number; fondo?: Lado; izquierda?: Lado; derecha?: Lado; frente?: Lado; tono?: { yeso?: string; madera?: string } }) {
+  const tono = o.tono ?? {};
+  const madera = materialAcero(tono.madera ?? '#3a2414');
   const fondo = o.fondo ?? 'entero', izquierda = o.izquierda ?? 'entero', derecha = o.derecha ?? {}, frente = o.frente ?? {};
-  if (fondo === 'entero') muroEntramado(g, -L / 2, L / 2, -L / 2, 0, o.ventana !== undefined ? { x: o.ventana, y: H * 0.55, w: 1.8, h: 1.6 } : undefined);
-  if (izquierda === 'entero') { const izq = muroEntramado(g, 0, L, 0, 0); izq.rotation.y = Math.PI / 2; izq.position.set(-L / 2, 0, L / 2); }
+  if (fondo === 'entero') muroEntramado(g, -L / 2, L / 2, -L / 2, 0, o.ventana !== undefined ? { x: o.ventana, y: H * 0.55, w: 1.8, h: 1.6 } : undefined, tono);
+  if (izquierda === 'entero') { const izq = muroEntramado(g, 0, L, 0, 0, undefined, tono); izq.rotation.y = Math.PI / 2; izq.position.set(-L / 2, 0, L / 2); }
   // un murete a lo largo de x (en z) o de z (en x), partido por el hueco del paso, con pies derechos a los lados
   const murete = (enX: boolean, fijo: number, paso?: number) => {
     const tramos: [number, number][] = paso === undefined ? [[-L / 2, L / 2]] : [[-L / 2, paso - 0.9], [paso + 0.9, L / 2]];
     for (const [a, b] of tramos) {
       const largo = b - a, c = (a + b) / 2;
       const [w, d, x, z] = enX ? [largo, 0.25, c, fijo] : [0.25, largo, fijo, c];
-      g.add(caja(w, BAJO, d, materialYeso(), x, BAJO / 2, z, true), caja(w + 0.1, 0.16, d + 0.1, madera, x, BAJO + 0.08, z, true));
+      g.add(caja(w, BAJO, d, materialYeso(tono.yeso), x, BAJO / 2, z, true), caja(w + 0.1, 0.16, d + 0.1, madera, x, BAJO + 0.08, z, true));
     }
     if (paso !== undefined) for (const t of [paso - 0.9, paso + 0.9]) g.add(caja(0.3, BAJO + 0.6, 0.3, madera, enX ? t : fijo, (BAJO + 0.6) / 2, enX ? fijo : t, true));
   };
@@ -193,61 +197,57 @@ async function mueblesMostrador() {
   luz(OX + 1, 2.4, 3, '#ffb35c', 6, 9, 3);
   luz(OX - 2, 2.8, -4, '#ffb35c', 6, 9, 2);
 }
-// ---------------------------------------------------------------- muebles de la Forja (pasos 3 y 4)
-// Eulogio forja los prototipos: fragua con fuego en la pared de fuera, yunque con martillo y tenazas delante, banco de
-// trabajo con los planos del prototipo (lo que se construye) y la piedra de afilar, tinas de temple, lingotes y armas
+// ---------------------------------------------------------------- la Cocina (pasos 3 y 4): el prototipo es el plato
+// Eulogio cocina cada prototipo con la receta del proyecto y lo cata antes de servirlo: hogar con el caldero al fuego,
+// horno de leña, mesas de trabajo con tabla, cuchillo y rodillo, cajas de ingredientes, ollas y sartenes, escurridor
+// de platos y los platos listos para el Comedor de los Peregrinos
 async function mueblesForja() {
   const { S, sobre } = en(forja);
   const W = (x: number, z: number) => [OX + x, OZ + z] as const;
-  // la fragua: una chimenea oscura en la pared de la izquierda, con fuego vivo y su resplandor
-  await tinte(S(R.casa('Fireplace'), { pos: [-L / 2 + 0.55, 0, -1.5], rot: Math.PI / 2, alto: 2.4, propios: true }), '#4a3a32');
-  await S(R.sv('Bonfire_Fire'), { pos: [-L / 2 + 0.9, 0.05, -1.5], alto: 0.6 });
-  { const [x, z] = W(-L / 2 + 1.3, -1.5); luz(x, 0.9, z, '#ff6a1a', 16, 11, 9); }
-  await S(R.recurso('Wood_Log_Stack'), { pos: [-L / 2 + 0.8, 0, -3.6], ancho: 1.3, rot: Math.PI / 2 });
-  // el yunque, con tenazas y martillo, y la tina de temple
-  const yunque = await S(R.herr('anvil'), { pos: [-2.6, 0, -1.4], ancho: 1.1, rot: Math.PI / 2 });
-  await sobre(yunque, R.herr('hammer'), -2.6, -1.2, { alto: 0.12, rotZ: Math.PI / 2 });
-  await S(R.herr('tongs'), { pos: [-2, 0, -2.4], alto: 0.6, rot: 0.4 });
-  await S(R.herr('bucket_metal'), { pos: [-3.6, 0, -0.1], alto: 0.6 });
-  await S(R.dun('barrel_large'), { pos: [-4.8, 0, 1.2], alto: 1 });
-  // el banco de trabajo con los planos del prototipo
-  const banco = await S(R.dun('table_long'), { pos: [1.8, 0, -3.4], alto: 0.85, rot: Math.PI / 2 });
-  await sobre(banco, R.herr('blueprint'), 1.3, -3.4, { ancho: 0.8 });
-  await sobre(banco, R.herr('blueprint_stacked'), 2.5, -3.5, { ancho: 0.6 });
-  await sobre(banco, R.herr('saw'), 2.9, -3.2, { ancho: 0.6, rotZ: Math.PI / 2 });
-  await sobre(banco, R.dun('candle_lit'), 0.7, -3.6, { alto: 0.3 });
-  { const [x, z] = W(1.8, -3.4); luz(x, 1.8, z, '#ffb347', 5, 7, 6); }
-  await S(R.dun('stool_round'), { pos: [1.8, 0, -2.4], alto: 0.5 });
-  await S(R.herr('grindstone'), { pos: [4.7, 0, -4.3], alto: 1 });
-  // materiales y armas: lingotes, cajas de piezas, armero y escudos
-  await S(R.recurso('Iron_Bars_Stack_Large'), { pos: [4.6, 0, -1.6], ancho: 1 });
-  await S(R.recurso('Gold_Bars_Stack_Small'), { pos: [4.9, 0, -0.4], ancho: 0.6 });
-  await S(R.recurso('Containers_Crate_Small_Grey'), { pos: [4.6, 0, 2.4], ancho: 0.7 });
-  await S(R.dun('crates_stacked'), { pos: [4.5, 0, 4.4], alto: 1.1 });
-  await S(R.dun('sword_shield'), { pos: [-L / 2 + 0.15, 1.7, 2.2], alto: 1.1, rot: Math.PI / 2 });
-  await S(R.dun('sword_shield_gold'), { pos: [-L / 2 + 0.15, 1.7, 3.8], alto: 1.1, rot: Math.PI / 2 });
-  await S(R.dun('pickaxe'), { pos: [-L / 2 + 0.5, 0, 5], alto: 1, rot: 0.3 });
-  // suelo de tierra pisada delante de la fragua y el yunque (la chispa no prende en la madera)
-  for (const [x, z] of [[-3.2, -2], [-3.2, 0.4], [-0.8, -2]]) await S(R.dun('floor_dirt_large'), { pos: [x, 0.012, z], ancho: 2.4, ancla: 'techo', sombra: false }).catch(() => null);
-  // segundo banco: el de las herramientas finas, con limas, cinceles, llave y tenazas colgadas
-  const banco2 = await S(R.dun('table_medium'), { pos: [-0.6, 0, 3.2], alto: 0.85 });
-  for (const [n, x, z, a] of [['file', -0.9, 3.1, 0.25], ['chisel', -0.6, 3.3, 0.22], ['wrench_A', -0.2, 3.1, 0.25], ['screwdriver_A_long_color', -0.5, 2.95, 0.25]] as const) await sobre(banco2, R.herr(n), x, z, { alto: a, rotZ: Math.PI / 2, rot: 0.4 });
-  await sobre(banco2, R.recurso('Iron_Nuggets'), 0.1, 3.3, { ancho: 0.4 });
-  await S(R.dun('stool'), { pos: [-0.6, 0, 4.1], alto: 0.6 });
-  // pila de piedras y montones de mineral, pico y cubo de picos junto a la pared de fuera
-  await S(R.recurso('Stone_Bricks_Stack_Large'), { pos: [-4.6, 0, 3.4], ancho: 1.1 });
-  await S(R.dun('bucket_pickaxes'), { pos: [-3.4, 0, 4.8], alto: 0.9 });
-  await S(R.recurso('Copper_Bars_Stack_Medium'), { pos: [2.8, 0, -0.6], ancho: 0.8 });
-  await S(R.dun('rocks_gold'), { pos: [3, 0, 1.2], ancho: 0.9 }).catch(() => null);
-  // la segunda lumbre: el brasero de templar, con su resplandor
-  await S(R.sv('Bonfire_Fire'), { pos: [1.2, 0, 0.6], alto: 0.7 });
-  { const [x, z] = W(1.2, 0.6); luz(x, 0.8, z, '#ff6a1a', 8, 7, 11); }
-  await S(R.herr('bucket_metal'), { pos: [2, 0, 1.4], alto: 0.5 });
-  // más armas y escudos recién forjados en la pared del fondo de la sala de al lado no; en un armero propio
-  await S(R.dun('shelves'), { pos: [-L / 2 + 0.4, 0, 0.6], alto: 2.2, rot: Math.PI / 2 }).catch(() => null);
-  for (const [y, z, n] of [[1, 0.2, 'sword_shield_broken'], [1.7, 1, 'sword_shield']] as const) await S(R.dun(n), { pos: [-L / 2 + 0.5, y, z], alto: 0.6, rot: Math.PI / 2 }).catch(() => null);
-  { const [x, z] = W(0, 1.5); luz(x, 2.8, z, '#ffb35c', 6, 10, 2); }
+  const C = (n: string) => R.cocina(n);
+  // el hogar: chimenea con fuego y el caldero del guiso encima
+  await tinte(S(R.casa('Fireplace'), { pos: [-L / 2 + 0.55, 0, -2], rot: Math.PI / 2, alto: 2.4, propios: true }), '#8a6a52');
+  await S(R.sv('Bonfire_Fire'), { pos: [-L / 2 + 0.9, 0.05, -2], alto: 0.55 });
+  await S(C('stew_pot'), { pos: [-L / 2 + 0.95, 0.35, -2], alto: 0.55 }).catch(() => S(R.sv('Pot'), { pos: [-L / 2 + 0.95, 0.35, -2], alto: 0.55 }));
+  { const [x, z] = W(-L / 2 + 1.3, -2); luz(x, 0.9, z, '#ff6a1a', 14, 10, 9); }
+  await S(R.recurso('Wood_Log_Stack'), { pos: [-L / 2 + 0.8, 0, -4.3], ancho: 1.3, rot: Math.PI / 2 });
+  // el horno de leña, en la esquina del fondo
+  // (el horno del pack de cocina es de metal: el de leña es otra chimenea, de ladrillo, con su lumbre dentro)
+  await tinte(S(R.casa('Fireplace'), { pos: [3.6, 0, -L / 2 + 0.6], alto: 2, propios: true }), '#a0503a');
+  await S(R.sv('Bonfire_Fire'), { pos: [3.6, 0.05, -L / 2 + 0.95], alto: 0.4 });
+  await S(C('food_ingredient_dough_base'), { pos: [3.6, 0.5, -L / 2 + 1.05], ancho: 0.4 }).catch(() => null);
+  { const [x, z] = W(3.6, -4.2); luz(x, 0.8, z, '#ff7a2a', 8, 7, 8); }
+  // las mesas de trabajo: la grande en el centro (donde se emplata el prototipo) y la de cortar
+  const mesa = await S(R.dun('table_long_decorated_C'), { pos: [0, 0, -0.8], alto: 0.88, rot: Math.PI / 2 }).catch(() => S(R.dun('table_long'), { pos: [0, 0, -0.8], alto: 0.85, rot: Math.PI / 2 }));
+  await sobre(mesa, C('cuttingboard'), -0.6, -0.8, { ancho: 0.5 }).catch(() => null);
+  await sobre(mesa, C('knife'), -0.5, -0.6, { ancho: 0.3 }).catch(() => null);
+  await sobre(mesa, C('food_dinner'), 0.5, -0.9, { ancho: 0.45 }).catch(() => null);
+  await sobre(mesa, C('rollingpin'), 0.1, -0.5, { ancho: 0.45 }).catch(() => null);
+  await sobre(mesa, R.dun('candle_lit'), 1, -1.1, { alto: 0.25 });
+  { const [x, z] = W(0, -0.8); luz(x, 2.2, z, '#ffb35c', 6, 8, 3); }
+  // el fregadero de madera: mesa con cubos de agua y la pila de platos limpios
+  const pila = await S(R.dun('table_medium'), { pos: [-0.6, 0, -L / 2 + 0.8], alto: 0.85 });
+  await sobre(pila, R.dun('bucket'), -1, -L / 2 + 0.8, { alto: 0.4 }).catch(() => null);
+  await sobre(pila, R.dun('plate_stack'), -0.2, -L / 2 + 0.8, { alto: 0.25 }).catch(() => null);
+  await S(R.dun('barrel_small'), { pos: [-2, 0, -L / 2 + 0.7], alto: 0.8 });
+  for (const [x, z] of [[-1, -1.6], [1, -1.6], [-1, 0], [1, 0]]) await S(R.dun('stool'), { pos: [x, 0, z], alto: 0.55 });
+  // ollas, sartenes y tarros en las baldas de la pared del fondo (la de la sala de al lado no: aquí no hay pared)
+  await S(R.dun('shelves_decorated'), { pos: [-L / 2 + 0.4, 0, 1.4], alto: 2.3, rot: Math.PI / 2 });
+  await S(C('pot_large'), { pos: [-3.8, 0, 0.2], alto: 0.7 }).catch(() => null);
+  await S(C('pot_A_stew'), { pos: [-3.2, 0, -0.4], alto: 0.4 }).catch(() => null);
+  // los ingredientes: cajas de verduras, queso, carne y pan, sacos y toneles
+  const cajas: [string, number, number][] = [['crate_carrots', 2.6, 0.8], ['crate_tomatoes', 3.4, 1.4], ['crate_cheese', 4.4, 0.6], ['crate_potatoes', 4.6, 1.8], ['crate_onions', 2.8, 2.2], ['crate_buns', 4.4, -1.4]];
+  for (const [n, x, z] of cajas) await S(C(n), { pos: [x, 0, z], ancho: 0.75, rot: x }).catch(() => null);
+  await S(R.dun('barrel_large'), { pos: [4.8, 0, 4.4], alto: 1 });
+  await S(R.dun('keg_decorated'), { pos: [3.8, 0, 4.8], alto: 0.9 });
+  await S(R.recurso('Food_Basket_A_Berries'), { pos: [-4.6, 0, 3.6], ancho: 0.7 }).catch(() => null);
+  // la mesa de catar: el plato listo, la cuchara y el taburete de quien prueba (la verificación, paso 4)
+  const cata = await S(R.dun('table_small'), { pos: [-1.4, 0, 3], alto: 0.78 });
+  await sobre(cata, C('stew_bowl'), -1.5, 3, { ancho: 0.35 }).catch(() => null);
+  await sobre(cata, C('spoon'), -1.1, 3.1, { ancho: 0.25 }).catch(() => null);
+  await S(R.dun('stool'), { pos: [-1.4, 0, 3.9], alto: 0.6 });
 }
+
 // ---------------------------------------------------------------- Torre del Vigía (paso 5)
 // Casiano revisa cada AC desde su atalaya: plataforma de madera con escalera, catalejo (la lupa grande) y brasero de
 // guardia arriba; abajo, la mesa de los mapas de lo auditado con lámpara, estandartes, escudos y la armería de guardia
@@ -281,27 +281,31 @@ async function mueblesTorre() {
   luzEn(torre, 4.9, 1.8, 1.6, '#ff8a3a', 4, 6, 10);
   await S(R.dun('keg'), { pos: [-4.9, 0, 4.9], alto: 0.9 });
 }
-// ---------------------------------------------------------------- Salón de los Parroquianos (paso 6)
-// Donde los parroquianos prueban los prototipos: mesas redondas con jarras y comida, tarima con el banco del posadero,
-// toneles; Fabricio va de mesa en mesa y los parroquianos (goblins y gente del pueblo) se sientan a probar
+// ---------------------------------------------------------------- Comedor de los Peregrinos (paso 6)
+// Los peregrinos prueban el plato (el prototipo): mesas redondas con manteles y el guiso servido en cada una, jarras
+// y pan; la pizarra del menú, toneles de bebida y el banco de los que esperan mesa. Fabricio sirve y apunta
 async function mueblesSalon() {
   const { S, sobre } = en(salon);
-  await tinte(S(R.mueble('rug_rectangle_stripes_A'), { pos: [0, 0.01, 0.8], ancho: 7, propios: true }), '#8c1c13');
+  const C = (n: string) => R.cocina(n);
+  await tinte(S(R.mueble('rug_rectangle_stripes_A'), { pos: [0, 0.01, 0.4], ancho: 7.4, propios: true }), '#8c1c13');
   const mesas: THREE.Object3D[] = [];
-  for (const [x, z] of [[-3, -2.2], [1.6, -2.4], [-2.4, 2.4], [2.6, 2.2]]) {
-    const m = await S(R.dun('table_round_medium'), { pos: [x, 0, z], alto: 0.8 }); mesas.push(m);
+  for (const [x, z, n] of [[-3, -2.2, 'table_round_B_tablecloth_red'], [1.6, -2.4, 'table_round_B_tablecloth_green'], [-2.4, 2.4, 'table_round_B_tablecloth_green'], [2.6, 2.2, 'table_round_B_tablecloth_red_decorated']] as const) {
+    const m = await S(C(n), { pos: [x, 0, z], alto: 0.8 }).catch(() => S(R.dun('table_round_medium'), { pos: [x, 0, z], alto: 0.8 })); mesas.push(m);
     for (let k = 0; k < 3; k++) { const a = k * 2.1 + x; await S(R.dun('stool_round'), { pos: [x + Math.cos(a) * 1.05, 0, z + Math.sin(a) * 1.05], alto: 0.5 }); }
+    // en cada mesa, el plato del día (el prototipo que prueban) y algo de beber
+    await sobre(m, C('stew_bowl'), x - 0.15, z, { ancho: 0.32 }).catch(() => null);
+    await sobre(m, R.mueble('mug_A'), x + 0.25, z - 0.15, { alto: 0.16 });
   }
-  await sobre(mesas[0], R.dun('plate_food_A'), -3, -2.2, { ancho: 0.4 });
-  await sobre(mesas[1], R.cocina('jar_A_large'), 1.6, -2.4, { alto: 0.3 }).catch(() => null);
-  await sobre(mesas[2], R.mueble('mug_A'), -2.3, 2.3, { alto: 0.18 });
-  await sobre(mesas[3], R.dun('plate_food_B'), 2.6, 2.2, { ancho: 0.4 });
+  await sobre(mesas[1], C('food_dinner'), 1.9, -2.3, { ancho: 0.35 }).catch(() => null);
   await sobre(mesas[3], R.dun('candle_lit'), 2.9, 2, { alto: 0.25 });
-  // el rincón de las bebidas: barriles y tonel con espita junto a la pared de la izquierda (es la de la Torre)
+  // la pizarra del menú, colgada en la pared de la Torre (es la izquierda)
+  await S(C('menu'), { pos: [-L / 2 + 0.2, 1.3, -0.4], alto: 1.2, rot: Math.PI / 2 }).catch(() => null);
+  // el rincón de las bebidas y el banco de los que esperan
   await S(R.dun('barrel_large_decorated'), { pos: [-5, 0, -4.8], alto: 1.1 });
   await S(R.dun('keg_decorated'), { pos: [-3.8, 0, -5], alto: 1 });
   await S(R.dun('barrel_small_stack'), { pos: [4.8, 0, -4.8], alto: 0.8 });
   await S(R.dun('bench'), { pos: [0, 0, 4.9], ancho: 2.6 });
+  await S(C('crate_buns'), { pos: [4.6, 0, 4.6], ancho: 0.7 }).catch(() => null);
   luzEn(salon, 0, 3, 0, '#ffb35c', 10, 14, 2);
   luzEn(salon, 2.9, 1.2, 2, '#ffb347', 3, 5, 9);
 }
@@ -381,42 +385,49 @@ async function exterior() {
 
 // ---------------------------------------------------------------- gente: Aurelia en la mesa de mapas y la Tabernera
 const gente: Personaje[] = [];
+// los que se pueden seleccionar con el ratón, con su ficha
+interface Npc { p: Personaje; nombre: string; mote: string; rol: string }
+const npcs: Npc[] = [];
+let jugador: Personaje | undefined;
+const ficha = (p: Personaje, nombre: string, mote: string, rol: string) => { npcs.push({ p, nombre, mote, rol }); return p; };
 async function personas() {
   const aurelia = new Personaje('Hiker', PASOS.mapas.aventurero.aspecto);
   await aurelia.cargar(); aurelia.raiz.position.set(-0.3, 0, 0.8); aurelia.raiz.rotation.y = Math.PI / 2; scene.add(aurelia.raiz);
-  aurelia.reproducir('Interact', 0); gente.push(aurelia);
+  aurelia.reproducir('Interact', 0); gente.push(aurelia); ficha(aurelia, 'Aurelia', PASOS.mapas.aventurero.mote, 'Paso 1 · Sala de Mapas');
   const tu = new Personaje('Protagonist_B', aspectoDe({ tipo: 'Protagonist_B' }));
-  await tu.cargar(); tu.raiz.position.set(2.2, 0, 3.4); tu.raiz.rotation.y = -Math.PI * 0.75; scene.add(tu.raiz); gente.push(tu);
+  await tu.cargar(); tu.raiz.position.set(0, 0, L); tu.raiz.rotation.y = -Math.PI * 0.75; scene.add(tu.raiz); gente.push(tu); jugador = tu;
   // Dámaso, el escribano del Mostrador, tras la barra con el libro de supuestos
   const damaso = new Personaje('Hiker', PASOS.mostrador.aventurero.aspecto);
-  await damaso.cargar(); damaso.raiz.position.set(OX + 0, 0, -3.5); scene.add(damaso.raiz); damaso.reproducir('Interact', 0); gente.push(damaso);
+  await damaso.cargar(); damaso.raiz.position.set(OX + 0, 0, -3.5); scene.add(damaso.raiz); damaso.reproducir('Interact', 0); gente.push(damaso); ficha(damaso, 'Dámaso', PASOS.mostrador.aventurero.mote, 'Paso 2 · Mostrador del BA');
   const goblin2 = new Personaje('Goblin_B', aspectoDe({ tipo: 'Goblin_B' }));
   await goblin2.cargar(); goblin2.raiz.scale.multiplyScalar(0.62); goblin2.raiz.position.set(OX - 3, 0, 3.1); goblin2.raiz.rotation.y = 0.3; scene.add(goblin2.raiz); gente.push(goblin2);
-  // Eulogio, el forjador, martillando en el yunque
+  // Eulogio, el cocinero, emplatando en la mesa grande
   const eulogio = new Personaje('Hiker', PASOS.forja.aventurero.aspecto);
-  await eulogio.cargar(); eulogio.raiz.position.set(OX - 2.6, 0, OZ - 0.3); eulogio.raiz.rotation.y = Math.PI; scene.add(eulogio.raiz); eulogio.reproducir('Hammering', 0); gente.push(eulogio);
+  await eulogio.cargar(); eulogio.raiz.position.set(OX, 0, OZ + 0.2); eulogio.raiz.rotation.y = Math.PI; scene.add(eulogio.raiz); eulogio.reproducir('Working_A', 0); gente.push(eulogio); ficha(eulogio, 'Eulogio', PASOS.forja.aventurero.mote, 'Pasos 3–4 · Cocina');
   // los de las salas nuevas y los parroquianos del Salón, sentados a probar
   const poner = async (tipo: string, aspecto: any, g: THREE.Group, x: number, z: number, rot: number, clip: string, escala = 1) => {
     const p = new Personaje(tipo, aspecto); await p.cargar(); if (escala !== 1) p.raiz.scale.multiplyScalar(escala);
     p.raiz.position.set(g.position.x + x, 0, g.position.z + z); p.raiz.rotation.y = rot; scene.add(p.raiz); p.reproducir(clip, 0); gente.push(p); return p;
   };
-  await poner('Hiker', PASOS.torre.aventurero.aspecto, torre, 1.8, 1.5, Math.PI, 'Interact');
-  await poner('Hiker', PASOS.salon.aventurero.aspecto, salon, -0.2, 0.4, 0.4, 'Idle_A');
-  await poner('Hiker', PASOS.mensajero.aventurero.aspecto, mensajero, -1.4, -1.4, Math.PI, 'Working_A');
-  await poner('Hiker', PASOS.libro.aventurero.aspecto, libro, 0.6, -0.7, Math.PI, 'Interact');
-  const PARROQUIANOS: [string, number, number, number][] = [['Goblin', -3.9, -1.6, 2.2], ['Survivalist', -2, -1.6, -2.3], ['Goblin_B', 0.7, -1.7, 2.3], ['Hoarder', -3, 3.4, Math.PI], ['Goblin', 3.5, 1.5, -2.2], ['Driver', 1.6, 2.8, 2]];
-  for (const [t, x, z, r] of PARROQUIANOS) await poner(t, aspectoDe({ tipo: t }), salon, x, z, r, 'Idle_A', t.startsWith('Goblin') ? 0.7 : 1);
+  for (const [id, g, x, z, rot, clip] of [['torre', torre, 1.8, 1.5, Math.PI, 'Interact'], ['salon', salon, -0.2, 0.4, 0.4, 'Idle_A'], ['mensajero', mensajero, -1.4, -1.4, Math.PI, 'Working_A'], ['libro', libro, 0.6, -0.7, Math.PI, 'Interact']] as const) {
+    const a = PASOS[id].aventurero;
+    ficha(await poner('Hiker', a.aspecto, g, x, z, rot, clip), a.nombre, a.mote, `Paso ${PASOS[id].numero} · ${PASOS[id].sala}`);
+  }
+  // los peregrinos del Comedor, probando el plato: caminantes con sombrero y mochila, gente del camino y goblins
+  const PEREGRINOS: [string, number, number, number, string, string][] = [['Hiker', -3.9, -1.6, 2.2, 'Romero', 'Peregrino de larga ruta'], ['Survivalist', -2, -1.6, -2.3, 'Brígida', 'Peregrina con prisa'], ['Goblin_B', 0.7, -1.7, 2.3, 'Trasgo', 'Goblin que lo prueba todo'], ['Protagonist_A', -3, 3.4, Math.PI, 'Elvira', 'Peregrina primeriza'], ['Goblin', 3.5, 1.5, -2.2, 'Nabo', 'Goblin de paladar fino'], ['Hiker', 1.6, 2.8, 2, 'Tomás', 'Peregrino veterano']];
+  for (const [t, x, z, r, n, m] of PEREGRINOS) ficha(await poner(t, aspectoDe({ tipo: t, tono: t === 'Hiker' ? Math.round(x * 50 + 200) : undefined }), salon, x, z, r, 'Interact', t.startsWith('Goblin') ? 0.7 : 1), n, m, 'Prueba el plato en el Comedor (paso 6)');
   const goblin = new Personaje('Goblin', aspectoDe({ tipo: 'Goblin' }));
   await goblin.cargar(); goblin.raiz.scale.multiplyScalar(0.62); goblin.raiz.position.set(4, 0, 1.4); goblin.raiz.rotation.y = -Math.PI / 2; scene.add(goblin.raiz);
-  goblin.reproducir('Working_A', 0); gente.push(goblin);
+  goblin.reproducir('Working_A', 0); gente.push(goblin); ficha(goblin, 'Grisko', 'Goblin recadero', 'Lleva y trae entre salas');
 }
 
-// ---------------------------------------------------------------- cámara isométrica y salas: entrar y salir
-// En la vista general, cada sala lleva su cartel flotante (paso y nombre). Al entrar en una (clic, o 1, 2, 3), la cámara
-// se acerca y arriba sale su título: paso, sala y qué se hace en ella. Esc vuelve a la vista general.
+// ---------------------------------------------------------------- cámara, ratón y salas
+// El ratón lleva a la Tabernera: clic en el suelo y va andando; clic en alguien y lo selecciona (su ficha abajo). Los
+// carteles de las salas solo salen al pasar el ratón por encima de una o con la Tabernera dentro; al entrar en una sala
+// sale arriba su título. Las teclas 1 a 8 acercan la cámara a cada sala y Esc vuelve a la vista general.
 const giro = THREE.MathUtils.degToRad(+(q.get('giro') ?? 45));
 const alto = THREE.MathUtils.degToRad(+(q.get('alto') ?? 38));
-camera.fov = 22; camera.near = 1; camera.far = 200;
+camera.fov = 22; camera.near = 1; camera.far = 260;
 const GENERAL = { centro: new THREE.Vector3(+(q.get('x') ?? -1), 0.6, +(q.get('z') ?? 13)), dist: +(q.get('dist') ?? 96) };
 const SALAS = [
   { id: 'mapas' as const, grupo: sala, tecla: '1' },
@@ -427,7 +438,8 @@ const SALAS = [
   { id: 'mensajero' as const, grupo: mensajero, tecla: '7' },
   { id: 'libro' as const, grupo: libro, tecla: '8' },
 ];
-let dentro: (typeof SALAS)[number] | null = null;
+type SalaIso = (typeof SALAS)[number];
+const salaEn = (x: number, z: number) => SALAS.find(sl => Math.abs(x - sl.grupo.position.x) < L / 2 && Math.abs(z - sl.grupo.position.z) < L / 2) ?? null;
 const camObjetivo = GENERAL.centro.clone(), camMirada = GENERAL.centro.clone();
 let camDist = GENERAL.dist, camDistAhora = GENERAL.dist;
 function colocarCamara() {
@@ -435,71 +447,119 @@ function colocarCamara() {
   camera.lookAt(camMirada); camera.updateProjectionMatrix();
 }
 colocarCamara();
+function enfocar(sl: SalaIso | null) {
+  if (sl) { camObjetivo.set(sl.grupo.position.x, 0.6, sl.grupo.position.z + 0.6); camDist = 34; }
+  else { camObjetivo.copy(GENERAL.centro); camDist = GENERAL.dist; }
+}
 
-// la interfaz: carteles de las salas y el título de la sala en la que estás
+// la interfaz: carteles (ocultos salvo con el ratón encima o la Tabernera dentro), título y ficha de quien se selecciona
 const capa = document.createElement('div'); capa.className = 'capa'; document.body.appendChild(capa);
 const titulo = document.createElement('div'); titulo.className = 'titulo-sala'; document.body.appendChild(titulo);
+const fichaNpc = document.createElement('div'); fichaNpc.className = 'ficha-npc'; document.body.appendChild(fichaNpc);
 const carteles = SALAS.map(sl => {
   const p = PASOS[sl.id];
   const c = document.createElement('button'); c.className = 'cartel-sala';
   c.innerHTML = `<b>${p.numero}</b><span>${p.sala}</span>`;
-  c.onclick = () => entrar(sl); capa.appendChild(c);
+  c.onclick = () => enfocar(sl); capa.appendChild(c);
   return c;
 });
-function entrar(sl: (typeof SALAS)[number] | null) {
-  dentro = sl;
-  if (sl) { camObjetivo.set(sl.grupo.position.x, 0.6, sl.grupo.position.z + 0.6); camDist = 30; }
-  else { camObjetivo.copy(GENERAL.centro); camDist = GENERAL.dist; }
+let salaRaton: SalaIso | null = null, salaJugador: SalaIso | null = null;
+function ponerTitulo(sl: SalaIso | null) {
   const p = sl && PASOS[sl.id];
-  titulo.innerHTML = p ? `<small>PASO ${p.numero}</small><h1>${p.sala}</h1><p>${p.etapa}${p.comando ? ` · <code>${p.comando}</code>` : ''}</p><kbd>Esc</kbd> volver a la taberna` : '';
+  titulo.innerHTML = p ? `<small>PASO ${p.numero}</small><h1>${p.sala}</h1><p>${p.etapa}${p.comando ? ` · <code>${p.comando}</code>` : ''}</p>` : '';
   titulo.classList.toggle('visible', !!p);
-  capa.classList.toggle('oculta', !!p);
+}
+// selección: anillo dorado a los pies y la ficha
+const anillo = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.7, 40), new THREE.MeshBasicMaterial({ color: '#ffcf4a', transparent: true, opacity: 0.9, depthWrite: false }));
+anillo.rotation.x = -Math.PI / 2; anillo.visible = false; anillo.renderOrder = 3; scene.add(anillo);
+let elegido: Npc | null = null;
+function seleccionar(n: Npc | null) {
+  elegido = n; anillo.visible = !!n;
+  fichaNpc.innerHTML = n ? `<h2>${n.nombre}</h2><em>«${n.mote}»</em><p>${n.rol}</p><button disabled>Hablar</button><small>Esc para soltar</small>` : '';
+  fichaNpc.classList.toggle('visible', !!n);
 }
 addEventListener('keydown', e => {
-  if (e.key === 'Escape') entrar(null);
-  const sl = SALAS.find(x => x.tecla === e.key); if (sl) entrar(sl);
+  if (e.key === 'Escape') { seleccionar(null); enfocar(null); }
+  const sl = SALAS.find(x => x.tecla === e.key); if (sl) enfocar(sl);
 });
-// un clic en el suelo de una sala entra en ella
-const rayo = new THREE.Raycaster(), raton = new THREE.Vector2();
-motor.renderer.domElement.addEventListener('click', ev => {
+// el ratón: qué sala hay debajo, a quién se apunta y adónde se va
+const rayo = new THREE.Raycaster(), raton = new THREE.Vector2(), SUELO_Y = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+function apuntar(ev: MouseEvent) {
   const r = motor.renderer.domElement.getBoundingClientRect();
   raton.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
   rayo.setFromCamera(raton, camera);
-  const p = rayo.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3()); if (!p) return;
-  const sl = SALAS.find(x => Math.abs(p.x - x.grupo.position.x) < L / 2 && Math.abs(p.z - x.grupo.position.z) < L / 2);
-  if (sl && sl !== dentro) entrar(sl);
+}
+/** El personaje más cercano al rayo (un cilindro de 0,5 m de radio y su altura), o null */
+function npcBajoRaton(): Npc | null {
+  let mejor: Npc | null = null, dMejor = Infinity;
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), enRayo = new THREE.Vector3(), enSeg = new THREE.Vector3();
+  for (const n of npcs) {
+    const k = n.p.raiz.scale.y;
+    a.copy(n.p.raiz.position); b.copy(a).setY(a.y + 1.7 * k);
+    const d2 = rayo.ray.distanceSqToSegment(a, b, enRayo, enSeg);
+    if (d2 < (0.5 * k) ** 2 && enRayo.distanceTo(rayo.ray.origin) < dMejor) { dMejor = enRayo.distanceTo(rayo.ray.origin); mejor = n; }
+  }
+  return mejor;
+}
+const lienzo = motor.renderer.domElement;
+lienzo.addEventListener('mousemove', ev => {
+  apuntar(ev);
+  const p = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3());
+  salaRaton = p ? salaEn(p.x, p.z) : null;
+  lienzo.style.cursor = npcBajoRaton() ? 'pointer' : 'default';
+});
+lienzo.addEventListener('mouseleave', () => { salaRaton = null; });
+lienzo.addEventListener('click', ev => {
+  apuntar(ev);
+  const n = npcBajoRaton(); if (n) { seleccionar(n); return; }
+  const p = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (!p) return;
+  // dentro de la taberna (las salas y el salón central): la Tabernera va andando hasta ahí
+  if (p.x > -L * 1.5 && p.x < L * 1.5 && p.z > -L / 2 && p.z < L * 2.5) jugador?.irA(new THREE.Vector3(p.x, 0, p.z));
 });
 const v = new THREE.Vector3();
 function moverCarteles() {
-  const r = motor.renderer.domElement.getBoundingClientRect();
+  const r = lienzo.getBoundingClientRect();
   SALAS.forEach((sl, i) => {
     v.set(sl.grupo.position.x, H + 1.2, sl.grupo.position.z - L / 2 + 0.4).project(camera);
     carteles[i].style.transform = `translate(-50%, -100%) translate(${(v.x + 1) / 2 * r.width}px, ${(1 - v.y) / 2 * r.height}px)`;
+    carteles[i].classList.toggle('visible', sl === salaRaton || sl === salaJugador);
   });
 }
-if (q.get('sala')) { const sl = SALAS.find(x => x.id === q.get('sala')); if (sl) { entrar(sl); camMirada.copy(camObjetivo); camDistAhora = camDist; colocarCamara(); } }
+if (q.get('sala')) { const sl = SALAS.find(x => x.id === q.get('sala')); if (sl) { enfocar(sl); camMirada.copy(camObjetivo); camDistAhora = camDist; colocarCamara(); } }
+// (QA: ?raton=<id de sala> simula el ratón encima de esa sala; ?yo=<id> pone a la Tabernera dentro; ?elegir=<nombre> selecciona)
 
 motor.cadaFotograma((dt, t) => {
   for (const p of gente) p.actualizar(dt);
   for (const l of puntos) l.luz.intensity = l.base * (0.85 + 0.15 * Math.sin(t * l.vel) * Math.sin(t * l.vel * 0.37 + 1.3));
   camMirada.x = THREE.MathUtils.damp(camMirada.x, camObjetivo.x, 4, dt); camMirada.z = THREE.MathUtils.damp(camMirada.z, camObjetivo.z, 4, dt);
   camDistAhora = THREE.MathUtils.damp(camDistAhora, camDist, 4, dt);
-  colocarCamara(); moverCarteles();
+  colocarCamara();
+  // en qué sala está la Tabernera: su título arriba (y su cartel)
+  if (jugador) { const sl = salaEn(jugador.raiz.position.x, jugador.raiz.position.z); if (sl !== salaJugador) { salaJugador = sl; ponerTitulo(sl); } }
+  if (elegido) { anillo.position.set(elegido.p.raiz.position.x, 0.03, elegido.p.raiz.position.z); anillo.material.opacity = 0.65 + 0.3 * Math.sin(t * 4); }
+  moverCarteles();
 });
 
 const listo = (async () => {
   // la L: Sala de Mapas y Mostrador al fondo, la Forja delante del Mostrador (la esquina libre será el salón)
   // las salas rodean el salón central (0, 12): cada pared que da a otra sala o al salón es un murete con paso
+  // cada sala con su suelo y el tono de su yeso y su madera
   paredes(sala, { ventana: 3.4, izquierda: { paso: 3.4 }, frente: { paso: 0 } });
-  paredes(mostrador, { ventana: -1.5, derecha: false, frente: { paso: -2.5 } });
-  paredes(forja, { fondo: false, derecha: { paso: 0 }, frente: { paso: -2 } });
-  paredes(torre, { fondo: false, derecha: { paso: 2 } });
-  paredes(salon, { fondo: { paso: 0 }, izquierda: false, derecha: { paso: 0 } });
-  paredes(mensajero, { fondo: { paso: 0 }, izquierda: false, frente: { paso: 0 } });
-  paredes(libro, { ventana: 2.6, izquierda: { paso: 0 }, frente: false });
-  await Promise.all([...[sala, mostrador, forja, torre, salon, mensajero, libro, central].map(suelo), muebles(), mueblesMostrador(), mueblesForja(), mueblesTorre(), mueblesSalon(), mueblesMensajero(), mueblesLibro(), personas(), exterior()]);
+  paredes(mostrador, { ventana: -1.5, derecha: false, frente: { paso: -2.5 }, tono: { yeso: '#f3e3c0', madera: '#5a3a22' } });
+  paredes(forja, { fondo: false, derecha: { paso: 0 }, frente: { paso: -2 }, tono: { yeso: '#d9c9b0', madera: '#2a1a0e' } });
+  paredes(torre, { fondo: false, derecha: { paso: 2 }, tono: { yeso: '#c9cfd6', madera: '#2b2a30' } });
+  paredes(salon, { fondo: { paso: 0 }, izquierda: false, derecha: { paso: 0 }, tono: { yeso: '#f0d6a8' } });
+  paredes(mensajero, { fondo: { paso: 0 }, izquierda: false, frente: { paso: 0 }, tono: { yeso: '#e3d3b8', madera: '#4a3020' } });
+  paredes(libro, { ventana: 2.6, izquierda: { paso: 0 }, frente: false, tono: { yeso: '#e6d2c6', madera: '#3b1f1a' } });
+  const suelos: [THREE.Group, Suelo][] = [[sala, 'madera'], [mostrador, 'oscura'], [forja, 'piedra'], [torre, 'piedra'], [salon, 'madera'], [mensajero, 'piedra'], [libro, 'oscura'], [central, 'madera']];
+  await Promise.all([...suelos.map(([g, t]) => suelo(g, t)), muebles(), mueblesMostrador(), mueblesForja(), mueblesTorre(), mueblesSalon(), mueblesMensajero(), mueblesLibro(), personas(), exterior()]);
   sala.traverse((o: any) => { if (o.isMesh) { o.castShadow = o.castShadow || false; o.receiveShadow = true; } });
   motor.renderer.shadowMap.needsUpdate = true;
+  // QA: estados fijos para las capturas
+  const porId = (id: string | null) => SALAS.find(x => x.id === id) ?? null;
+  if (q.get('yo')) { const sl = porId(q.get('yo')); if (sl && jugador) jugador.raiz.position.set(sl.grupo.position.x + 1.5, 0, sl.grupo.position.z + 2.5); }
+  if (q.get('raton')) salaRaton = porId(q.get('raton'));
+  if (q.get('elegir')) seleccionar(npcs.find(n => n.nombre === q.get('elegir')) ?? null);
 })();
 (window as any).__ready = () => listo;
 (window as any).__step = (dt: number) => motor.paso(dt);

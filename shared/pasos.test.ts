@@ -30,7 +30,7 @@ describe('pasos del proceso de UX', () => {
 });
 
 describe('una historia recorre la taberna', () => {
-  it('crear, supuestos, pasar con oro, vuelta a la Forja y cierre', () => {
+  it('crear, supuestos, pasar con oro, vuelta a la Cocina y cierre', () => {
     const hs: Historia[] = [];
     const { id } = accionHistoria(hs, 'crear', { texto: 'Como empleada quiero pedir un permiso\nAC1: …' });
     const h = hs[0];
@@ -46,7 +46,7 @@ describe('una historia recorre la taberna', () => {
     expect(h.paso).toBe('forja');
     expect(promptDePaso('forja', h)).toMatch(/Pendiente de confirmación del BA/);
     accionHistoria(hs, 'pasar', { id }); expect(h.paso).toBe('torre');
-    // desde la Torre, vuelta a la Forja con los ACs afectados; la Forja no vuelve a cobrar
+    // desde la Torre, vuelta a la Cocina con los ACs afectados; la Cocina no vuelve a cobrar
     expect(() => accionHistoria(hs, 'volver', { id, acs: '' })).toThrow();
     accionHistoria(hs, 'volver', { id, acs: 'AC3' });
     expect(h).toMatchObject({ paso: 'forja', vuelta: { desde: 'torre', acs: 'AC3' } });
