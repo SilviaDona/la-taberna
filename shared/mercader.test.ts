@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { MERCANCIAS, existencias, sanearAdornos, conAdornos } from './mercader.ts';
-import { catalogo } from '../server/atrezo.ts';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { catalogo, ASSETS } from '../server/atrezo.ts';
 
 describe('mercader', () => {
-  it('todo lo que vende está en el atrezo', () => {
+  // (el material se descarga con ./shelter; en la CI no está)
+  it.skipIf(!existsSync(path.join(ASSETS, 'indice.json')))('todo lo que vende está en el atrezo', () => {
     const ids = new Set(catalogo().map(m => m.id));
     for (const m of MERCANCIAS) expect(ids.has(m.modelo), m.modelo).toBe(true);
   });
