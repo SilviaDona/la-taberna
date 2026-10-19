@@ -88,9 +88,28 @@ export function Hud() {
         </button>
       </div>
     </div>
+    <JarraAlzada />
     {e.demo && <span className="marca-demo" title="Integraciones sin configurar: muestran datos simulados (DEMO)">DEMO</span>}
     {reiniciando && <Reiniciando />}
     </>
+  );
+}
+
+// La Taberna: un aventurero espera tu aprobación (un permiso, una pregunta): alza la jarra. Se ve desde cualquier
+// sitio, encima de todo menos de su propia conversación; Q o un clic te lleva con él. role="status" lo anuncia a los
+// lectores de pantalla sin robar el foco.
+function JarraAlzada() {
+  const e = juego.usar(s => s);
+  const esperan = [...e.habitantes, ...e.copias].filter(h => h.estado === 'esperando' && h.id !== e.hablandoCon);
+  const h = esperan[0];
+  if (!h) return null;
+  const ir = () => window.dispatchEvent(new CustomEvent('refugio:ir', { detail: { salaId: h.sala, habitanteId: h.id, hablar: true } }));
+  return (
+    <button className="jarra-alzada" role="status" aria-live="polite" onClick={ir} title="Ir a aprobar (Q)">
+      <span className="jarra" aria-hidden="true">🍺</span>
+      <span><span className="quien">{h.nombre} alza la jarra</span><span className="que">{h.detalle ? h.detalle : 'Espera tu aprobación'}{esperan.length > 1 ? ` · y ${esperan.length - 1} más` : ''} · {h.salaNombre}</span></span>
+      <span className="tecla">Q</span>
+    </button>
   );
 }
 

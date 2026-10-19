@@ -690,7 +690,7 @@ export async function crearSala(o: OpcionesSala, amueblar: Amueblar): Promise<Sa
   };
   sala.ponerIcono = (tipo) => {
     const ic = sala.userData.icono as THREE.Sprite;
-    const marca = tipo === 'listo' ? ['✓', '#5dff8a'] : tipo === 'espera' ? ['?', '#ffb000'] : tipo === 'error' ? ['!', '#ff2a1a'] : null;
+    const marca = tipo === 'listo' ? ['✓', '#5dff8a'] : tipo === 'espera' ? ['🍺', '#ffb000'] : tipo === 'error' ? ['!', '#ff2a1a'] : null;
     ic.visible = !!marca;
     if (marca) { (ic.material as THREE.SpriteMaterial).map = texturaIcono(marca[0], marca[1]); (ic.material as THREE.SpriteMaterial).needsUpdate = true; }
   };

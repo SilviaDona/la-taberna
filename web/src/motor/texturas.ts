@@ -87,8 +87,10 @@ export function cartel(lineas: string[], pie: string, fondo: string, tinta: stri
   // símbolo
   g.save(); g.translate(W / 2, 250); g.fillStyle = tinta; g.strokeStyle = tinta;
   if (simbolo === 'engranaje') {
-    for (let i = 0; i < 12; i++) { g.rotate(Math.PI / 6); g.fillRect(-18, -150, 36, 50); }
-    g.beginPath(); g.arc(0, 0, 112, 0, 7); g.fill(); g.fillStyle = fondo; g.beginPath(); g.arc(0, 0, 52, 0, 7); g.fill();
+    // La Taberna: el símbolo de serie ya no es un engranaje sino una jarra con espuma (el nombre se queda: es un dato)
+    g.fillRect(-90, -80, 150, 210); g.lineWidth = 30; g.beginPath(); g.arc(70, 25, 55, -Math.PI / 2, Math.PI / 2); g.stroke();
+    for (const [x, y, r] of [[-70, -95, 42], [-15, -115, 50], [40, -95, 40]]) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+    g.fillStyle = fondo; for (const x of [-55, -15, 25]) g.fillRect(x, -40, 14, 140);
   } else if (simbolo === 'ojo') {
     g.beginPath(); g.ellipse(0, 0, 150, 80, 0, 0, 7); g.fill(); g.fillStyle = fondo; g.beginPath(); g.arc(0, 0, 55, 0, 7); g.fill(); g.fillStyle = tinta; g.beginPath(); g.arc(0, 0, 26, 0, 7); g.fill();
   } else if (simbolo === 'rayo') {

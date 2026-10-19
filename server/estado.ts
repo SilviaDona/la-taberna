@@ -153,7 +153,7 @@ export function sanear(e: any): EstadoRefugio {
   const sup = e.supervisor && typeof e.supervisor === 'object' ? e.supervisor : {};
   return {
     ...ini, ...e,
-    version: 1, creado: num(e.creado, Date.now()), nombre: !e.nombre || e.nombre === 'Refugio' ? ini.nombre : str(e.nombre, ini.nombre), bienvenidaHecha: e.bienvenidaHecha === true,
+    version: 1, creado: num(e.creado, Date.now()), nombre: !e.nombre || e.nombre === 'Refugio' || e.nombre === 'work-shelter' ? ini.nombre : str(e.nombre, ini.nombre), bienvenidaHecha: e.bienvenidaHecha === true,
     supervisor: { personaje: str(sup.personaje, ini.supervisor.personaje), nombre: str(sup.nombre, 'Supervisor'), accesorios: arr(sup.accesorios)?.filter((a: unknown) => typeof a === 'string') ?? [], aspecto: sanearAspecto(sup.aspecto) ?? undefined },
     raizRepos: str(e.raizRepos, ini.raizRepos), limiteSesiones: Math.max(1, Math.min(20, num(e.limiteSesiones, ini.limiteSesiones))),
     salas, habitantes, jugador, integraciones,
