@@ -20,14 +20,16 @@ const PESADAS = new Set(['node_modules', '.git', '.next', '.nuxt', '.turbo', '.c
 const IMAGENES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.bmp': 'image/bmp', '.avif': 'image/avif' };
 
 // ---------------------------------------------------------------- rutas seguras
+// en Windows, ni barras invertidas (otro separador) ni «:» (unidades y flujos alternativos de NTFS)
+const RARO_WIN = process.platform === 'win32' ? /[\\:]/ : /(?!)/;
 const relSeguro = (r: unknown) => {
   const s = String(r ?? '').replace(/^\/+|\/+$/g, '');
-  if (s.includes('\0') || s.split('/').some(p => p === '..' || p === '.')) throw new Error('Ruta no válida.');
+  if (s.includes('\0') || RARO_WIN.test(s) || s.split('/').some(p => p === '..' || p === '.')) throw new Error('Ruta no válida.');
   return s;
 };
 const nombreSeguro = (n: unknown) => {
   const s = String(n ?? '').trim();
-  if (!s || s === '.' || s === '..' || s.includes('\0') || s.split('/').some(p => !p || p === '..' || p === '.')) throw new Error(`«${s}» no vale como nombre.`);
+  if (!s || s === '.' || s === '..' || s.includes('\0') || RARO_WIN.test(s) || s.split('/').some(p => !p || p === '..' || p === '.')) throw new Error(`«${s}» no vale como nombre.`);
   return s;
 };
 /** Ruta absoluta de `rel` dentro de `raiz`; si existe (o existe su carpeta), comprueba que de verdad cae dentro (enlaces). */

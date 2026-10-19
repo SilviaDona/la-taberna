@@ -88,7 +88,7 @@ function diffDe(texto: string): Diff {
   const recortado = texto.length > MAX_DIFF;
   return { texto: recortado ? texto.slice(0, MAX_DIFF) : texto, binario: /^Binary files .* differ$/m.test(texto) || /^GIT binary patch$/m.test(texto), recortado };
 }
-const archivoSeguro = (a: unknown) => { const s = String(a ?? ''); if (!s || s.includes('\0') || path.isAbsolute(s) || s.split('/').includes('..')) throw new Error('Ruta de archivo no válida.'); return s; };
+const archivoSeguro = (a: unknown) => { const s = String(a ?? ''); if (!s || s.includes('\0') || path.isAbsolute(s) || s.split(/[\\/]/).includes('..') || (process.platform === 'win32' && s.includes(':'))) throw new Error('Ruta de archivo no válida.'); return s; };
 
 export async function diff(ruta: string, d: { archivo: string; origen?: string; preparado?: boolean; sinSeguir?: boolean; contexto?: number }): Promise<Diff> {
   const archivo = archivoSeguro(d.archivo), u = `-U${Math.max(0, Math.min(100_000, Number(d.contexto) || 3))}`;

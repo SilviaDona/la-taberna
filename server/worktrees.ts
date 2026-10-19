@@ -1,5 +1,6 @@
 // Worktrees como copias holográficas de quien los creó: inspeccionar (estado y commits), desechar (con lo que se pierde a la vista)
 // e integrar (lo hace un habitante con sus permisos). Basado en code-town/server/worktrees.ts (MIT).
+import path from 'node:path';
 import { execFile } from 'node:child_process';
 import type { Sesiones } from './sesiones.ts';
 import type { InfoRepo } from '../shared/protocolo.ts';
@@ -13,7 +14,7 @@ function git(cwd: string, args: string[], timeout = 15000): Promise<string> {
 interface Ctx { sesiones: Sesiones; repos: Record<string, InfoRepo>; salaDeRuta: (r: string) => string | undefined; almacen: Almacen; terminales?: { abiertas(): { id: string; cwd: string }[] } }
 
 export function ocupado(ruta: string, ctx: Ctx) {
-  return ctx.sesiones.lista().some(s => s.estado !== 'cerrada' && (s.cwd === ruta || s.cwd.startsWith(ruta + '/')));
+  return ctx.sesiones.lista().some(s => s.estado !== 'cerrada' && (s.cwd === ruta || s.cwd.startsWith(ruta + path.sep)));
 }
 
 export async function accionWorktree(nombre: string, d: Record<string, any>, ctx: Ctx) {
@@ -34,7 +35,7 @@ export async function accionWorktree(nombre: string, d: Record<string, any>, ctx
     }
     case 'desechar': {
       if (ocupado(wt.ruta, ctx)) throw new Error('Hay alguien trabajando ahí dentro. Termina esa sesión antes de desechar el worktree.');
-      if (ctx.terminales?.abiertas().some(t => t.cwd === wt.ruta || t.cwd.startsWith(wt.ruta + '/'))) throw new Error('Hay una terminal abierta dentro de la copia. Ciérrala antes de desecharla.');
+      if (ctx.terminales?.abiertas().some(t => t.cwd === wt.ruta || t.cwd.startsWith(wt.ruta + path.sep))) throw new Error('Hay una terminal abierta dentro de la copia. Ciérrala antes de desecharla.');
       // Claude Code deja bloqueados los worktrees que crea: se desbloquea y se fuerza dos veces (git lo exige con candado)
       await git(sala.ruta, ['worktree', 'unlock', wt.ruta]).catch(() => '');
       try { await git(sala.ruta, ['worktree', 'remove', ...(d.forzar ? ['--force', '--force'] : []), wt.ruta], 30000); }
