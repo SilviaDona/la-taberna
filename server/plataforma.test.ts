@@ -12,7 +12,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAIAAAB7QOjdAAAAD0lEQVR
 
 describe('plataforma: carpetas y canales', () => {
   it('cada sistema tiene sus carpetas de la app', () => {
-    if (process.platform === 'win32') { expect(carpetaApp()).toBe(path.join(process.env.APPDATA!, 'work-shelter-public')); expect(carpetaLogs()).toContain(process.env.LOCALAPPDATA!); }
+    if (process.platform === 'win32') { expect(carpetaApp()).toBe(path.join(process.env.APPDATA!, 'work-shelter-public')); expect(carpetaLogs()).toBe(path.resolve(import.meta.dirname, '..', 'Logs')); }
     else if (process.platform === 'darwin') { expect(carpetaApp()).toContain('Library/Application Support/work-shelter-public'); expect(carpetaLogs()).toContain('Library/Logs'); }
     else expect(carpetaApp()).toContain('work-shelter-public');
   });

@@ -13,8 +13,14 @@ $NODO_VERSION = '22.20.0'
 # sumas SHA-256 oficiales (https://nodejs.org/dist/v22.20.0/SHASUMS256.txt): no se ejecuta nada que no cuadre
 $SUMAS = @{ 'x64' = 'bb819d6eb8f5bfda294bbc83a7e4ec6539da67c4233d54b0d655b9248b15e29d'; 'arm64' = 'b12919e609b4fa1176ba8a155b49f761419a0c7cc97b42e6be09874a3f760ab6' }
 $OCULTO = [bool]$env:SHELTER_OCULTO   # abierto desde el acceso directo, sin consola a la vista
-$LOGS = Join-Path $env:LOCALAPPDATA 'work-shelter-public\Logs'
+$LOGS = Join-Path $RAIZ 'Logs'   # junto al código, esté donde esté (SHELTER_CODIGO)
 
+# huella de un archivo con .NET (Get-FileHash no existe en Windows PowerShell lanzado desde PowerShell 7: el PSModulePath
+# de la 7 le esconde su módulo)
+function Huella($archivo, $algoritmo) {
+  $h = [System.Security.Cryptography.HashAlgorithm]::Create($algoritmo)
+  $f = [System.IO.File]::OpenRead((Resolve-Path $archivo)); try { -join ($h.ComputeHash($f) | ForEach-Object { $_.ToString('x2') }) } finally { $f.Dispose() }
+}
 function Amarillo($t) { Write-Host $t -ForegroundColor Yellow }
 function Verde($t) { Write-Host $t -ForegroundColor Green }
 function Fallo($t) {
@@ -47,8 +53,9 @@ if ($node -and $version -ge 22) {
     $zip = Join-Path $RAIZ '.runtime\node.zip'
     try { Invoke-WebRequest -UseBasicParsing "https://nodejs.org/dist/v$NODO_VERSION/node-v$NODO_VERSION-win-$arq.zip" -OutFile $zip }
     catch { Fallo 'No he podido descargar Node. Comprueba la conexión o instala Node 22 desde https://nodejs.org' }
-    if ((Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower() -ne $SUMAS[$arq]) { Remove-Item $zip; Fallo 'El Node descargado no cuadra con su suma oficial: no lo uso. Instala Node 22 desde https://nodejs.org' }
-    Expand-Archive -Path $zip -DestinationPath (Join-Path $RAIZ '.runtime') -Force
+    if ((Huella $zip 'SHA256') -ne $SUMAS[$arq]) { Remove-Item $zip; Fallo 'El Node descargado no cuadra con su suma oficial: no lo uso. Instala Node 22 desde https://nodejs.org' }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zip, (Join-Path $RAIZ '.runtime'))
     Remove-Item $zip
   }
   $env:PATH = "$dir;$env:PATH"; $NODE = Join-Path $dir 'node.exe'; $NPM = Join-Path $dir 'npm.cmd'
@@ -73,7 +80,7 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 
 # 3. Dependencias (la primera vez, o si cambia package-lock.json)
 $sello = 'node_modules\.sello-shelter'
-$huella = (Get-FileHash -Algorithm SHA1 package-lock.json).Hash.ToLower()
+$huella = Huella 'package-lock.json' 'SHA1'
 if (-not (Test-Path $sello) -or ((Get-Content $sello -Raw).Trim() -ne $huella)) {
   Amarillo 'Instalando dependencias (la primera vez tarda un par de minutos)…'
   & $NPM ci --no-audit --no-fund --loglevel=error
@@ -116,6 +123,7 @@ if ($LASTEXITCODE -ne 0) {
 if ($orden -eq 'instalar-app') {
   Amarillo 'Creando los accesos directos…'
   $icono = Join-Path $RAIZ '.runtime\icono.ico'
+  New-Item -ItemType Directory -Force -Path (Join-Path $RAIZ '.runtime') | Out-Null   # con Node del sistema, la carpeta aún no existe
   try {
     # un .ico con la imagen PNG dentro (Windows lo admite desde Vista), reducida a 256 px
     Add-Type -AssemblyName System.Drawing

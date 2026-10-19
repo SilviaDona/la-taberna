@@ -20,9 +20,10 @@ export function carpetaApp(): string {
   if (ES_MAC) return path.join(os.homedir(), 'Library', 'Application Support', NOMBRE_APP);
   return path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), NOMBRE_APP);
 }
-/** Registros: ~/Library/Logs/<app> en macOS, %LOCALAPPDATA%\<app>\Logs en Windows */
+/** Registros: ~/Library/Logs/<app> en macOS; en Windows, Logs junto al código del juego (como shelter.ps1): si se
+ *  mueve el juego a otro disco, sus registros van con él */
 export function carpetaLogs(): string {
-  if (ES_WINDOWS) return path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), NOMBRE_APP, 'Logs');
+  if (ES_WINDOWS) return path.join(import.meta.dirname, '..', 'Logs');
   if (ES_MAC) return path.join(os.homedir(), 'Library', 'Logs', NOMBRE_APP);
   return path.join(carpetaApp(), 'logs');
 }

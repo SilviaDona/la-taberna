@@ -1,12 +1,11 @@
 // Descarga el material artístico fijado (todo CC0) desde scripts/manifest_assets.json (procedencia y licencias: docs/assets.md).
 // Desde los commits fijados de los repos de origen. Idempotente.
+import { fileURLToPath } from 'node:url';
 import { readFileSync, mkdirSync, existsSync, statSync, writeFileSync, renameSync } from 'node:fs';
 import { dirname, join, basename } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const destino = process.argv[2] || 'assets';
-// fileURLToPath y no .pathname: en Windows, .pathname da «/D:/…» y join lo convierte en «D:\D:\…»
-const raiz = fileURLToPath(new URL('..', import.meta.url));
+const raiz = fileURLToPath(new URL('..', import.meta.url));   // (en Windows, .pathname da «/D:/…»)
 const manifest = JSON.parse(readFileSync(join(raiz, 'scripts/manifest_assets.json'), 'utf8'));
 const cola = [];
 const k = manifest.kaykit;

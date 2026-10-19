@@ -240,7 +240,8 @@ function entornoDeUsuario() {
 
 async function arrancar() {
   const raiz = process.env.SHELTER_RAIZ;
-  const carpetaLogs = process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA || os.homedir(), 'work-shelter-public', 'Logs') : path.join(os.homedir(), 'Library/Logs/work-shelter-public');
+  // en Windows, junto al código del juego (como shelter.ps1 y server/plataforma.ts)
+  const carpetaLogs = process.platform === 'win32' ? path.resolve(__dirname, '..', 'Logs') : path.join(os.homedir(), 'Library/Logs/work-shelter-public');
   fs.mkdirSync(carpetaLogs, { recursive: true });
   const log = fs.createWriteStream(path.join(carpetaLogs, 'shelter.log'), { flags: 'a', mode: 0o600 });
   log.write(`\n== ${new Date().toISOString()} ==\n`);

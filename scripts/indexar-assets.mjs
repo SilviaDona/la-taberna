@@ -1,9 +1,9 @@
 // Genera assets/indice.json: lista de modelos por grupo, para el catálogo y el cargador del juego.
+import { fileURLToPath } from 'node:url';
 import { readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const raiz = fileURLToPath(new URL('../assets/', import.meta.url));
+const raiz = fileURLToPath(new URL('../assets/', import.meta.url));   // (en Windows, .pathname da «/D:/…»)
 if (!existsSync(raiz)) { console.error('No existe ./assets: ejecuta node scripts/descargar-assets.mjs (o ./shelter)'); process.exit(1); }
 const todos = [];
 (function recorre(d) {
