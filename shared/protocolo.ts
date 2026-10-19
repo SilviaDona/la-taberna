@@ -70,6 +70,8 @@ export interface ResumenSesion {
   error?: string;
   coste?: number;                // estimación del SDK (con plan no se factura; informativa)
   lateral?: { pregunta: string; respuesta?: string; ts: number };
+  historia?: string;             // la historia de usuario y el paso en los que se trabaja (salas de los pasos)
+  paso?: string;
   creada: number;
   actualizada: number;
 }
@@ -106,7 +108,7 @@ export interface EstadoMusica {
 export interface Visitante { claudeId: string; salaId: string; cwd: string; titulo: string; modificada: number }
 
 // ---------------------------------------------------------------- mensajes
-export interface OpcionesTrabajo { modelo?: string; esfuerzo?: string; permisos?: string; worktree?: boolean; reanudar?: string; cwd?: string }
+export interface OpcionesTrabajo { modelo?: string; esfuerzo?: string; permisos?: string; worktree?: boolean; reanudar?: string; cwd?: string; historia?: string; paso?: string }
 
 export type MensajeCliente =
   | { t: 'hola'; version: string }
@@ -152,6 +154,7 @@ export type MensajeServidor =
   | { t: 'integracion'; id: string; estado: unknown }
   | { t: 'estado'; estado: Record<string, unknown> }
   | { t: 'aviso'; nivel: 'info' | 'aviso' | 'error'; texto: string }
+  | { t: 'hecho'; historia: string; paso: string; quien: string; titulo: string; oro: number; entregables: { ruta: string; nombre: string; tipo: string }[] }
   | { t: 'voz'; id: string; estado: 'descargando' | 'listo' | 'parcial' | 'final' | 'error'; texto?: string }   // lo transcrito de un dictado
   | { t: 'recargar' }
   | { t: 'reiniciando' };

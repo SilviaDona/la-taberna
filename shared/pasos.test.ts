@@ -11,7 +11,7 @@ describe('pasos del proceso de UX', () => {
   it('cada sala usa la skill de su paso (el Mostrador no lanza nada: lo marca la Tabernera)', () => {
     expect(PASOS.mapas.comando).toBe('/ux-analysis'); expect(PASOS.torre.comando).toBe('/ux-analysis');
     expect(PASOS.salon.comando).toBe('/ux-testing'); expect(PASOS.mensajero.comando).toBe('/ux-edge-cases'); expect(PASOS.libro.comando).toBe('/session-log');
-    const h: Historia = { id: 'h', titulo: 'Pedir permiso', texto: 'Como empleada…\nAC1: …', paso: 'mapas', supuestos: [], hechos: [], creada: 0, actualizada: 0 };
+    const h: Historia = { id: 'h', titulo: 'Pedir permiso', texto: 'Como empleada…\nAC1: …', paso: 'mapas', supuestos: [], hechos: [], entregables: [], creada: 0, actualizada: 0 };
     expect(promptDePaso('mapas', h)).toMatch(/^\/ux-analysis\n[\s\S]*Modo plan[\s\S]*AC1/);
     expect(promptDePaso('mostrador', h)).toBeNull();
     for (const p of PASOS_IDS.filter(x => PASOS[x].comando)) expect(promptDePaso(p, h)!.startsWith(PASOS[p].comando!)).toBe(true);

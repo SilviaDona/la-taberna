@@ -8,9 +8,12 @@ import { vivo, cliente } from '../red/cliente';
 import { SFX } from '../audio/sonido';
 import { Aparato, Opciones, Teclas, cerrarPanel, useMenu, useTeclas, type ItemMenu } from './aparato';
 import { irA } from './Paneles';
-import { PASOS, PASOS_IDS, siguiente, puedePasar, promptDePaso, type Historia, type PasoId, type Proyecto, type Supuesto } from '@shared/pasos';
+import { markdown } from './markdown';
+import { Mercader, Decorar } from './Mercader';
+import { Almacen } from './almacen';
+import { PASOS, PASOS_IDS, siguiente, puedePasar, promptDePaso, type Historia, type Entregable, type PasoId, type Proyecto, type Supuesto } from '@shared/pasos';
 
-type Vista = { v: 'menu' } | { v: 'proyecto' } | { v: 'nueva' } | { v: 'historia'; id: string } | { v: 'supuestos'; id: string } | { v: 'volver'; id: string };
+type Vista = { v: 'menu' } | { v: 'proyecto' } | { v: 'nueva' } | { v: 'historia'; id: string } | { v: 'supuestos'; id: string } | { v: 'volver'; id: string } | { v: 'entregables'; id: string } | { v: 'mercader' } | { v: 'decorar' };
 const usarHistorias = () => vivo.usar(e => (e.estado?.historias ?? []) as Historia[]);
 const usarProyecto = () => vivo.usar(e => e.estado?.proyecto as Proyecto | undefined);
 const accion = (nombre: string, d: Record<string, unknown>) => cliente.accion<{ oro: number; id?: string }>(nombre, d);
@@ -24,6 +27,9 @@ export function PanelDePaso({ salaId, sala, generales }: { salaId: string; sala:
     case 'nueva': return <NuevaHistoria volver={menu} alCrear={id => setVista({ v: 'historia', id })} />;
     case 'historia': return <HistoriaEnPaso salaId={salaId} id={vista.id} volver={menu} ir={setVista} />;
     case 'supuestos': return <AnadirSupuestos id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} />;
+    case 'mercader': return <Mercader volver={menu} />;
+    case 'decorar': return <Decorar salaId={salaId} volver={menu} />;
+    case 'entregables': return <ListaEntregables id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} />;
     case 'volver': return <VolverACocina id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} hecho={menu} />;
     default: return <MenuDePaso salaId={salaId} sala={sala} generales={generales} ir={setVista} />;
   }
@@ -40,6 +46,8 @@ function MenuDePaso({ salaId, sala, generales, ir }: { salaId: string; sala: any
     ...(paso.id === 'mapas' && proyecto ? [{ texto: <b>Nueva historia: pegar la historia y sus ACs…</b>, pista: 'entra por aquí, el paso 1', f: () => ir({ v: 'nueva' }) }] : []),
     ...aqui.map(h => ({ texto: <>📜 <b>{h.titulo}</b>{h.vuelta && <span className="aviso-consola"> · vuelve del paso {PASOS[h.vuelta.desde].numero}</span>}</>, pista: h.paso === 'hecha' ? 'cerrada' : paso.id === 'mostrador' ? `${h.supuestos.filter(s => s.estado === 'sin revisar').length} supuestos sin revisar` : 'trabajar o pasarla', f: () => ir({ v: 'historia', id: h.id }) })),
     ...(proyecto ? [{ texto: <>Proyecto: <b>{proyecto.nombre}</b></>, pista: 'cambiar de carpeta', f: () => ir({ v: 'proyecto' }) }] : []),
+    { texto: <>🪙 Llamar a <b>Gorgo</b>, el buhonero</>, pista: 'comprar adornos con el oro', f: () => ir({ v: 'mercader' }) },
+    { texto: '🔨 Decorar esta sala', pista: 'poner y mover lo de tu baúl', f: () => ir({ v: 'decorar' }) },
     ...generales,
   ];
   const [i, setI] = useMenu(items.length, k => items[k].f());
@@ -124,7 +132,7 @@ function trabajar(paso: PasoId, h: Historia) {
   const hab = juego.get().habitantes.find(x => x.sala === salaId && !x.copia);
   const prompt = promptDePaso(paso, h);
   if (!hab || !prompt) { SFX.noPermitido(); return; }
-  cliente.enviar({ t: 'empezar', habitanteId: hab.id, salaId, prompt, opciones: {} });
+  cliente.enviar({ t: 'empezar', habitanteId: hab.id, salaId, prompt, opciones: { historia: h.id, paso } });
   SFX.exitoCorto(); cerrarPanel(); irA(salaId, hab.id, true);
 }
 
@@ -151,6 +159,7 @@ function HistoriaEnPaso({ salaId, id, volver, ir }: { salaId: string; id: string
       if (confirmar !== 'pasar') { setConfirmar('pasar'); return; }
       hacer('historia.pasar').then(r => { setAviso(r.oro ? `+${r.oro} de oro` : 'Pasada.'); setConfirmar(null); volver(); }).catch(() => setConfirmar(null));
     } }] : []),
+    ...(h.entregables.length ? [{ texto: <>📜 Entregables de la historia <b>({h.entregables.length})</b></>, pista: h.carpeta ? `en ${h.carpeta}` : 'verlos en el juego', f: () => ir({ v: 'entregables', id }) }] : []),
     ...(p && (p.id === 'torre' || p.id === 'salon') ? [{ texto: '↩ Hay que corregir: volver a la Cocina con los ACs afectados…', f: () => ir({ v: 'volver', id }) }] : []),
     { texto: confirmar === 'borrar' ? '¿Seguro? Enter otra vez para borrar la historia' : 'Borrar la historia', peligro: true, f: () => { if (confirmar !== 'borrar') { setConfirmar('borrar'); return; } hacer('historia.borrar').then(volver).catch(() => {}); } },
     { texto: 'Volver', f: volver },
@@ -163,6 +172,7 @@ function HistoriaEnPaso({ salaId, id, volver, ir }: { salaId: string; id: string
         <dt>paso</dt><dd>{h.paso === 'hecha' ? 'cerrada' : <><b>{PASOS[h.paso].numero} · {PASOS[h.paso].etapa}</b> <span className="tenue">en {PASOS[h.paso].sala}</span></>}{h.paso !== 'hecha' && h.paso !== salaId && <span className="aviso-consola"> (no está en esta sala)</span>}</dd>
         <dt>recorrido</dt><dd>{PASOS_IDS.map(x => <span key={x} className={h.hechos.includes(x) ? '' : 'tenue'} title={PASOS[x].etapa}>{h.hechos.includes(x) ? '✔' : h.paso === x ? '▶' : '·'} {PASOS[x].numero}&nbsp; </span>)}</dd>
         {p && <><dt>para pasar</dt><dd>{p.puerta.map((x, k) => <div key={k}>☐ {x}</div>)}</dd></>}
+        <dt>carpeta</dt><dd>{h.carpeta ?? <span className="tenue">la propondrá el primer aventurero (tú la confirmas)</span>}</dd>
         {h.vuelta && <><dt>vuelta</dt><dd className="aviso-consola">desde el paso {PASOS[h.vuelta.desde].numero}: {h.vuelta.acs}</dd></>}
         {p?.id === 'mostrador' && <><dt>supuestos</dt><dd>{h.supuestos.length ? `${h.supuestos.filter(s => s.estado === 'confirmado').length} confirmados, ${h.supuestos.filter(s => s.estado === 'pendiente').length} pendientes del BA, ${h.supuestos.filter(s => s.estado === 'sin revisar').length} sin revisar · Enter cambia el estado` : 'ninguno apuntado'}</dd></>}
       </dl></div>
@@ -170,5 +180,97 @@ function HistoriaEnPaso({ salaId, id, volver, ir }: { salaId: string; id: string
       <div className="lista-desplazable"><Opciones items={items} i={i} setI={k => { setI(k); setConfirmar(null); }} alElegir={k => items[k].f()} /></div>
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>usar <kbd>Esc</kbd>volver</Teclas>
     </Aparato>
+  );
+}
+
+// ---------------------------------------------------------------- entregables: lo que dejan los aventureros, visto en el juego
+const ICONO: Record<string, string> = { html: '🍲', md: '📜', json: '🗂', texto: '📄', imagen: '🖼', otro: '📦' };
+type Abierto = { ruta: string; nombre: string; tipo: string };
+export const visor = new Almacen<{ e: Abierto | null }>({ e: null });
+export function verEntregable(e: { ruta: string; nombre: string; tipo: string }) { SFX.abrir(); visor.set({ e: { ruta: e.ruta, nombre: e.nombre, tipo: e.tipo } }); }
+
+function ListaEntregables({ id, volver }: { id: string; volver: () => void }) {
+  const h = usarHistorias().find(x => x.id === id);
+  const lista = [...(h?.entregables ?? [])].sort((a, b) => b.fecha - a.fecha);
+  const items: (ItemMenu & { f: () => void })[] = [
+    ...lista.map(e => ({ texto: <>{ICONO[e.tipo] ?? '📦'} {e.nombre}</>, pista: `${PASOS[e.paso].sala} · ${e.ruta}`, f: () => verEntregable(e) })),
+    ...(h?.carpeta ? [{ texto: 'Abrir la carpeta de la historia en el escritorio', f: () => { accion('entregable.abrir', { ruta: lista[0]?.ruta ?? h.carpeta, carpeta: true }).catch(() => SFX.error()); } }] : []),
+    { texto: 'Volver', f: volver },
+  ];
+  const [i, setI] = useMenu(items.length, k => items[k].f(), undefined, volver);
+  return (
+    <Aparato rotulo={`ENTREGABLES · ${(h?.titulo ?? '').toUpperCase().slice(0, 40)}`} ancho={64} alCerrar={volver}>
+      {!lista.length && <p className="tenue">Aún no hay nada.</p>}
+      <div className="lista-desplazable"><Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} /></div>
+      <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>ver <kbd>Esc</kbd>volver</Teclas>
+    </Aparato>
+  );
+}
+
+/** El visor: HTML (el plato) en un marco aislado, Markdown como documento, JSON y texto tal cual, imágenes */
+export function Visor() {
+  const e = visor.usar(x => x.e);
+  const [c, setC] = useState<{ texto?: string; datos?: string; url?: string; error?: string } | null>(null);
+  useEffect(() => {
+    setC(null); if (!e) return;
+    const pedir = e.tipo === 'html' ? cliente.accion<{ url: string }>('entregable.ver', { ruta: e.ruta }) : cliente.accion<{ texto?: string; datos?: string }>('entregable.leer', { ruta: e.ruta });
+    pedir.then(r => setC(r)).catch(err => setC({ error: (err as Error).message }));
+  }, [e?.ruta]);
+  useEffect(() => {
+    if (!e) return;
+    const k = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); visor.set({ e: null }); } };
+    addEventListener('keydown', k, true); return () => removeEventListener('keydown', k, true);
+  }, [!!e]);
+  if (!e) return null;
+  const cerrar = () => { SFX.cerrar(); visor.set({ e: null }); };
+  let cuerpo: React.ReactNode = <p className="tenue">Abriendo…</p>;
+  if (c?.error) cuerpo = <p className="aviso-consola">{c.error}</p>;
+  else if (c?.url) cuerpo = <iframe className="visor-marco" src={c.url} sandbox="allow-scripts allow-forms allow-modals" title={e.nombre} />;
+  else if (c?.datos) cuerpo = <div className="visor-imagen"><img src={c.datos} alt={e.nombre} /></div>;
+  else if (c?.texto !== undefined) cuerpo = e.tipo === 'md' ? <div className="visor-doc markdown" dangerouslySetInnerHTML={{ __html: markdown(c.texto) }} /> : <pre className="visor-texto">{e.tipo === 'json' ? bonito(c.texto) : c.texto}</pre>;
+  return (
+    <div className="visor interactivo" role="dialog">
+      <div className="visor-cabeza">
+        <span>{ICONO[e.tipo] ?? '📦'} <b>{e.nombre}</b> <span className="tenue">{e.ruta}</span></span>
+        <span>
+          <button onClick={() => cliente.accion('entregable.abrir', { ruta: e.ruta }).catch(() => SFX.error())}>Abrir en el escritorio</button>
+          <button onClick={() => cliente.accion('entregable.abrir', { ruta: e.ruta, carpeta: true }).catch(() => SFX.error())}>Enseñar en la carpeta</button>
+          <button onClick={cerrar}>✕ Cerrar <kbd>Esc</kbd></button>
+        </span>
+      </div>
+      <div className="visor-cuerpo">{cuerpo}</div>
+    </div>
+  );
+}
+const bonito = (t: string) => { try { return JSON.stringify(JSON.parse(t), null, 2); } catch { return t; } };
+
+/** Aviso ✔ cuando un aventurero termina su trabajo en un paso, con lo que ha dejado */
+export function Hechos() {
+  const hechos = vivo.usar(x => x.hechos);
+  const [quitados, setQuitados] = useState<Set<number>>(new Set());
+  useEffect(() => { if (hechos.length) SFX.exito(); }, [hechos.length]);
+  const quitar = (id: number) => setQuitados(q => new Set([...q, id]));
+  const vivos = hechos.filter(x => !quitados.has(x.id));
+  if (!vivos.length) return null;
+  return (
+    <div className="hechos">
+      {vivos.map(x => {
+        const paso = (PASOS as any)[x.paso];
+        const principal = x.entregables.find(e => e.tipo === 'html') ?? x.entregables.find(e => e.tipo === 'md') ?? x.entregables[0];
+        return (
+          <div key={x.id} className="hecho interactivo">
+            <div className="hecho-check">✔</div>
+            <div className="hecho-texto">
+              <b>{x.quien}</b> ha terminado {paso ? <>el paso {paso.numero} · {paso.etapa}</> : 'su trabajo'}
+              <div className="tenue">«{x.titulo}» · {x.entregables.length ? `${x.entregables.length} entregable${x.entregables.length > 1 ? 's' : ''}` : 'sin archivos nuevos (mira la conversación)'}</div>
+              <div className="hecho-botones">
+                {principal && <button onClick={() => { verEntregable(principal); quitar(x.id); }}>Ver {principal.nombre}</button>}
+                <button onClick={() => quitar(x.id)}>Vale</button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

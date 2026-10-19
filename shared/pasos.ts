@@ -30,7 +30,20 @@ export interface Historia {
   supuestos: Supuesto[];
   vuelta?: { desde: PasoId; acs: string };         // corrección pedida desde la Torre o el Salón
   hechos: PasoId[];                                 // pasos cumplidos (para las cuentas y el oro)
+  carpeta?: string;                                 // la carpeta de la historia dentro del proyecto (la confirma la Tabernera)
+  entregables: Entregable[];                        // lo que han dejado los aventureros (se abre en el juego)
   creada: number; actualizada: number;
+}
+export type TipoEntregable = 'html' | 'md' | 'json' | 'texto' | 'imagen' | 'otro';
+export interface Entregable { ruta: string; nombre: string; paso: PasoId; tipo: TipoEntregable; fecha: number }   // ruta: relativa al proyecto
+export function tipoEntregable(nombre: string): TipoEntregable {
+  const ext = nombre.toLowerCase().split('.').pop() || '';
+  if (ext === 'html' || ext === 'htm') return 'html';
+  if (ext === 'md' || ext === 'markdown') return 'md';
+  if (ext === 'json') return 'json';
+  if (['txt', 'csv', 'log', 'css', 'js', 'ts', 'yml', 'yaml'].includes(ext)) return 'texto';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return 'imagen';
+  return 'otro';
 }
 export interface Proyecto { nombre: string; ruta: string }
 
@@ -256,6 +269,16 @@ export function promptDePaso(p: PasoId, h: Historia): string | null {
   const supuestos = h.supuestos.length ? '\n\nSupuestos del paso 2:\n' + h.supuestos.map(s => `- ${s.texto} — ${s.estado === 'confirmado' ? 'confirmado' : 'Pendiente de confirmación del BA'}${s.nota ? ` (${s.nota})` : ''}`).join('\n') : '';
   const vuelta = h.vuelta ? `\n\nVuelve del paso ${PASOS[h.vuelta.desde].numero} (${PASOS[h.vuelta.desde].etapa}): ${p === 'forja' ? 'corrige solo' : 'revisa solo'} estos ACs: ${h.vuelta.acs}` : '';
   const de = `la historia «${h.titulo}»`;
+  const t = cuerpoPrompt(p, h, supuestos, vuelta, de);
+  return t && t + instruccionCarpeta(h);
+}
+/** Todo lo de una historia va a una carpeta suya dentro del proyecto: la primera vez, el aventurero la propone y espera el sí. */
+export function instruccionCarpeta(h: Historia): string {
+  return h.carpeta
+    ? `\n\nGuarda todos los documentos y salidas de este paso en la carpeta de la historia, «${h.carpeta}» (dentro del proyecto), sin preguntar.`
+    : `\n\nAntes de escribir nada: propón el nombre de una carpeta NUEVA dentro del proyecto para todo el proceso de esta historia y espera a que la Tabernera la confirme. Después, guarda ahí todos los documentos y salidas.`;
+}
+function cuerpoPrompt(p: PasoId, h: Historia, supuestos: string, vuelta: string, de: string): string | null {
   switch (p) {
     case 'mapas': return `/ux-analysis\n\nModo plan (paso 1, análisis de la historia) para ${de}. Historia y ACs:\n\n${h.texto}`;
     case 'mostrador': return null;
@@ -277,6 +300,9 @@ export function sanearHistorias(v: unknown): Historia[] {
     supuestos: (Array.isArray(h.supuestos) ? h.supuestos : []).filter((s: any) => s && typeof s.id === 'string').slice(0, 200).map((s: any) => ({ id: txt(s.id, 40), texto: txt(s.texto, 1000), estado: ['confirmado', 'pendiente'].includes(s.estado) ? s.estado : 'sin revisar', ...(s.nota ? { nota: txt(s.nota, 500) } : {}) })),
     ...(h.vuelta && esPaso(h.vuelta.desde) ? { vuelta: { desde: h.vuelta.desde, acs: txt(h.vuelta.acs, 2000) } } : {}),
     hechos: (Array.isArray(h.hechos) ? h.hechos : []).filter(esPaso),
+    ...(typeof h.carpeta === 'string' && h.carpeta && !h.carpeta.includes('..') ? { carpeta: txt(h.carpeta, 300) } : {}),
+    entregables: (Array.isArray(h.entregables) ? h.entregables : []).filter((x: any) => x && typeof x.ruta === 'string' && !x.ruta.split(/[\\/]/).includes('..') && esPaso(x.paso)).slice(-200)
+      .map((x: any): Entregable => ({ ruta: txt(x.ruta, 400), nombre: txt(x.nombre, 120) || x.ruta, paso: x.paso, tipo: tipoEntregable(x.ruta), fecha: Number.isFinite(x.fecha) ? x.fecha : Date.now() })),
     creada: Number.isFinite(h.creada) ? h.creada : Date.now(), actualizada: Number.isFinite(h.actualizada) ? h.actualizada : Date.now(),
   }));
 }
@@ -292,7 +318,7 @@ export function accionHistoria(hs: Historia[], nombre: string, d: Record<string,
   if (nombre === 'crear') {
     const texto = txt(d.texto, 40000).trim(); if (!texto) throw new Error('Pega la historia y sus ACs.');
     const titulo = txt(d.titulo, 120).trim() || texto.split('\n').find(l => l.trim())!.trim().slice(0, 80);
-    const h: Historia = { id: nuevoId(), titulo, texto, paso: 'mapas', supuestos: [], hechos: [], creada: ahora, actualizada: ahora };
+    const h: Historia = { id: nuevoId(), titulo, texto, paso: 'mapas', supuestos: [], hechos: [], entregables: [], creada: ahora, actualizada: ahora };
     hs.push(h); return { oro: 0, id: h.id };
   }
   const h = hs.find(x => x.id === d.id); if (!h) throw new Error('Esa historia ya no está.');

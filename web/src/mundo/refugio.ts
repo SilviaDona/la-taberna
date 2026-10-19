@@ -1003,7 +1003,7 @@ export class Refugio {
     const visibles = this.habitantes.filter(h => Math.abs(h.pos.x - this.camara.objetivo.x) < this.camara.distancia * 0.45 && Math.abs(h.pos.y - this.camara.objetivo.y) < this.camara.distancia * 0.3);
     // menos chips sobre las piezas: solo se rotula a quien pide atención, trabaja o está junto al Supervisor
     const relevante = (h: Habitante) => h === this.cercano || !['ocioso', 'durmiendo'].includes(h.estado) || Math.abs(h.pos.x - sp.x) < 2.2;
-    const items: any[] = visibles.filter(relevante).map(h => ({ k: h, pos: h.p.puntoCabeza(), alto: 0.2, nombre: h.id.nombre, estado: h.estado, detalle: h === this.cercano && h.estado !== 'ocioso' && h.estado !== 'durmiendo' ? h.detalle : '', cerca: h === this.cercano, lejos, prompt: h === this.cercano ? 'Hablar' : '' }));
+    const items: any[] = visibles.filter(relevante).map(h => ({ k: h, pos: h.p.puntoCabeza(), alto: 0.2, nombre: h.id.nombre, estado: h.estado, detalle: h === this.cercano && h.estado !== 'ocioso' && h.estado !== 'durmiendo' ? h.detalle : '', cerca: h === this.cercano, lejos, prompt: h === this.cercano ? 'Hablar' : '', progreso: progresoDe(h.sesionId) }));
     items.push(...this.visitantes.etiquetas(lejos, sp).filter(x => Math.abs(x.pos.x - this.camara.objetivo.x) < this.camara.distancia * 0.45 && Math.abs(x.pos.y - this.camara.objetivo.y) < this.camara.distancia * 0.3));
     items.push(...this.hologramas.etiquetas(lejos, sp, this.cercana).filter(x => Math.abs(x.pos.x - this.camara.objetivo.x) < this.camara.distancia * 0.45 && Math.abs(x.pos.y - this.camara.objetivo.y) < this.camara.distancia * 0.3));
     items.push(...this.ayudantes.etiquetas(lejos, sp).filter(x => Math.abs(x.pos.x - this.camara.objetivo.x) < this.camara.distancia * 0.45 && Math.abs(x.pos.y - this.camara.objetivo.y) < this.camara.distancia * 0.3));
@@ -1035,4 +1035,14 @@ export class Refugio {
     this.sol.position.set(c.x - 6, c.y + 12, 16); this.sol.target.position.set(c.x, c.y - 2, 0);
     this.reparto.actualizar([...this.salas, ...(this.ascensor ? [{ anclas: this.ascensor.anclas, grupo: this.ascensor.cabina } as any] : [])], c, dt);
   }
+}
+
+/** Cuánto lleva el trabajo de una sesión (estimado: tiempo y herramientas, sin llegar nunca al final hasta que acaba) */
+const inicios = new Map<string, number>();
+function progresoDe(sesionId?: string): number | undefined {
+  const s: any = sesionId ? vivo.get().sesiones[sesionId] : undefined;
+  if (!s || !['arrancando', 'trabajando'].includes(s.estado)) { if (sesionId) inicios.delete(sesionId); return undefined; }
+  const t0 = inicios.get(s.id) ?? (inicios.set(s.id, Date.now()), Date.now());
+  const x = (Date.now() - t0) / 1000 / 25 + (s.herramientas ?? 0) / 12;
+  return Math.min(0.95, 0.04 + (1 - Math.exp(-x / 3)));
 }

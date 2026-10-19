@@ -3,7 +3,7 @@
 import http from 'node:http';
 import path from 'node:path';
 import os from 'node:os';
-import { createReadStream, existsSync, statSync, mkdirSync, writeFileSync, readdirSync, rmSync, readFileSync } from 'node:fs';
+import { createReadStream, realpathSync, existsSync, statSync, mkdirSync, writeFileSync, readdirSync, rmSync, readFileSync } from 'node:fs';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { execFile, execFileSync, spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -31,7 +31,10 @@ import { distribuir, esSalaDeRepo } from '../shared/disposicion.ts';
 import { PALETA_ESTILO } from '../shared/sectores.ts';
 import { sanearAspecto, TIPOS_DE_SERIE, COSTE_ASPECTO } from '../shared/aspecto.ts';
 import { abrirCarpeta, abrirEnEditor, abrirTerminalEn, revelar } from './plataforma.ts';
-import { accionHistoria } from '../shared/pasos.ts';
+import { accionHistoria, esPaso, tipoEntregable, PASOS } from '../shared/pasos.ts';
+import { buscarCambios, carpetaComun } from './entregables.ts';
+import { MERCANCIAS, mercancia, existencias, precioVenta, conAdornos, SUELO_ADORNOS } from '../shared/mercader.ts';
+import { abrirAdjunto as abrirEntregable, realDentro } from './abrir.ts';
 import { mkdir } from 'node:fs';
 
 // reinicio desde el juego: antes de apagar el servidor viejo se carga el nuevo con esta variable para ver que arranca
@@ -152,7 +155,33 @@ sesiones.on('turno', r => {
     difundir({ t: 'aviso', nivel: 'info', texto: `${quien} ha terminado: +${p.chatarra} de oro${p.pieza ? ` y ha encontrado ${p.pieza.nombre} (${p.pieza.rareza})` : ''}.` });
   }
   const h = almacen.estado.habitantes.find(x => x.id === r.habitanteId); if (h && r.claudeId) { h.ultimaSesion = r.claudeId; almacen.guardar(); }
+  if (r.estado === 'terminada' && r.historia) apuntarEntregables(r);
 });
+
+// lo que ha dejado un aventurero en la carpeta del proyecto: se apunta en la historia y se avisa con ✔ (y «Ver»)
+const inicioTurno = new Map<string, number>();
+sesiones.on('sesion', (r: any) => { if (r?.historia && r.estado === 'trabajando' && !inicioTurno.has(r.id)) inicioTurno.set(r.id, Date.now()); });
+function apuntarEntregables(r: { id: string; historia?: string; paso?: string; habitanteId: string; creada: number; titulo: string }) {
+  const raiz = almacen.estado.proyecto?.ruta; const paso = r.paso;
+  const desde = inicioTurno.get(r.id) ?? r.creada; inicioTurno.delete(r.id);
+  if (!raiz || !esPaso(paso)) return;
+  const rutas = buscarCambios(raiz, desde);
+  let titulo = r.titulo;
+  almacen.cambiar(x => {
+    const hi = x.historias.find(y => y.id === r.historia); if (!hi) return;
+    titulo = hi.titulo;
+    if (!hi.carpeta) { const c = carpetaComun(rutas); if (c) hi.carpeta = c; }
+    for (const ruta of rutas) {
+      const previo = hi.entregables.find(y => y.ruta === ruta);
+      if (previo) { previo.fecha = Date.now(); previo.paso = paso; }
+      else hi.entregables.push({ ruta, nombre: ruta.split('/').pop() || ruta, paso, tipo: tipoEntregable(ruta), fecha: Date.now() });
+    }
+    hi.entregables = hi.entregables.slice(-200); hi.actualizada = Date.now();
+  });
+  const quien = almacen.estado.habitantes.find(x => x.id === r.habitanteId)?.nombre ?? PASOS[paso].aventurero.nombre;
+  difundir({ t: 'estado', estado: almacen.estado as any });
+  difundir({ t: 'hecho', historia: r.historia!, paso, quien, titulo, oro: 0, entregables: rutas.map(ruta => ({ ruta, nombre: ruta.split('/').pop() || ruta, tipo: tipoEntregable(ruta) })) });
+}
 
 // las conversaciones abiertas, en disco: si el refugio entero se cae, `./shelter superficie` las retoma fuera
 let temporizadorAbiertas: NodeJS.Timeout | null = null;
@@ -320,6 +349,61 @@ async function accion(nombre: string, d: Record<string, any> = {}): Promise<unkn
       difundir({ t: 'estado', estado: almacen.estado as any });
       if (r.oro) difundir({ t: 'aviso', nivel: 'info', texto: `+${r.oro} de oro por cumplir el paso` });
       return r;
+    }
+    // un entregable de la carpeta del proyecto: su texto, para verlo en el juego (o abrirlo en el escritorio)
+    case 'entregable.leer': case 'entregable.abrir': case 'entregable.ver': {
+      const raiz = e.proyecto?.ruta; if (!raiz) throw new Error('No hay proyecto elegido.');
+      const rel = String(d.ruta || ''); if (!rel || rel.split(/[\\/]/).includes('..') || path.isAbsolute(rel)) throw new Error('Esa ruta no vale.');
+      const real = await realDentro(raiz, path.join(raiz, rel));
+      if (nombre === 'entregable.ver') return { url: `/entregable/${paseEntregable(raiz)}/${path.relative(await realDentro(raiz, raiz), real).split(path.sep).map(encodeURIComponent).join('/')}` };
+      if (nombre === 'entregable.abrir') { if (d.carpeta) revelar(real); else await abrirEntregable(raiz, real); return true; }
+      const st = statSync(real); if (!st.isFile()) throw new Error('No es un archivo.');
+      const tipo = tipoEntregable(real);
+      if (tipo === 'imagen') { if (st.size > 8e6) throw new Error('Imagen demasiado grande para verla aquí.'); const ext = real.split('.').pop()!.toLowerCase(); return { tipo, datos: `data:image/${ext === 'svg' ? 'svg+xml' : ext === 'jpg' ? 'jpeg' : ext};base64,` + readFileSync(real).toString('base64') }; }
+      if (tipo === 'otro') throw new Error('Este archivo no se puede ver en el juego: ábrelo en el escritorio.');
+      if (st.size > 4e6) throw new Error('Demasiado grande para verlo en el juego: ábrelo en el escritorio.');
+      return { tipo, texto: readFileSync(real, 'utf8') };
+    }
+    // el mercader (shared/mercader.ts): comprar y vender con el oro; lo comprado va al baúl
+    case 'mercader.comprar': case 'mercader.vender': {
+      const m = mercancia(String(d.id)); if (!m) throw new Error('Eso no lo vende el buhonero.');
+      let r = 0;
+      almacen.cambiar(x => {
+        const b = (x.jugador.baul ??= {});
+        if (nombre === 'mercader.comprar') {
+          if (!existencias().includes(m.id)) throw new Error('Hoy no lo trae: vuelve mañana.');
+          if (x.jugador.chatarra < m.precio) throw new Error(`Te faltan ${m.precio - x.jugador.chatarra} de oro.`);
+          x.jugador.chatarra -= m.precio; b[m.id] = (b[m.id] ?? 0) + 1; r = -m.precio;
+        } else {
+          if (!b[m.id]) throw new Error('No lo tienes en el baúl (quítalo antes de la sala).');
+          b[m.id]--; if (!b[m.id]) delete b[m.id]; r = precioVenta(m); x.jugador.chatarra += r;
+        }
+      });
+      difundir({ t: 'estado', estado: almacen.estado as any });
+      return { oro: r };
+    }
+    // modo decorar: poner, mover y quitar lo del baúl en las salas de los pasos (se suma a su escena)
+    case 'decorar.poner': case 'decorar.mover': case 'decorar.quitar': {
+      const sala = e.salas.find(x => x.id === d.salaId);
+      if (!sala?.paso) throw new Error('Esta sala no se puede decorar.');
+      const num = (v: unknown, a: number, b: number) => Math.max(a, Math.min(b, Number(v) || 0));
+      almacen.cambiar(x => {
+        const s2 = x.salas.find(y => y.id === sala.id)!; const ads = (s2.adornos ??= []); const b = (x.jugador.baul ??= {});
+        if (nombre === 'decorar.poner') {
+          const m = mercancia(String(d.mercancia)); if (!m) throw new Error('Eso no existe.');
+          if (!b[m.id]) throw new Error('No te queda en el baúl: cómpralo al buhonero.');
+          if (ads.length >= 40) throw new Error('La sala ya está llena.');
+          b[m.id]--; if (!b[m.id]) delete b[m.id];
+          ads.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), mercancia: m.id, x: num(d.x, SUELO_ADORNOS.x0, SUELO_ADORNOS.x1), z: num(d.z, SUELO_ADORNOS.z0, SUELO_ADORNOS.z1), giro: Math.round(num(d.giro, -360, 360)) });
+        } else {
+          const a = ads.find(y => y.id === d.id); if (!a) throw new Error('Ese adorno ya no está.');
+          if (nombre === 'decorar.quitar') { ads.splice(ads.indexOf(a), 1); b[a.mercancia] = (b[a.mercancia] ?? 0) + 1; }
+          else { if (d.x !== undefined) a.x = num(d.x, SUELO_ADORNOS.x0, SUELO_ADORNOS.x1); if (d.z !== undefined) a.z = num(d.z, SUELO_ADORNOS.z0, SUELO_ADORNOS.z1); if (d.giro !== undefined) a.giro = Math.round(num(d.giro, -360, 360)) % 360; }
+        }
+        s2.decorado = conAdornos(PASOS[s2.paso!].decorado, ads);
+      });
+      difundir({ t: 'estado', estado: almacen.estado as any });
+      return true;
     }
     case 'retirarSala': {
       const sr = e.salas.find(s => s.id === d.salaId);
@@ -658,6 +742,27 @@ function servir(req: http.IncomingMessage, res: http.ServerResponse, raiz: strin
   createReadStream(ruta).pipe(res);
   return true;
 }
+const pasesVer = new Map<string, { raiz: string; hasta: number }>();
+function paseEntregable(raiz: string) {
+  const ahora = Date.now(); for (const [k, v] of pasesVer) if (v.hasta < ahora) pasesVer.delete(k);
+  const k = randomBytes(18).toString('hex'); pasesVer.set(k, { raiz, hasta: ahora + 3600_000 }); return k;
+}
+const TIPOS_ENTREGABLE: Record<string, string> = { '.htm': 'text/html; charset=utf-8', '.md': 'text/plain; charset=utf-8', '.mjs': 'text/javascript', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.woff': 'font/woff', '.csv': 'text/plain; charset=utf-8' };
+function servirEntregable(url: string, res: http.ServerResponse) {
+  const [, , pase, ...resto] = url.split('/');
+  const v = pasesVer.get(pase); const rel = resto.join('/');
+  if (!v || v.hasta < Date.now() || !rel || resto.includes('..')) { res.writeHead(404); res.end(); return; }
+  let real: string;
+  try {
+    const r = realpathSync(v.raiz); real = realpathSync(path.join(v.raiz, rel));
+    if (!real.startsWith(r + path.sep) || !statSync(real).isFile()) throw new Error();
+  } catch { res.writeHead(404); res.end(); return; }
+  const ext = path.extname(real).toLowerCase();
+  res.writeHead(200, { 'Content-Type': TIPOS[ext] ?? TIPOS_ENTREGABLE[ext] ?? 'application/octet-stream', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': `sandbox allow-scripts allow-forms allow-modals; default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'none'; form-action 'none'; frame-ancestors 'self'` });
+  createReadStream(real).pipe(res);
+}
+
 const servidor = http.createServer((req, res) => {
   const host = req.headers.host || '';
   if (!/^(127\.0\.0\.1|localhost):\d+$/.test(host)) { res.writeHead(403); res.end(); return; }
@@ -673,11 +778,14 @@ const servidor = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(ponerAlDia());
     return;
   }
+  // los entregables del proyecto, para el visor del juego: solo con un pase de un solo proyecto (acción entregable.ver)
+  // y aislados con sandbox (origen opaco: un prototipo no puede tocar el juego ni pedir nada fuera)
+  if (url.startsWith('/entregable/')) { servirEntregable(url, res); return; }
   // la página del juego lleva el secreto de este arranque para abrir el WebSocket
   // la página NO lleva el secreto (cualquier proceso local podría pedirla): llega en el fragmento #t= de la URL que abre
   // el lanzador (leído de DATOS/token, 0600), como hace Jupyter. Política de contenido estricta: nada se carga de fuera
   // salvo las carátulas de lo que suena en la discoteca (imágenes del CDN de Spotify, que lee la pletina).
-  const csp = `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://i.scdn.co; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: data: ws://127.0.0.1:${PUERTO} ws://localhost:${PUERTO}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'`;
+  const csp = `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://i.scdn.co; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: data: ws://127.0.0.1:${PUERTO} ws://localhost:${PUERTO}; object-src 'none'; frame-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'`;
   const pagina = () => { const f = path.join(WEB, 'index.html'); if (!existsSync(f)) return false; res.writeHead(200, { 'Content-Type': TIPOS['.html'], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': csp, 'Referrer-Policy': 'no-referrer' }); res.end(readFileSync(f, 'utf8')); return true; };
   if (existsSync(WEB) && (url === '/' || url === '/index.html' ? pagina() : (servir(req, res, WEB, url) || pagina()))) return;
   res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('El juego no está compilado. Ejecuta ./shelter');

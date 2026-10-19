@@ -12,6 +12,7 @@ import { FUENTES } from './integraciones/adaptadores.ts';
 import { sanearDecorado, type Decorado } from '../shared/decorado.ts';
 import { rutaEjemplo } from './ejemplos.ts';
 import { carpetaApp } from './plataforma.ts';
+import { sanearAdornos, conAdornos, type Adorno } from '../shared/mercader.ts';
 import { esPaso, sanearHistorias, sanearProyecto, PASOS, PASOS_IDS, type PasoId, type Historia, type Proyecto } from '../shared/pasos.ts';
 import { esClonDeEjemplo } from './ejemplos.ts';
 
@@ -29,11 +30,12 @@ export interface SalaGuardada {
   variante: string;             // paleta
   estilo?: string;
   decorado?: Decorado;          // la escena que le ha diseñado su habitante («Adaptar la sala al repo»); sin él, su plantilla
+  adornos?: Adorno[];           // lo que la Tabernera ha puesto en la sala con el modo decorar (shared/mercader.ts)
   paso?: PasoId;                // sala de un paso del proceso de UX (shared/pasos.ts): trabaja en la carpeta del proyecto
 }
 export interface HabitanteGuardado { id: string; nombre: string; mote: string; tipo: string; bio: string; salaId: string; tinte?: string; tono?: number; voz: number; ultimaSesion?: string; accesorios?: string[]; aspecto?: Aspecto }
 export interface Jugador {
-  chatarra: number; inventario: Record<string, number>; atuendo: string[]; tienda: string[];
+  chatarra: number; inventario: Record<string, number>; baul?: Record<string, number>; atuendo: string[]; tienda: string[];
   records: Record<string, number>; logros: string[]; tareasTerminadas: number; llamadasHerramientas: number;
   cultivos: { especie: string; fase: number; progreso: number }[];
 }
@@ -154,7 +156,7 @@ export function sanear(e: any): EstadoRefugio {
     .map((x: any) => ({ id: x.id, tipo: x.tipo, nombre: !esSalaDeRepo(x.tipo) && NOMBRES_ANTIGUOS[x.nombre] ? NOMBRES_ANTIGUOS[x.nombre] : str(x.nombre, x.id), ruta: typeof x.ruta === 'string' ? x.ruta : undefined, planta: x.planta, lado: x.lado, orden: x.orden, variante: str(x.variante, 'neutro'), estilo: typeof x.estilo === 'string' ? x.estilo : undefined,
       ...(esSalaDeRepo(x.tipo) && x.decorado ? { decorado: sanearDecorado(x.decorado).decorado ?? undefined } : {}),
       // (las de los pasos llevan siempre la escena de su paso: la de serie, que el juego pone al día)
-      ...(esSalaDeRepo(x.tipo) && esPaso(x.paso) ? { paso: x.paso, decorado: PASOS[x.paso as PasoId].decorado } : {}), ...(x.oficio ? { oficio: x.oficio } : {}) }) as SalaGuardada);
+      ...(esSalaDeRepo(x.tipo) && esPaso(x.paso) ? { paso: x.paso, adornos: sanearAdornos(x.adornos), decorado: conAdornos(PASOS[x.paso as PasoId].decorado, sanearAdornos(x.adornos)) } : {}), ...(x.oficio ? { oficio: x.oficio } : {}) }) as SalaGuardada);
   if (!leidas.length) throw new Error('sin salas');
   const salas = distribuir(leidas);
   const ids = new Set(salas.map((x: any) => x.id));
@@ -165,7 +167,7 @@ export function sanear(e: any): EstadoRefugio {
   const objNum = (v: unknown) => Object.fromEntries(Object.entries(v && typeof v === 'object' ? v as object : {}).filter(([, n]) => Number.isFinite(n)));
   const jugador = {
     ...ini.jugador, ...jv,
-    chatarra: Math.max(0, num(jv.chatarra, ini.jugador.chatarra)), inventario: objNum(jv.inventario), records: objNum(jv.records),
+    chatarra: Math.max(0, num(jv.chatarra, ini.jugador.chatarra)), inventario: objNum(jv.inventario), baul: objNum(jv.baul), records: objNum(jv.records),
     atuendo: arr(jv.atuendo)?.filter((x: unknown) => typeof x === 'string') ?? [], tienda: arr(jv.tienda)?.filter((x: unknown) => typeof x === 'string') ?? [],
     logros: arr(jv.logros) ?? [], tareasTerminadas: num(jv.tareasTerminadas, 0), llamadasHerramientas: num(jv.llamadasHerramientas, 0),
     cultivos: (arr(jv.cultivos) ?? ini.jugador.cultivos).filter((c: any) => c && typeof c.especie === 'string').map((c: any) => ({ especie: c.especie, fase: Math.max(1, Math.min(4, num(c.fase, 1))), progreso: Math.max(0, num(c.progreso, 0)) })),

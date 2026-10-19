@@ -14,6 +14,8 @@ import { ventanaGit, abrirGit } from './ui/git/ventana';
 import { Explorador } from './ui/archivos/Explorador';
 import { ventanaArchivos, abrirArchivos } from './ui/archivos/ventana';
 import { Avisos, Carga, CargaSalas } from './ui/Puente';
+import { Hechos, Visor } from './ui/Pasos';
+import { ModoDecorar } from './ui/Mercader';
 import { Pletina } from './ui/Discoteca';
 import { Buscador } from './ui/Buscador';
 import { cliente, vivo } from './red/cliente';
@@ -32,7 +34,7 @@ import('./mundo/animaciones').then(m => { (window as any).__anim = m; });   // Q
 let refugio: Refugio;
 const listo = fuentes.then(() => { refugio = new Refugio(motor); (window as any).__refugio = refugio; return refugio.listo; });
 (window as any).__ready = () => listo;
-createRoot(document.getElementById('ui')!).render(<><Hud /><Dialogo /><Paneles /><Terminales /><Navegadores /><ClienteGit /><Explorador /><div className="columna-izquierda"><Pletina /><Barra /></div><Avisos /><Buscador /><CargaSalas /><Carga /></>);
+createRoot(document.getElementById('ui')!).render(<><Hud /><Dialogo /><Paneles /><Terminales /><Navegadores /><ClienteGit /><Explorador /><div className="columna-izquierda"><Pletina /><Barra /></div><Avisos /><Hechos /><Visor /><ModoDecorar /><Buscador /><CargaSalas /><Carga /></>);
 cliente.conectar();
 Object.assign(window as any, { __juego: juego, __cliente: cliente, __vivo: vivo, __intercoms: intercoms, __navegadores: { navegadores, abrirNavegador }, __git: { ventanaGit, abrirGit }, __archivos: { ventanaArchivos, abrirArchivos } }); // para QA y depuración
 (window as any).__salirRefugio = () => new Promise<void>(ok => { cliente.enviar({ t: 'salir' }); setTimeout(ok, 300); });

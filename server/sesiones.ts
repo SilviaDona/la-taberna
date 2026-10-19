@@ -199,6 +199,7 @@ export class Sesiones extends EventEmitter {
       id, habitanteId, salaId, cwd: o.cwd || cwd, estado: 'arrancando', sinLeer: false, titulo: prompt.slice(0, 80) || (adjuntos[0] ? `Mira ${adjuntos[0].nombre}` : 'Trabajo nuevo'),
       pendientes: 0, ayudantes: [], herramientas: 0, turnos: 0, modelo: o.modelo || undefined, esfuerzo: o.esfuerzo || undefined,
       modoPermisos: o.permisos || 'default', creada: Date.now(), actualizada: Date.now(), claudeId: o.reanudar,
+      ...(o.historia ? { historia: String(o.historia).slice(0, 40), paso: String(o.paso || '').slice(0, 20) } : {}),
     };
     const x: Sesion = { r, viva: false, cerrando: false, interrumpiendo: false, enviados: new Map(), pendientes: [], entradas: [], herramientas: new Map(), ayudantes: new Map(), tareaAAyudante: new Map(), comandos: [], stderr: '', opciones: o, textoParcial: '', envios: Promise.resolve() };
     this.s.set(id, x);

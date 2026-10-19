@@ -6,7 +6,7 @@ const GLIFO: Record<string, string> = { durmiendo: 'z', ocioso: '·', pensando: 
 
 export class CapaEtiquetas {
   raiz: HTMLDivElement;
-  private mapa = new Map<Habitante | object, { el: HTMLDivElement; nombre: HTMLSpanElement; detalle: HTMLSpanElement; glifo: HTMLSpanElement; prompt: HTMLSpanElement; clave: string }>();
+  private mapa = new Map<Habitante | object, { el: HTMLDivElement; nombre: HTMLSpanElement; detalle: HTMLSpanElement; glifo: HTMLSpanElement; prompt: HTMLSpanElement; barra: HTMLSpanElement; clave: string }>();
   constructor() {
     this.raiz = document.createElement('div'); this.raiz.id = 'etiquetas';
     document.body.appendChild(this.raiz);
@@ -16,10 +16,11 @@ export class CapaEtiquetas {
     const glifo = document.createElement('span'); glifo.className = 'glifo';
     const nombre = document.createElement('span'); const detalle = document.createElement('span'); detalle.className = 'detalle';
     const prompt = document.createElement('span'); prompt.className = 'prompt';
-    el.append(glifo, nombre, detalle, prompt); this.raiz.appendChild(el);
-    const e = { el, nombre, detalle, glifo, prompt, clave: '' }; this.mapa.set(k, e); return e;
+    const barra = document.createElement('span'); barra.className = 'progreso'; barra.appendChild(document.createElement('i'));
+    el.append(glifo, nombre, detalle, prompt, barra); this.raiz.appendChild(el);
+    const e = { el, nombre, detalle, glifo, prompt, barra, clave: '' }; this.mapa.set(k, e); return e;
   }
-  actualizar(cam: THREE.PerspectiveCamera, items: { k: object; pos: THREE.Vector3; alto: number; nombre: string; estado: string; detalle: string; cerca: boolean; supervisor?: boolean; aparato?: boolean; prompt?: string; lejos?: boolean }[]) {
+  actualizar(cam: THREE.PerspectiveCamera, items: { k: object; pos: THREE.Vector3; alto: number; nombre: string; estado: string; detalle: string; cerca: boolean; supervisor?: boolean; aparato?: boolean; prompt?: string; lejos?: boolean; progreso?: number }[]) {
     const w = innerWidth, h = innerHeight; const v = new THREE.Vector3();
     const vistos = new Set<object>();
     const puestas: { x0: number; x1: number; y0: number; y1: number }[] = [];
@@ -34,6 +35,9 @@ export class CapaEtiquetas {
         e.glifo.textContent = it.supervisor ? '★' : it.aparato ? '⚙' : GLIFO[it.estado] ?? '·';
         e.nombre.textContent = it.nombre; e.detalle.textContent = it.detalle; e.detalle.style.display = it.detalle ? '' : 'none';
       }
+      // la barra de progreso del trabajo en curso (se estima: Claude Code no sabe cuánto le falta)
+      const pr = it.progreso === undefined ? '' : `${Math.round(it.progreso * 100)}%`;
+      if ((e as any).pr !== pr) { (e as any).pr = pr; e.barra.style.display = pr ? '' : 'none'; if (pr) (e.barra.firstChild as HTMLElement).style.width = pr; }
       v.copy(it.pos); v.y += it.alto + 0.25; v.project(cam);
       if (v.z > 1) { if (e.el.style.display !== 'none') e.el.style.display = 'none'; continue; }
       if (e.el.style.display) e.el.style.display = '';

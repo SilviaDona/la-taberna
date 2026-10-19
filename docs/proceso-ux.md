@@ -46,3 +46,10 @@ y `ponerProyecto` en `server/estado.ts`.
 | ![Sala de Mapas](media/proceso-mapas.png) La Sala de Mapas | ![Plano](media/proceso-plano.png) Plano: los siete pasos en fila |
 
 Hechas en Linux sin GPU (SwiftShader) con una taberna y un proyecto de prueba, y sin Claude Code.
+
+## Entregables, oro y decoración
+
+- **Carpeta de la historia.** La primera vez que un aventurero trabaja una historia, propone el nombre de una carpeta nueva dentro del proyecto y espera tu sí. Desde entonces, todo lo de esa historia (planes, prototipo, informes, handoff, registro) va ahí.
+- **Mientras trabaja**, sobre su cabeza sale una barra de progreso (estimada: Claude Code no sabe cuánto le falta).
+- **Al terminar**, sale un aviso ✔ con lo que ha dejado. «Ver» lo abre dentro del juego: el prototipo (el plato) funciona tal cual, aislado del juego; los documentos Markdown se leen como documento. Todos los entregables de una historia están en su ficha («📜 Entregables»).
+- **El oro** se gana cumpliendo pasos. En el panel de cualquier sala de un paso: «Llamar a Gorgo, el buhonero» (trae seis cosas distintas cada día) y «Decorar esta sala» (pones lo del baúl; flechas para moverlo, Q/E para girarlo, Supr lo devuelve al baúl, Enter para acabar). Lo que vendes de vuelta te da la mitad.

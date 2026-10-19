@@ -18,10 +18,11 @@ export interface DatosVivos {
   eventos: any[];
   integraciones: Record<string, any>;
   avisos: { id: number; nivel: string; texto: string }[];
+  hechos: { id: number; historia: string; paso: string; quien: string; titulo: string; entregables: { ruta: string; nombre: string; tipo: string }[] }[];   // trabajos de los pasos terminados (✔)
   musica: EstadoMusica | null;              // lo que suena en la discoteca (Spotify web; lo pone Discoteca.tsx)
 }
 
-export const vivo = new Almacen<DatosVivos>({ conectado: false, intentos: 0, reiniciando: false, claudeOk: false, estado: null, sesiones: {}, entradas: {}, parcial: {}, repos: {}, visitantes: [], notificaciones: [], eventos: [], integraciones: {}, avisos: [], musica: null });
+export const vivo = new Almacen<DatosVivos>({ conectado: false, intentos: 0, reiniciando: false, claudeOk: false, estado: null, sesiones: {}, entradas: {}, parcial: {}, repos: {}, visitantes: [], notificaciones: [], eventos: [], integraciones: {}, avisos: [], hechos: [], musica: null });
 
 // El secreto del arranque llega en el fragmento de la URL (#t=…, no viaja al servidor ni queda en el historial de
 // peticiones); se guarda en la sesión de la pestaña para sobrevivir a recargas y se quita de la barra de direcciones.
@@ -100,6 +101,7 @@ class Cliente {
       case 'eventos': vivo.set({ eventos: m.lista }); break;
       case 'integracion': vivo.set(e => ({ integraciones: { ...e.integraciones, [m.id]: m.estado } })); break;
       case 'estado': vivo.set({ estado: m.estado }); break;
+      case 'hecho': vivo.set(e => ({ hechos: [...e.hechos.slice(-3), { id: Date.now() + Math.random(), historia: m.historia, paso: m.paso, quien: m.quien, titulo: m.titulo, entregables: m.entregables }] })); break;
       case 'aviso': vivo.set(e => ({ avisos: [...e.avisos.slice(-4), { id: Date.now() + Math.random(), nivel: m.nivel, texto: m.texto }] })); break;
       case 'recargar': location.reload(); break;
       case 'reiniciando': vivo.set({ reiniciando: true }); break;

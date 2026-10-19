@@ -19,7 +19,7 @@ scene.background = new THREE.Color('#2b2420');
 const sala = new THREE.Group(); scene.add(sala);
 
 // ---------------------------------------------------------------- luz: penumbra cálida, fuego, araña y velas
-scene.add(new THREE.HemisphereLight('#ffd9a8', '#3a2414', 0.55));
+const cielo = new THREE.HemisphereLight('#ffd9a8', '#3a2414', 0.55); scene.add(cielo);
 const luna = new THREE.DirectionalLight('#9fb4ff', 0.35); luna.position.set(-8, 14, -4); scene.add(luna);
 const sol = new THREE.DirectionalLight('#ffd7a0', 0.9); sol.position.set(10, 18, 8); sol.castShadow = true;
 sol.shadow.mapSize.set(2048, 2048); Object.assign(sol.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 1, far: 90 }); sol.shadow.mapSize.set(4096, 4096); sol.shadow.bias = -0.0008; scene.add(sol);
@@ -28,6 +28,38 @@ function luz(x: number, y: number, z: number, color: string, intensidad: number,
   const l = new THREE.PointLight(color, intensidad, distancia, 1.6); l.position.set(x, y, z); scene.add(l);
   if (parpadeo) puntos.push({ luz: l, base: intensidad, vel: parpadeo });
   return l;
+}
+
+// ---------------------------------------------------------------- día y noche con la hora real (?hora=HH:MM para probar)
+// el sol sale por el este y cruza; de noche, luna azul y las velas y el fuego mandan. Las ventanas cambian de color.
+const ventanas: THREE.MeshBasicMaterial[] = [];
+const C = (c: string) => new THREE.Color(c);
+const TRAMOS: [number, { cielo: string; suelo: string; sol: string; fondo: string; ventana: string; luzSol: number; luzCielo: number; luna: number; velas: number }][] = [
+  [0, { cielo: '#4a5a8a', suelo: '#1a1410', sol: '#7a8cff', fondo: '#0d1020', ventana: '#141d3a', luzSol: 0.02, luzCielo: 0.12, luna: 0.4, velas: 1.35 }],
+  [6, { cielo: '#c99a8a', suelo: '#3a2414', sol: '#ff9a5a', fondo: '#3a2a34', ventana: '#e89a6a', luzSol: 0.45, luzCielo: 0.4, luna: 0.2, velas: 1.05 }],
+  [9, { cielo: '#ffe2b8', suelo: '#3a2414', sol: '#ffe0b0', fondo: '#2b2420', ventana: '#9fc8f0', luzSol: 0.95, luzCielo: 0.6, luna: 0, velas: 0.8 }],
+  [17, { cielo: '#ffd9a8', suelo: '#3a2414', sol: '#ffd7a0', fondo: '#2b2420', ventana: '#a8c8e8', luzSol: 0.9, luzCielo: 0.55, luna: 0.05, velas: 0.85 }],
+  [19.5, { cielo: '#e08a6a', suelo: '#2a1a10', sol: '#ff7a3a', fondo: '#3a2018', ventana: '#f08a4a', luzSol: 0.5, luzCielo: 0.4, luna: 0.2, velas: 1.05 }],
+  [21.5, { cielo: '#4a5a8a', suelo: '#1a1410', sol: '#7a8cff', fondo: '#0d1020', ventana: '#141d3a', luzSol: 0.02, luzCielo: 0.12, luna: 0.4, velas: 1.35 }],
+  [24, { cielo: '#4a5a8a', suelo: '#1a1410', sol: '#7a8cff', fondo: '#0d1020', ventana: '#141d3a', luzSol: 0.02, luzCielo: 0.12, luna: 0.4, velas: 1.35 }],
+];
+const horaFija = /^\d{1,2}:\d{2}$/.test(q.get('hora') ?? '') ? q.get('hora')!.split(':').map(Number) : null;
+let factorVelas = 1;
+function horaAhora() { if (horaFija) return horaFija[0] + horaFija[1] / 60; const d = new Date(); return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600; }
+function ponerHora(h: number) {
+  let i = 0; while (i < TRAMOS.length - 2 && TRAMOS[i + 1][0] <= h) i++;
+  const [h0, a] = TRAMOS[i], [h1, b] = TRAMOS[i + 1]; const k = THREE.MathUtils.clamp((h - h0) / (h1 - h0), 0, 1);
+  const mez = (x: string, y: string) => C(x).lerp(C(y), k);
+  cielo.color.copy(mez(a.cielo, b.cielo)); cielo.groundColor.copy(mez(a.suelo, b.suelo)); cielo.intensity = THREE.MathUtils.lerp(a.luzCielo, b.luzCielo, k);
+  sol.color.copy(mez(a.sol, b.sol)); sol.intensity = THREE.MathUtils.lerp(a.luzSol, b.luzSol, k);
+  luna.intensity = THREE.MathUtils.lerp(a.luna, b.luna, k);
+  (scene.background as THREE.Color).copy(mez(a.fondo, b.fondo)); if (scene.fog) (scene.fog as THREE.Fog).color.copy(mez(a.fondo, b.fondo)).multiplyScalar(0.8);
+  for (const m of ventanas) m.color.copy(mez(a.ventana, b.ventana));
+  factorVelas = THREE.MathUtils.lerp(a.velas, b.velas, k);
+  scene.environmentIntensity = 0.05 + 0.2 * Math.min(1, sol.intensity / 0.9);   // el reflejo del entorno también se apaga de noche
+  // el sol da la vuelta: este (mañana) → sur (mediodía) → oeste (tarde); de noche, la luz que queda es la de la luna
+  const ang = ((h - 6) / 12) * Math.PI; const dia = h > 6 && h < 20;
+  sol.position.set(Math.cos(ang) * -22 + 4, dia ? 6 + Math.sin(ang) * 16 : 14, 10);
 }
 
 // ---------------------------------------------------------------- estructura
@@ -98,7 +130,8 @@ function paredes(g: THREE.Group, o: { ventana?: number; fondo?: Lado; izquierda?
     g.add(caja(0.34, alto, 0.34, madera, x, alto / 2, z, true));
   }
   if (o.ventana !== undefined && fondo === 'entero') {   // el cielo detrás de la ventana
-    const cielo = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2), new THREE.MeshBasicMaterial({ color: '#2b3a66' }));
+    const vidrio = new THREE.MeshBasicMaterial({ color: '#2b3a66' }); ventanas.push(vidrio);
+    const cielo = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2), vidrio);
     cielo.position.set(o.ventana, H * 0.55, -L / 2 - 0.05); g.add(cielo);
   }
 }
@@ -530,7 +563,8 @@ if (q.get('sala')) { const sl = SALAS.find(x => x.id === q.get('sala')); if (sl)
 
 motor.cadaFotograma((dt, t) => {
   for (const p of gente) p.actualizar(dt);
-  for (const l of puntos) l.luz.intensity = l.base * (0.85 + 0.15 * Math.sin(t * l.vel) * Math.sin(t * l.vel * 0.37 + 1.3));
+  if (Math.floor(t * 2) !== Math.floor((t - dt) * 2) || t < 0.1) ponerHora(horaAhora());   // dos veces por segundo basta
+  for (const l of puntos) l.luz.intensity = factorVelas * l.base * (0.85 + 0.15 * Math.sin(t * l.vel) * Math.sin(t * l.vel * 0.37 + 1.3));
   camMirada.x = THREE.MathUtils.damp(camMirada.x, camObjetivo.x, 4, dt); camMirada.z = THREE.MathUtils.damp(camMirada.z, camObjetivo.z, 4, dt);
   camDistAhora = THREE.MathUtils.damp(camDistAhora, camDist, 4, dt);
   colocarCamara();

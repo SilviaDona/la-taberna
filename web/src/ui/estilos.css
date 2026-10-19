@@ -125,6 +125,8 @@ html, body { margin: 0; height: 100%; background: var(--fondo); overflow: hidden
 /* ---------- etiquetas sobre los habitantes (capa del mundo) ---------- */
 #etiquetas { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
 .etiqueta { position: absolute; left: 0; top: 0; white-space: nowrap; display: flex; align-items: center; gap: calc(var(--u) * 0.4); padding: calc(var(--u) * 0.18) calc(var(--u) * 0.55) calc(var(--u) * 0.18) calc(var(--u) * 0.25); font: 600 calc(var(--u) * 0.86) var(--t-rotulo); letter-spacing: .02em; color: var(--crema); background: linear-gradient(180deg, #3a3631, #24211e); border: 1px solid #0b0a09; box-shadow: inset 0 1px 0 #6a6256, 0 3px 6px rgba(0,0,0,.55); border-radius: 2px; transition: opacity .2s; }
+.etiqueta .progreso { position: absolute; left: 4px; right: 4px; bottom: -9px; height: 5px; background: #0b0a09; border: 1px solid #000; border-radius: 2px; overflow: hidden; }
+.etiqueta .progreso i { display: block; height: 100%; background: linear-gradient(90deg, #c8902a, #f0c35a); transition: width .8s linear; animation: latido 1.2s ease-in-out infinite alternate; }
 .etiqueta::after { content: ''; position: absolute; left: 50%; bottom: -6px; margin-left: -5px; border: 5px solid transparent; border-top-color: #24211e; border-bottom: 0; }
 .etiqueta .glifo { width: calc(var(--u) * 1.1); height: calc(var(--u) * 1.1); display: grid; place-items: center; font-size: calc(var(--u) * 0.75); color: #111; border-radius: 2px; font-weight: 700; }
 .etiqueta.durmiendo .glifo { background: #6a6f78; color: #e8e8e8; }
@@ -973,3 +975,22 @@ html.en-segundo-plano *, html.en-segundo-plano *::before, html.en-segundo-plano 
 .ex-menu button { display: flex; justify-content: space-between; gap: 18px; }
 .ex-menu button.peligro { color: #ff9b8f; }
 .ex-menu hr { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--g-borde); }
+
+/* entregables: el visor (el plato, los documentos) y el aviso ✔ al terminar un paso */
+.visor { position: fixed; inset: 4vh 4vw; z-index: 60; display: flex; flex-direction: column; background: #1d1813; border: 2px solid #6b4a26; box-shadow: 0 10px 40px rgba(0,0,0,.7); border-radius: 4px; }
+.visor-cabeza { display: flex; justify-content: space-between; align-items: center; gap: 1em; padding: .5em .8em; background: linear-gradient(180deg, #4a3520, #2e2014); color: var(--crema); font: 600 calc(var(--u) * .85) var(--t-rotulo); }
+.visor-cabeza .tenue { font-weight: 400; margin-left: .6em; }
+.visor-cabeza button { margin-left: .4em; }
+.visor-cuerpo { flex: 1; min-height: 0; overflow: auto; background: #f4ecd8; }
+.visor-marco { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+.visor-doc { max-width: 900px; margin: 0 auto; padding: 2em 2.5em; color: #2a2017; font: 16px/1.55 Georgia, serif; }
+.visor-texto { margin: 0; padding: 1.5em; color: #2a2017; font: 13px/1.45 ui-monospace, monospace; white-space: pre-wrap; }
+.visor-imagen { display: grid; place-items: center; min-height: 100%; } .visor-imagen img { max-width: 100%; }
+.hechos { position: fixed; right: calc(var(--u) * 1); top: calc(var(--u) * 5); z-index: 55; display: flex; flex-direction: column; gap: .6em; width: min(92vw, calc(var(--u) * 24)); }
+.hecho { display: flex; gap: .8em; padding: .7em .9em; background: linear-gradient(180deg, #3b2b1a, #241a10); border: 2px solid #c8902a; border-radius: 4px; color: var(--crema); box-shadow: 0 6px 18px rgba(0,0,0,.6); animation: hechoEntra .35s ease-out; font: calc(var(--u) * .8) var(--t-rotulo); }
+.hecho-check { flex: none; width: 2em; height: 2em; display: grid; place-items: center; border-radius: 50%; background: #3f8a3a; color: #fff; font-weight: 700; font-size: 1.2em; box-shadow: 0 0 0 3px #1c3d1a; }
+.hecho-botones { margin-top: .5em; display: flex; gap: .4em; }
+@keyframes hechoEntra { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modo-decorar { position: fixed; left: 50%; bottom: calc(var(--u) * 4); transform: translateX(-50%); z-index: 50; padding: .6em 1.1em; background: linear-gradient(180deg, #3b2b1a, #241a10); border: 2px solid #c8902a; border-radius: 4px; color: var(--crema); font: calc(var(--u) * .85) var(--t-rotulo); text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,.6); }
+.teclas-decorar { margin-top: .4em; opacity: .85; font-size: .9em; } .teclas-decorar kbd { margin: 0 .2em 0 .7em; }
+.visor-doc table { border-collapse: collapse; margin: 1em 0; } .visor-doc th, .visor-doc td { border: 1px solid #c9b48a; padding: .35em .7em; text-align: left; } .visor-doc th { background: #eadcb8; }
