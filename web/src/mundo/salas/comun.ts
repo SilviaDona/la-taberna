@@ -238,7 +238,7 @@ export function materialYeso() {
     return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', roughness: 0.95, metalness: 0 });
   });
 }
-export function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number, giro: number, ventana?: { x: number; y: number; w: number; h: number }) {
+export function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number, giro: number, ventana?: { x: number; y: number; w: number; h: number; puerta?: boolean }) {
   const largo = x1 - x0; const madera = materialAcero(ROBLE_OSCURO);
   const grupo = new THREE.Group(); grupo.rotation.y = giro; grupo.position.z = z; g.add(grupo);
   const forma = new THREE.Shape([new THREE.Vector2(x0, 0), new THREE.Vector2(x1, 0), new THREE.Vector2(x1, ALTO), new THREE.Vector2(x0, ALTO)]);
@@ -247,9 +247,16 @@ export function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number,
   const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 3, uv.getY(i) / 3);
   const yeso = new THREE.Mesh(geo, materialYeso()); yeso.receiveShadow = true; yeso.userData.pared = true; grupo.add(yeso);
   const viga = (w: number, h: number, x: number, y: number, rz = 0) => { const b = caja(w, h, 0.16, madera, x, y, 0.08); b.rotation.z = rz; b.userData.pared = true; grupo.add(b); };
-  viga(largo, 0.28, (x0 + x1) / 2, 0.14);              // durmiente
+  // una viga a lo largo, partida por el hueco si es una puerta (durmiente y peto no la cruzan)
+  const tramo = (h: number, y: number) => {
+    if (!ventana?.puerta || y > ventana.y + ventana.h / 2) { viga(largo, h, (x0 + x1) / 2, y); return; }
+    const a = ventana.x - ventana.w / 2 - 0.1, b = ventana.x + ventana.w / 2 + 0.1;
+    if (a > x0) viga(a - x0, h, (x0 + a) / 2, y);
+    if (x1 > b) viga(x1 - b, h, (b + x1) / 2, y);
+  };
+  tramo(0.28, 0.14);              // durmiente
   viga(largo, 0.24, (x0 + x1) / 2, ALTO - 0.5);         // carrera
-  viga(largo, 0.18, (x0 + x1) / 2, 1.25);               // peto
+  tramo(0.18, 1.25);              // peto
   const n = Math.max(2, Math.round(largo / 1.5)); const paso = largo / n;
   for (let i = 0; i <= n; i++) {
     const x = x0 + i * paso;
@@ -259,11 +266,11 @@ export function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number,
   // tornapuntas en cruz en los vanos de los extremos, sobre el peto
   const hT = ALTO - 0.5 - 1.25, diag = Math.hypot(paso, hT), ang = Math.atan2(hT, paso);
   for (const i of [0, n - 1]) { const cx = x0 + (i + 0.5) * paso, cy = 1.25 + hT / 2; viga(diag, 0.14, cx, cy, ang); viga(diag, 0.14, cx, cy, -ang); }
-  if (ventana) {   // marco de la ventana, con cruceta y alféizar
+  if (ventana) {   // marco de la ventana, con cruceta y alféizar (la puerta, solo el marco y el dintel)
     const { x, y, w, h } = ventana;
-    viga(w + 0.3, 0.2, x, y + h / 2 + 0.1); viga(w + 0.5, 0.16, x, y - h / 2 - 0.08);
+    viga(w + 0.3, 0.2, x, y + h / 2 + 0.1);
     viga(0.18, h, x - w / 2 - 0.09, y); viga(0.18, h, x + w / 2 + 0.09, y);
-    viga(0.08, h, x, y); viga(w, 0.08, x, y);
+    if (!ventana.puerta) { viga(w + 0.5, 0.16, x, y - h / 2 - 0.08); viga(0.08, h, x, y); viga(w, 0.08, x, y); }
   }
   return grupo;
 }
