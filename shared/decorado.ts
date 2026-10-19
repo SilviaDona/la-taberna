@@ -40,6 +40,7 @@ export const PACKS: Record<string, { carpeta: string; ext: string; que: string }
   recurso: { carpeta: 'kaykit-extra/resource-bits-1.0/Assets/gltf', ext: '.gltf', que: 'recursos: cajas y contenedores, lingotes y pepitas, barriles de combustible, comida en cestas y cajones, madera, piedra' },
   cocina: { carpeta: 'kaykit-extra/restaurant-bits-1.0/Assets/gltf', ext: '.gltf', que: 'restaurante: menaje, comida, cafetera, hornos, fogones, mesas y sillas, vitrinas' },
   base: { carpeta: 'kaykit-extra/space-base-bits-1.0/Assets/gltf', ext: '.gltf', que: 'base espacial: módulos, cúpula, carga y contenedores, taladro, naves de aterrizaje, camiones, paneles solares, granja espacial, rocas' },
+  dun: { carpeta: 'kaykit-extra/dungeon-remastered-1.1/Assets/gltf', ext: '.gltf', que: 'taberna y mazmorra: barras de bar, barriles y toneles, velas, antorchas, estandartes, mesas, bancos, taburetes, estanterías, cofres, escaleras de madera, vigas, muros de piedra con ventanas' },
   acc: { carpeta: 'kaykit/adventurers-2.0/Assets/gltf', ext: '.gltf', que: 'aventureros: armas, escudos, pociones, libros de hechizos, bastones, jarras, cajas de munición' },
 };
 export const PACKS_ATREZO = Object.keys(PACKS);

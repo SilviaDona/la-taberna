@@ -41,6 +41,8 @@ export const R = {
   cocina: (n: string) => `kaykit-extra/restaurant-bits-1.0/Assets/gltf/${n}.gltf`,
   base: (n: string) => `kaykit-extra/space-base-bits-1.0/Assets/gltf/${n}.gltf`,
   acc: (n: string) => `kaykit/adventurers-2.0/Assets/gltf/${n}.gltf`,
+  // La Taberna: KayKit Dungeon Remastered (muros, barras de bar, barriles, velas, antorchas, escaleras de madera, estandartes)
+  dun: (n: string) => `kaykit-extra/dungeon-remastered-1.1/Assets/gltf/${n}.gltf`,
 };
 
 const matCache = new Map<string, THREE.Material>();

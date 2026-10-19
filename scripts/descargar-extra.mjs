@@ -2,6 +2,9 @@
 // Complementa a scripts/descargar-assets.mjs. Idempotente. Uso: node scripts/descargar-extra.mjs [destino=assets]
 import { mkdirSync, existsSync, statSync, writeFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 const destino = process.argv[2] || 'assets';
 const FUENTES = [
@@ -9,7 +12,7 @@ const FUENTES = [
     carpetas: ['assets/kaykit/rpg-tools-bits-1.0/Assets/gltf/', 'assets/kaykit/furniture-bits-1.0/Assets/gltf/', 'assets/kaykit/resource-bits-1.0/Assets/gltf/', 'assets/kaykit/restaurant-bits-1.0/Assets/gltf/'],
     sueltos: ['LICENSES/', 'assets/kaykit/rpg-tools-bits-1.0/Textures/', 'assets/kaykit/furniture-bits-1.0/textures/', 'assets/kaykit/resource-bits-1.0/Textures/', 'assets/kaykit/restaurant-bits-1.0/textures/'] },
   { repo: 'GeorgeQLe/assets-kaykit-3d-environments', commit: 'd5e6c73284e9385a389ac7181dec3d0dc9e9021d', local: 'kaykit-extra',
-    carpetas: ['assets/kaykit/space-base-bits-1.0/Assets/gltf/', 'assets/kaykit/forest-nature-pack-1.0/Assets/gltf/Color1/'],
+    carpetas: ['assets/kaykit/space-base-bits-1.0/Assets/gltf/', 'assets/kaykit/forest-nature-pack-1.0/Assets/gltf/Color1/', 'assets/kaykit/dungeon-remastered-1.1/Assets/gltf/'],
     sueltos: ['LICENSES/'] },
   { repo: 'trebeljahr/quaternius-showcase', commit: 'e90ffea347393537703ae6f9d73e36492820f5a9', local: 'quaternius',
     carpetas: ['public/glb/crops_pack/', 'public/glb/simple_nature_pack/'], filtro: { 'public/glb/nature_pack/': /^(Rock|Rock_Moss)_\d\.glb$/ }, aplanar: true },
@@ -20,7 +23,20 @@ const FUENTES = [
 ];
 
 // GITHUB_TOKEN (opcional, p. ej. en el CI): sin él, la API de GitHub limita las peticiones por IP
+// sin la API (límite por IP: 403), con git: solo el árbol de ese commit, sin bajar contenidos
+function arbolConGit(repo, commit) {
+  const dir = mkdtempSync(join(tmpdir(), 'shelter-arbol-'));
+  try {
+    const git = (...a) => execFileSync('git', ['-C', dir, ...a], { encoding: 'utf8', maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'ignore'] });
+    git('init', '-q'); git('fetch', '-q', '--depth=1', '--filter=blob:none', `https://github.com/${repo}.git`, commit);
+    return git('ls-tree', '-r', '--name-only', 'FETCH_HEAD').split('\n').filter(Boolean).map(path => ({ path, type: 'blob' }));
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+}
 async function arbol(repo, commit) {
+  try { return await arbolApi(repo, commit); }
+  catch (e) { console.log(`${e.message}: listo el árbol con git`); return arbolConGit(repo, commit); }
+}
+async function arbolApi(repo, commit) {
   const r = await fetch(`https://api.github.com/repos/${repo}/git/trees/${commit}?recursive=1`, { headers: { 'User-Agent': 'work-shelter', ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) } });
   if (!r.ok) throw new Error(`GitHub ${r.status} al listar ${repo}`);
   return (await r.json()).tree.filter(e => e.type === 'blob');
