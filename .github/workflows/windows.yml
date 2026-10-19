@@ -1,0 +1,78 @@
+# Comprueba que el juego se instala, compila y pasa las pruebas en Windows, sin un PC con Windows a mano.
+# También arranca el servidor de verdad con shelter.ps1 (sin ventana) y espera a que conteste en 127.0.0.1.
+name: Windows
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Sintaxis de los guiones de PowerShell
+        shell: pwsh
+        run: |
+          $mal = $false
+          foreach ($f in 'shelter.ps1', 'instalar.ps1') {
+            $errores = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f), [ref]$null, [ref]$errores)
+            if ($errores) { $errores | ForEach-Object { Write-Host "${f}: $_" }; $mal = $true }
+          }
+          if ($mal) { exit 1 }
+
+      - name: Dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Tipos
+        run: npx tsc --noEmit -p .
+
+      - name: Pruebas
+        run: npm test
+
+      - name: Material CC0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/descargar-assets.mjs assets
+          node scripts/descargar-extra.mjs assets
+          node scripts/indexar-assets.mjs
+
+      - name: Compilar la interfaz
+        run: node scripts/huellas.cjs compilar
+
+      - name: Arranque con shelter.ps1 (sin ventana)
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $env:SHELTER_SIN_VENTANA = '1'
+          $env:SHELTER_DATOS = Join-Path $env:RUNNER_TEMP 'datos-shelter'
+          $env:SHELTER_PUERTO = '3799'
+          $p = Start-Process powershell.exe -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'shelter.ps1' -PassThru -NoNewWindow
+          $ok = $false
+          for ($i = 0; $i -lt 360 -and -not $p.HasExited; $i++) {
+            try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:3799/salud' | Out-Null; $ok = $true; break } catch { Start-Sleep 1 }
+          }
+          if ($ok) {
+            # solo escucha en 127.0.0.1 y la página lleva el secreto del arranque
+            if (-not (Test-Path (Join-Path $env:SHELTER_DATOS 'token'))) { Write-Host 'No se ha escrito el secreto del arranque.'; $ok = $false }
+            $escucha = Get-NetTCPConnection -LocalPort 3799 -State Listen -ErrorAction SilentlyContinue
+            $escucha | Format-Table LocalAddress, LocalPort
+            if ($escucha | Where-Object { $_.LocalAddress -notin '127.0.0.1' }) { Write-Host 'El servidor escucha fuera de 127.0.0.1.'; $ok = $false }
+          }
+          & taskkill.exe /T /F /PID $p.Id | Out-Null
+          if (-not $ok) { Write-Host 'El servidor no ha arrancado en Windows.'; exit 1 }
+          Write-Host 'El servidor arranca y contesta en 127.0.0.1:3799.'

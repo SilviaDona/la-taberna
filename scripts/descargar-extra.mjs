@@ -19,8 +19,9 @@ const FUENTES = [
     patron: /^assets\/kaykit\/[^/]+\/(?:[^/]+\/)?(?:characters?|Characters)\/(?:gltf\/)?[^/]+\.glb$/ },
 ];
 
+// GITHUB_TOKEN (opcional, p. ej. en el CI): sin él, la API de GitHub limita las peticiones por IP
 async function arbol(repo, commit) {
-  const r = await fetch(`https://api.github.com/repos/${repo}/git/trees/${commit}?recursive=1`, { headers: { 'User-Agent': 'work-shelter' } });
+  const r = await fetch(`https://api.github.com/repos/${repo}/git/trees/${commit}?recursive=1`, { headers: { 'User-Agent': 'work-shelter', ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) } });
   if (!r.ok) throw new Error(`GitHub ${r.status} al listar ${repo}`);
   return (await r.json()).tree.filter(e => e.type === 'blob');
 }
