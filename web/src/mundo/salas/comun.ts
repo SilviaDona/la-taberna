@@ -226,7 +226,7 @@ export async function paredes(g: THREE.Group, ancho: number, v: Variante, panele
 // (durmiente, carrera, pies derechos cada metro y medio y tornapuntas en cruz), y en el centro una ventana con
 // marco de madera que deja ver el cielo de fuera a la hora real. Los laterales, igual, sin ventana.
 const ROBLE_OSCURO = '#3a2414';
-function materialYeso() {
+export function materialYeso() {
   return mat('yeso', () => {
     const { c, g } = lienzo(512, 512);
     g.fillStyle = '#e8d7b4'; g.fillRect(0, 0, 512, 512);
@@ -238,7 +238,7 @@ function materialYeso() {
     return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', roughness: 0.95, metalness: 0 });
   });
 }
-function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number, giro: number, ventana?: { x: number; y: number; w: number; h: number }) {
+export function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number, giro: number, ventana?: { x: number; y: number; w: number; h: number }) {
   const largo = x1 - x0; const madera = materialAcero(ROBLE_OSCURO);
   const grupo = new THREE.Group(); grupo.rotation.y = giro; grupo.position.z = z; g.add(grupo);
   const forma = new THREE.Shape([new THREE.Vector2(x0, 0), new THREE.Vector2(x1, 0), new THREE.Vector2(x1, ALTO), new THREE.Vector2(x0, ALTO)]);
