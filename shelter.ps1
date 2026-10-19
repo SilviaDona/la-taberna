@@ -13,7 +13,7 @@ $NODO_VERSION = '22.20.0'
 # sumas SHA-256 oficiales (https://nodejs.org/dist/v22.20.0/SHASUMS256.txt): no se ejecuta nada que no cuadre
 $SUMAS = @{ 'x64' = 'bb819d6eb8f5bfda294bbc83a7e4ec6539da67c4233d54b0d655b9248b15e29d'; 'arm64' = 'b12919e609b4fa1176ba8a155b49f761419a0c7cc97b42e6be09874a3f760ab6' }
 $OCULTO = [bool]$env:SHELTER_OCULTO   # abierto desde el acceso directo, sin consola a la vista
-$LOGS = Join-Path $env:LOCALAPPDATA 'work-shelter-public\Logs'
+$LOGS = Join-Path $RAIZ 'Logs'   # junto al código, esté donde esté (SHELTER_CODIGO)
 
 # huella de un archivo con .NET (Get-FileHash no existe en Windows PowerShell lanzado desde PowerShell 7: el PSModulePath
 # de la 7 le esconde su módulo)

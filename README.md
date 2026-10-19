@@ -188,7 +188,7 @@ accesos directos).
 | Salir a la superficie en iTerm o Terminal | Windows Terminal (o PowerShell si no lo tienes) |
 | Llavero de macOS | Administrador de credenciales de Windows |
 | Datos en `~/Library/Application Support/work-shelter-public` | `%APPDATA%\work-shelter-public` |
-| Registro en `~/Library/Logs/work-shelter-public` | `%LOCALAPPDATA%\work-shelter-public\Logs` |
+| Registro en `~/Library/Logs/work-shelter-public` | `Logs` dentro de la carpeta del juego (por defecto `%LOCALAPPDATA%\work-shelter-public\Logs`) |
 | Dictado (🎙/⌘D) en el propio Mac | **Desactivado**: usa Win+H, el dictado de Windows |
 | Spotify en la Discoteca | Necesita Google Chrome instalado; si no suena, no está soportado aún |
 
@@ -199,8 +199,8 @@ habitantes usan tu Claude Code. En Windows, el anfitrión de terminales usa una 
 
 - **«No se puede cargar el archivo … porque la ejecución de scripts está deshabilitada».** Usa la línea del paso 3
   tal cual (no cambia nada del sistema) o abre el juego con `shelter.cmd`.
-- **No pasa nada al hacer doble clic.** Mira el registro: pega `%LOCALAPPDATA%\work-shelter-public\Logs` en el
-  Explorador y abre `shelter.log`. También puedes abrir PowerShell, ir a la carpeta del juego
+- **No pasa nada al hacer doble clic.** Mira el registro: pega `%LOCALAPPDATA%\work-shelter-public\Logs` (o la
+  carpeta `Logs` dentro de donde instalaste el juego) en el Explorador y abre `shelter.log`. También puedes abrir PowerShell, ir a la carpeta del juego
   (`cd $env:LOCALAPPDATA\work-shelter-public`) y ejecutar `.\shelter.cmd` para ver los mensajes.
 - **«No encuentro Claude Code».** Instálalo (paso 1), cierra y vuelve a abrir el juego.
 - **«Falta git» y winget no lo instala.** Instálalo desde https://git-scm.com/download/win y repite el paso 3.

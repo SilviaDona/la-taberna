@@ -9,6 +9,7 @@ dist/
 
 # Estado local del refugio y datos de usuario
 /.data/
+/Logs/
 .env
 .env.*
 *.pem
