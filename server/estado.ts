@@ -144,7 +144,7 @@ export class Almacen {
 }
 
 // los nombres de serie que tuvieron las salas de los pasos (la Cocina fue la Forja; el Comedor, el Salón)
-const NOMBRES_PASO_ANTIGUOS = ['Forja', 'La Forja', 'Salón de los Peregrinos', 'Salón'];
+const NOMBRES_PASO_ANTIGUOS = ['Forja', 'La Forja', 'Salón de los Peregrinos', 'Salón de los Parroquianos', 'Salón'];
 
 // El estado guardado se valida campo a campo: lo que no cuadra se descarta o vuelve a su valor inicial.
 // Si falta lo imprescindible (salas), se lanza y el almacén aparta la copia y arranca de cero.

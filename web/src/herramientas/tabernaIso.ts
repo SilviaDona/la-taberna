@@ -9,7 +9,7 @@ import { colocar, R, type Colocacion } from '../motor/assets';
 import { muroEntramado, materialYeso, materialAcero, caja } from '../mundo/salas/comun';
 import { Personaje } from '../mundo/personaje';
 import { PASOS } from '@shared/pasos';
-import { aspectoDe } from '@shared/aspecto';
+import { aspectoDe, firmaAspecto, type Aspecto } from '@shared/aspecto';
 import { PACKS } from '@shared/decorado';
 import { mercancia, type Adorno } from '@shared/mercader';
 import type { PasoId } from '@shared/pasos';
@@ -686,7 +686,7 @@ const etiquetas = EN_JUEGO ? new CapaEtiquetas() : (null as unknown as CapaEtiqu
 let ultimaPublicacion = 0;
 function alFotograma(t: number) {
   if (t - ultimaPublicacion > 0.5) { ultimaPublicacion = t; publicar(); if (elegido) pintarFichaSiCambia(); }
-  fichaNpc.style.visibility = juego.get().hablandoCon ? 'hidden' : '';
+  fichaNpc.style.visibility = juego.get().hablandoCon || juego.get().panel ? 'hidden' : '';
   if (juego.get().hablandoCon) return;
   if (etiquetas.raiz.style.display === 'none') etiquetas.raiz.style.display = '';
   const items = npcs.filter(n => n.paso).map(n => {
@@ -722,8 +722,22 @@ function ponerAdornos() {
     }
   }
 }
+// el aspecto de la Tabernera y el de cada aventurero salen de Chapa y Pintura (P): se cambia en caliente
+const aspectoPuesto = new Map<Personaje, string>();
+function vestir(p: Personaje, a: Aspecto) { const f = firmaAspecto(a); if (aspectoPuesto.get(p) === f) return; aspectoPuesto.set(p, f); p.cambiarAspecto(a).then(() => { motor.renderer.shadowMap.needsUpdate = true; }).catch(() => {}); }
+function ponerAspectos() {
+  const e: any = vivo.get().estado; if (!e) return;
+  if (jugador) vestir(jugador, aspectoDe({ tipo: e.supervisor?.personaje ?? 'Protagonist_B', aspecto: e.supervisor?.aspecto }));
+  for (const n of npcs) { const h: any = habitanteDe(n); if (h?.aspecto) vestir(n.p, aspectoDe(h)); }
+}
 function conectar() {
-  publicar(); ponerAdornos(); vivo.suscribir(() => ponerAdornos());
+  publicar(); ponerAdornos(); ponerAspectos(); vivo.suscribir(() => { ponerAdornos(); ponerAspectos(); });
+  // el probador enseña lo que se está eligiendo sobre el propio personaje, sin guardar
+  addEventListener('refugio:probar', (ev: any) => {
+    const { quien, aspecto } = ev.detail ?? {}; if (!aspecto) return;
+    const p = quien === 'supervisor' ? jugador : npcs.find(n => habitanteDe(n)?.id === quien)?.p;
+    if (p) { aspectoPuesto.delete(p); p.cambiarAspecto(aspecto).catch(() => {}); }
+  });
   addEventListener('refugio:fin-dialogo', () => { retrato?.destruir(); retrato = null; (window as any).__retrato = undefined; });
   // viaje rápido (plano, tablón, buscador): a la sala y, con `hablar`, la conversación con su aventurero
   addEventListener('refugio:ir', (ev: any) => {
