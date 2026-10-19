@@ -48,7 +48,7 @@ varying vec3 vPosW; varying vec3 vNorW; varying vec2 vUvH;
 float azar(float x) { return fract(sin(x) * 43758.5453); }
 void main() {
   if (vPosW.y > uCorte) discard;
-  // la textura del habitante, en luminancia: se le reconoce la cara y la ropa
+  // la textura del aventurero, en luminancia: se le reconoce la cara y la ropa
   float lum = uConMapa > 0.5 ? dot(texture2D(uMapa, vUvH).rgb, vec3(0.299, 0.587, 0.114)) : 0.5;
   vec3 v = normalize(cameraPosition - vPosW);
   float fres = pow(1.0 - abs(dot(normalize(vNorW), v)), 2.0);
@@ -426,8 +426,8 @@ export class Hologramas {
       const autor = this.r.habitantes.find(h => h.id.id === f.autorId), a = autor?.id;
       const nombre = a?.nombre ?? 'Copia';
       return {
-        id: idCopia(f.ruta), nombre: `${nombre} ◇ ${rotuloRama(f.w.rama)}`, mote: 'copia holográfica', tipo: a?.tipo ?? '',
-        bio: `Copia holográfica de ${nombre} «${a?.mote ?? ''}». Trabaja en el worktree ${f.w.rama || f.ruta}, sin tocar la copia principal del repo.`,
+        id: idCopia(f.ruta), nombre: `${nombre} ◇ ${rotuloRama(f.w.rama)}`, mote: 'espectro', tipo: a?.tipo ?? '',
+        bio: `Espectro de ${nombre} «${a?.mote ?? ''}». Trabaja en el worktree ${f.w.rama || f.ruta}, sin tocar la copia principal del repo.`,
         sala: f.sala.id, salaNombre: f.sala.nombre, ruta: f.ruta, carpeta: f.ruta, estado: f.listo ? f.estado : 'ocioso', detalle: f.detalle, sesionId: f.sesionId,
         robot: autor?.p.aspecto?.especie === 'robot',
         copia: { ruta: f.ruta, rama: f.w.rama, autorId: f.autorId, autorNombre: nombre, autorMote: a?.mote ?? '', cambios: f.w.cambios, adelantados: f.w.adelantados },

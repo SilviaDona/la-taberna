@@ -91,7 +91,7 @@ class Google extends ConectorBase {
           await this.token({ grant_type: 'authorization_code', code: codigo, redirect_uri: redireccion, code_verifier: verificador });
           this.correo = null; const correo = await this.quienSoy();
           this.bien(`Conectado como ${correo}.`); this.avisar?.('activar');
-          return { ok: true, titulo: 'Conectado', texto: 'Listo: el refugio ya ve tu correo sin leer y tu calendario. Puedes volver a work-shelter.' };
+          return { ok: true, titulo: 'Conectado', texto: 'Listo: la taberna ya ve tu correo sin leer y tu calendario. Puedes volver a La Taberna.' };
         } catch (e) { this.mal((e as Error).message); this.avisar?.('estado'); return { ok: false, titulo: 'No se pudo conectar con Google', texto: (e as Error).message }; }
       },
     });

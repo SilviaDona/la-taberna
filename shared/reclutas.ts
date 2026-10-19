@@ -8,7 +8,7 @@ const MOTES = ['Destornillador', 'La Brújula', 'Cortocircuito', 'Tuerca Loca', 
 // Supervisor por defecto y un recluta con su cara se confundiría con el jugador. 4GTN es un androide de aspecto humano.
 export const ASPECTOS = ['Engineer', 'Survivalist', 'Hoarder', 'Hiker', 'Protagonist_A', 'Driver', 'SpaceRanger', '4GTN'];
 export const ROBOTS = ['Robot_One', 'Robot_Two', 'Clanker', '4GTN'];
-const ORIGEN = ['Llegó del yermo con una mochila llena de cables', 'Vivía en un refugio vecino que se quedó sin agua', 'Apareció en la escotilla con un portátil sin batería', 'Dice que trabajó en una fábrica de terminales antes del gran apagón', 'Cruzó tres tormentas de polvo siguiendo la señal de la radio'];
+const ORIGEN = ['Llegó del yermo con una mochila llena de cables', 'Vivía en una taberna vecina que se quedó sin agua', 'Apareció en la escotilla con un portátil sin batería', 'Dice que trabajó en una fábrica de terminales antes del gran apagón', 'Cruzó tres tormentas de polvo siguiendo la señal de la radio'];
 const MANIA = ['No soporta un test en rojo', 'Lee el README entero antes de tocar nada', 'Nombra las ramas como canciones', 'Guarda cada log como si fuera un tesoro', 'Prefiere borrar código a escribirlo', 'Tararea mientras compila', 'Desconfía de las dependencias nuevas', 'Deja la consola más limpia de lo que la encontró'];
 
 function azar(semilla: number) { let s = semilla >>> 0 || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 100000) / 100000; }; }

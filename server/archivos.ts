@@ -241,7 +241,7 @@ const ESCRIBEN = new Set(['guardar', 'crear', 'renombrar', 'pegar', 'papelera'])
 
 export async function accionArchivos(nombre: string, d: Record<string, any>, ctx: CtxArchivos): Promise<unknown> {
   const permitidas = ctx.raicesPermitidas();
-  const raizDe = (r: string) => { const p = path.resolve(r || '/'); if (!permitidas.includes(p)) throw new Error('Esa carpeta no es de ninguna sala del refugio.'); if (!existsSync(p)) throw new Error('La carpeta de la sala ya no está.'); return p; };
+  const raizDe = (r: string) => { const p = path.resolve(r || '/'); if (!permitidas.includes(p)) throw new Error('Esa carpeta no es de ninguna sala de la taberna.'); if (!existsSync(p)) throw new Error('La carpeta de la sala ya no está.'); return p; };
   const raiz = raizDe(String(d.raiz ?? ''));
   const r = await (async () => {
     switch (nombre) {

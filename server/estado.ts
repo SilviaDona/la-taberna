@@ -3,7 +3,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { SALAS_INICIALES, HABITANTES_INICIALES } from '../shared/refugioInicial.ts';
+import { SALAS_INICIALES, HABITANTES_INICIALES, NOMBRES_ANTIGUOS } from '../shared/refugioInicial.ts';
 import { NOMBRE_JUEGO } from '../shared/protocolo.ts';
 import { tonosParaRepetidos } from '../shared/reclutas.ts';
 import { distribuir, esSalaDeRepo } from '../shared/disposicion.ts';
@@ -128,7 +128,8 @@ export function sanear(e: any): EstadoRefugio {
   const str = (v: unknown, def: string) => (typeof v === 'string' ? v : def);
   // el sitio de cada sala no se guarda a mano: se recalcula (así un refugio de antes se recoloca al cargar)
   const leidas = (arr(e.salas) ?? []).filter((x: any) => x && typeof x.id === 'string' && typeof x.tipo === 'string' && Number.isInteger(x.planta) && x.planta >= 0 && (x.lado === 'izq' || x.lado === 'der') && Number.isInteger(x.orden) && x.orden >= 0)
-    .map((x: any) => ({ id: x.id, tipo: x.tipo, nombre: str(x.nombre, x.id), ruta: typeof x.ruta === 'string' ? x.ruta : undefined, planta: x.planta, lado: x.lado, orden: x.orden, variante: str(x.variante, 'neutro'), estilo: typeof x.estilo === 'string' ? x.estilo : undefined,
+    // La Taberna: las salas especiales con su nombre de refugio pasan a su nombre de taberna (las que renombraste, no)
+    .map((x: any) => ({ id: x.id, tipo: x.tipo, nombre: !esSalaDeRepo(x.tipo) && NOMBRES_ANTIGUOS[x.nombre] ? NOMBRES_ANTIGUOS[x.nombre] : str(x.nombre, x.id), ruta: typeof x.ruta === 'string' ? x.ruta : undefined, planta: x.planta, lado: x.lado, orden: x.orden, variante: str(x.variante, 'neutro'), estilo: typeof x.estilo === 'string' ? x.estilo : undefined,
       ...(esSalaDeRepo(x.tipo) && x.decorado ? { decorado: sanearDecorado(x.decorado).decorado ?? undefined } : {}) }) as SalaGuardada);
   if (!leidas.length) throw new Error('sin salas');
   const salas = distribuir(leidas);

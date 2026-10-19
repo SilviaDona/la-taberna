@@ -18,7 +18,7 @@ const DIRECTAS: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/j
 const CONVERTIBLES = new Set(['.heic', '.heif', '.tif', '.tiff', '.bmp']);
 export const esImagen = (ruta: string) => { const e = path.extname(ruta).toLowerCase(); return e in DIRECTAS || CONVERTIBLES.has(e); };
 
-export const CABECERA = '[Adjuntos del Supervisor]';
+export const CABECERA = '[Adjuntos de la Tabernera]';
 
 export class Adjuntos {
   readonly dir: string;

@@ -14,7 +14,7 @@ export function pkce() { const verificador = b64url(randomBytes(48)); return { v
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 export function pagina(res: http.ServerResponse, ok: boolean, servicio: string, titulo: string, texto: string) {
   res.writeHead(ok ? 200 : 400, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'close', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
-  res.end(`<!doctype html><html lang="es"><meta charset="utf-8"><title>work-shelter · ${esc(servicio)}</title><body style="font:16px system-ui;background:#1d1a15;color:#eadfc8;display:grid;place-items:center;height:100vh;margin:0"><main style="max-width:34em;padding:2em;border:2px solid #6b5a3a;border-radius:8px;background:#2a251d"><h1 style="font-size:1.3em;color:${ok ? '#9fd38a' : '#f0a868'}">${esc(titulo)}</h1><p>${esc(texto)}</p></main></body></html>`);
+  res.end(`<!doctype html><html lang="es"><meta charset="utf-8"><title>La Taberna · ${esc(servicio)}</title><body style="font:16px system-ui;background:#1d1a15;color:#eadfc8;display:grid;place-items:center;height:100vh;margin:0"><main style="max-width:34em;padding:2em;border:2px solid #6b5a3a;border-radius:8px;background:#2a251d"><h1 style="font-size:1.3em;color:${ok ? '#9fd38a' : '#f0a868'}">${esc(titulo)}</h1><p>${esc(texto)}</p></main></body></html>`);
 }
 
 export interface Retorno {
@@ -48,7 +48,7 @@ export async function escucharRetorno(op: OpcionesRetorno): Promise<Retorno> {
   const manejar = (req: http.IncomingMessage, res: http.ServerResponse) => {
     const u = new URL(req.url || '/', 'http://localhost');
     if (u.pathname !== ruta || (!u.searchParams.has('code') && !u.searchParams.has('error'))) { res.writeHead(404); res.end(); return; }
-    if (u.searchParams.get('state') !== estado) return pagina(res, false, op.servicio, 'Enlace caducado', `Este inicio de sesión no lo empezó work-shelter o ha caducado. Vuelve a la cámara acorazada y pulsa «Conectar con ${op.servicio}» otra vez.`);
+    if (u.searchParams.get('state') !== estado) return pagina(res, false, op.servicio, 'Enlace caducado', `Este inicio de sesión no lo empezó La Taberna o ha caducado. Vuelve a la cámara acorazada y pulsa «Conectar con ${op.servicio}» otra vez.`);
     parar();
     const error = u.searchParams.get('error') ? Object.fromEntries(u.searchParams) : undefined;
     op.alVolver({ codigo: u.searchParams.get('code') ?? undefined, error, redireccion, verificador })

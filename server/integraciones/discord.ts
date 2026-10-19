@@ -17,7 +17,7 @@ export function usarGatewayDePrueba(url: string) { GATEWAY = url; }
 const UA = 'DiscordBot (https://example.com/work-shelter, 0.1)';
 
 export const CAMPOS_DISCORD: Campo[] = [
-  { nombre: 'token', etiqueta: 'Token del bot', secreto: true, ayuda: 'discord.com/developers/applications → tu app «work-shelter» → Bot → Reset Token → Copy. Es el token de un BOT: nunca pegues el de tu cuenta personal (está prohibido y no funcionaría). Activa también «Message Content Intent» en esa misma página.' },
+  { nombre: 'token', etiqueta: 'Token del bot', secreto: true, ayuda: 'discord.com/developers/applications → tu app «La Taberna» → Bot → Reset Token → Copy. Es el token de un BOT: nunca pegues el de tu cuenta personal (está prohibido y no funcionaría). Activa también «Message Content Intent» en esa misma página.' },
   { nombre: 'canales', etiqueta: 'Canales a vigilar', opcional: true, ayuda: 'Se eligen en la cámara acorazada una vez conectado (IDs separados por comas). Vacío: todos los canales que ve el bot. Las menciones a ti o a tus roles llegan siempre, con prioridad alta.' },
   { nombre: 'usuario', etiqueta: 'Tu ID de usuario de Discord', opcional: true, ayuda: 'Solo si el bot pertenece a un equipo de desarrolladores (si no, se deduce del dueño de la app). Discord → Ajustes → Avanzado → Modo desarrollador; luego clic derecho en tu nombre → Copiar ID de usuario.' },
 ];

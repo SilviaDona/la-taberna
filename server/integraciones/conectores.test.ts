@@ -120,7 +120,7 @@ describe('Microsoft 365 (Outlook)', () => {
     expect(await o.accion!('conectar', { abrir: false })).toEqual({ url });   // una sola escucha a la vez
     expect(await navegar(`${q.get('redirect_uri')}/?code=x&state=inventado`)).toMatch(/caducado/);
     const html = await navegar(`${q.get('redirect_uri')}/?code=CODIGO&state=${q.get('state')}`);
-    expect(html).toMatch(/Puedes volver a work-shelter/);
+    expect(html).toMatch(/Puedes volver a La Taberna/);
     expect(redireccion).toBe(q.get('redirect_uri'));
     expect(createHash('sha256').update(verificador).digest('base64url')).toBe(q.get('code_challenge'));
     expect(llavero.datos.get('outlook.refreshToken')).toBe(fx('token_response.json').refresh_token);
@@ -183,7 +183,7 @@ describe('Google', () => {
     expect(url.startsWith('https://accounts.google.com/o/oauth2/v2/auth?')).toBe(true);
     expect(q.get('scope')).toBe('https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly');
     expect(q.get('access_type')).toBe('offline');
-    expect(await navegar(`${q.get('redirect_uri')}/?code=CODIGO&state=${q.get('state')}`)).toMatch(/Puedes volver a work-shelter/);
+    expect(await navegar(`${q.get('redirect_uri')}/?code=CODIGO&state=${q.get('state')}`)).toMatch(/Puedes volver a La Taberna/);
     expect(createHash('sha256').update(verificador).digest('base64url')).toBe(q.get('code_challenge'));
     expect(secreto).toBe('GOCSPX-FAKE');
     expect(llavero.datos.get('google.refreshToken')).toBe('1//REFRESH-FAKE');

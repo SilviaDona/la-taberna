@@ -23,6 +23,8 @@ export const Icono = {
   sobre: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 5h20v14H2zm2 2v.5l8 5 8-5V7zm16 2.9-8 5-8-5V17h16z"/></svg>,
   reloj: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 110 20 10 10 0 010-20zm0 2a8 8 0 100 16 8 8 0 000-16zm-1 3h2v5.6l3.7 2.2-1 1.7L11 13.7z"/></svg>,
   tuerca: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10l5 9-5 9H7l-5-9zm5 5.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z"/></svg>,
+  // La Taberna: moneda de oro con canto
+  moneda: <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 3a7 7 0 110 14 7 7 0 010-14zm-1 3v1.1c-1.4.3-2.3 1.2-2.3 2.4 0 1.5 1.3 2 2.8 2.4 1 .3 1.4.5 1.4 1s-.5.8-1.3.8c-.9 0-1.6-.4-1.9-1L8.2 15c.5.9 1.4 1.5 2.8 1.7V18h2v-1.3c1.4-.3 2.3-1.2 2.3-2.4 0-1.6-1.4-2.1-2.9-2.5-.9-.2-1.3-.4-1.3-.9 0-.4.4-.7 1.1-.7.7 0 1.3.3 1.6.8l1.5-.9c-.5-.8-1.3-1.3-2.3-1.5V8z"/></svg>,
   error: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 110 20 10 10 0 010-20zm-3.5 5L7 8.5 10.5 12 7 15.5 8.5 17 12 13.5 15.5 17 17 15.5 13.5 12 17 8.5 15.5 7 12 10.5z"/></svg>,
   reiniciar: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a8 8 0 017.4 5H22l-3.5 4.5L15 9h2.2A6 6 0 106 12H4a8 8 0 018-8zm0 16a8 8 0 01-7.4-5H2l3.5-4.5L9 15H6.8A6 6 0 1018 12h2a8 8 0 01-8 8z"/></svg>,
 };
@@ -65,7 +67,7 @@ export function Hud() {
         <span className="hh">{fmtHora.format(ahora)}</span>
         <span className="fecha">{fmtFecha.format(ahora)}</span>
       </div>
-      {!conectado && <div className="seg fosforo sin-enlace" title="Se ha perdido el enlace con el servidor del refugio; los datos de la regleta pueden estar viejos"><span className="piloto error" /> SIN ENLACE · reintentando</div>}
+      {!conectado && <div className="seg fosforo sin-enlace" title="Se ha perdido el enlace con el servidor de la taberna; los datos de la regleta pueden estar viejos"><span className="piloto error" /> SIN ENLACE · reintentando</div>}
       <div className={'seg fosforo contadores' + (conectado ? '' : ' viejos')}>
         <Contador icono={Icono.engranaje} n={trabajando} texto="trabajando" tecla="Tab" nivel={trabajando ? '' : 'apagado'} />
         <Contador icono={Icono.aviso} n={esperando} texto="te esperan" tecla="Q" nivel={esperando ? 'urgente' : 'apagado'} />
@@ -73,12 +75,12 @@ export function Hud() {
         <Contador icono={Icono.sobre} n={e.notificacionesSinVer} texto="sin ver" tecla="N" nivel={e.notificacionesSinVer ? '' : 'apagado'} />
         <Contador icono={Icono.reloj} n={e.proximoEvento ? minutosHasta(e.proximoEvento.inicio, ahora) : '—'} texto={e.proximoEvento ? e.proximoEvento.titulo : 'sin eventos'} tecla="C" nivel={e.proximoEvento ? '' : 'apagado'} />
       </div>
-      <div className="seg fosforo chatarra" title="Chatarra: se gana con cada tarea terminada">
-        <span className="icono">{Icono.tuerca}</span><span className="n">{e.chatarra.toLocaleString('es-ES')}</span>
+      <div className="seg fosforo chatarra" title="Oro: se gana con cada tarea terminada">
+        <span className="icono">{Icono.moneda}</span><span className="n">{e.chatarra.toLocaleString('es-ES')}</span>
       </div>
       {/* las dos puertas de todo lo demás, con su tecla a la vista: el buscador (⌘K) y el menú del juego (Esc) */}
       <div className="seg puertas">
-        <button className="boton-puerta" onClick={() => abrirBuscador()} title="Buscar conversaciones, acciones, habitantes y salas (desde cualquier sitio)">
+        <button className="boton-puerta" onClick={() => abrirBuscador()} title="Buscar conversaciones, acciones, aventureros y salas (desde cualquier sitio)">
           <span className="tecla">{MAC ? '⌘K' : 'Ctrl+K'}</span>buscar
         </button>
         <button className="boton-puerta" onClick={() => { if (juego.get().hablandoCon) minimizarIntercom(); juego.set({ panel: 'menu', panelDatos: null }); }} title="Menú del juego: opciones, atajos, reiniciar, salir a la superficie y salir">

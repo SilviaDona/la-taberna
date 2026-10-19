@@ -116,7 +116,7 @@ function manejar(m: any) {
 // ---------------------------------------------------------------- clientes de fuera (terminales del escritorio)
 function enganchar(s: net.Socket, m: any) {
   const x = typeof m.id === 'string' ? t.get(m.id) : undefined;
-  if (!x) { aFuera(s, { ev: 'error', texto: 'Esa terminal ya no existe en el refugio.' }); s.end(); return; }
+  if (!x) { aFuera(s, { ev: 'error', texto: 'Esa terminal ya no existe en la taberna.' }); s.end(); return; }
   x.fuera.add(s);
   if (reloj) { clearTimeout(reloj); reloj = null; }
   // lo que ya había en pantalla y los modos vigentes; el tamaño nuevo (o el empujón) hace que el programa se redibuje

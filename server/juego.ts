@@ -54,7 +54,7 @@ export function accionJuego(nombre: string, d: Record<string, any>, almacen: Alm
     case 'comprar': {
       const a = TIENDA.find(x => x.id === d.articulo); if (!a) throw new Error('Ese artículo no está en la tienda.');
       if (j.tienda.includes(a.id) || j.armas.includes(a.id)) throw new Error('Ya lo tienes.');
-      if (j.chatarra < a.precio) throw new Error(`Te faltan ${a.precio - j.chatarra} de chatarra.`);
+      if (j.chatarra < a.precio) throw new Error(`Te faltan ${a.precio - j.chatarra} de oro.`);
       almacen.cambiar(() => {
         j.chatarra -= a.precio;
         if (a.tipo === 'arma') { j.armas.push(a.id); j.arma = a.id; }
@@ -88,7 +88,7 @@ export function accionJuego(nombre: string, d: Record<string, any>, almacen: Alm
     }
     case 'cosechar': {
       const c = j.cultivos[Number(d.bancal)]; if (!c) throw new Error('Ese bancal no existe.');
-      if (c.fase < 4) throw new Error('Aún no está madura: crece con el trabajo de los habitantes.');
+      if (c.fase < 4) throw new Error('Aún no está madura: crece con el trabajo de los aventureros.');
       const especie = d.especie && j.especies.includes(d.especie) ? d.especie : c.especie;
       almacen.cambiar(() => {
         j.inventario['cosecha:' + c.especie] = (j.inventario['cosecha:' + c.especie] ?? 0) + 3;

@@ -41,7 +41,7 @@ export function describirHerramienta(nombre: string, e: Entrada, cwd: string): s
     case 'Glob': return `Buscando archivos ${recorta(s(e.pattern), 50)}`;
     case 'WebFetch': return `Consultando ${recorta(s(e.url), 60)}`;
     case 'WebSearch': return `Buscando en la red: ${recorta(s(e.query), 50)}`;
-    case 'Agent': case 'Task': return `Enviando un ayudante: ${recorta(s(e.description), 60)}`;
+    case 'Agent': case 'Task': return `Enviando un duende: ${recorta(s(e.description), 60)}`;
     case 'TodoWrite': return 'Actualizando la lista de tareas';
     case 'AskUserQuestion': return 'Tiene una pregunta para ti';
     case 'ExitPlanMode': return 'Presenta un plan';

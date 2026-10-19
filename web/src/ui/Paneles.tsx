@@ -140,7 +140,7 @@ function Plano() {
     </>;
   };
   return (
-    <Aparato rotulo="PLANO DEL REFUGIO · VIAJE RÁPIDO" ancho={84} alto clase="plano">
+    <Aparato rotulo="PLANO DE LA TABERNA · VIAJE RÁPIDO" ancho={84} alto clase="plano">
       <div className="plano-cuerpo">
         {foto ? <div className="plano-caja" ref={caja}>
           <div className="plano-foto" style={{ width: fw, height: fh }}>
@@ -189,20 +189,20 @@ function Plano() {
 // Ficha del plano: la sala que está bajo el ratón o elegida con las flechas. Más que el cartel: para qué sirve, cómo
 // llegar y lo que pasa ahora dentro (repo, avisos, próxima reunión, integraciones, habitantes)
 const INFO_SALA: Record<string, string> = {
-  puerta: 'La entrada del refugio, a pie de calle. El Guardián decide quién pasa: aquí se recluta y se excava una sala nueva para cada carpeta de la raíz de repos que aún no tiene la suya.',
-  camara: 'Guarda las conexiones con Microsoft 365, Google, Discord, Slack, GitHub y Linear (los secretos van al llavero de macOS, nunca al disco) y los ajustes del refugio: nombre, raíz de repos y límite de sesiones.',
-  puente: 'Desde aquí se gobierna el refugio: su habitante trabaja en el repo del propio juego. La maqueta holográfica enseña cada sala en vivo y desde el panel de la sala se aplican los cambios del juego.',
-  comunicaciones: 'Correo, chats y avisos de Outlook, Gmail, Discord, Slack, GitHub y Linear en un solo tablón, de solo lectura: lo que te menciona va primero y Enter abre el original (en su navegador del refugio si lo tiene; los números abren cada web sin pasar por un aviso). También está la radio.',
+  puerta: 'La entrada de la taberna, a pie de calle. El Guardián decide quién pasa: aquí se recluta y se excava una sala nueva para cada carpeta de la raíz de repos que aún no tiene la suya.',
+  camara: 'Guarda las conexiones con Microsoft 365, Google, Discord, Slack, GitHub y Linear (los secretos van al llavero de macOS, nunca al disco) y los ajustes de la taberna: nombre, raíz de repos y límite de sesiones.',
+  puente: 'Desde aquí se gobierna la taberna: su aventurero trabaja en el repo del propio juego. La maqueta holográfica enseña cada sala en vivo y desde el panel de la sala se aplican los cambios del juego.',
+  comunicaciones: 'Correo, chats y avisos de Outlook, Gmail, Discord, Slack, GitHub y Linear en un solo tablón, de solo lectura: lo que te menciona va primero y Enter abre el original (en su navegador de la taberna si lo tiene; los números abren cada web sin pasar por un aviso). También está la radio.',
   planificacion: 'Calendario unificado de Microsoft 365 y Google Calendar: la semana, la agenda de los próximos días y el enlace para unirse a cada reunión.',
-  git: 'Control de versiones: el cliente de git de todos los repos del refugio (preparar por archivos, bloques o líneas, commits, historial con su grafo, ramas y cajón), tu matriz de contribuciones de GitHub y tus pull requests. La Octocat vive aquí. G lo abre desde cualquier sitio.',
-  logistica: 'Tableros de Linear: tus incidencias y el ciclo del equipo. Su habitante usa el MCP oficial de Linear para crear, mover o comentar incidencias, siempre con tu permiso.',
-  hidroponia: 'Los cultivos del refugio, para cuidarlos entre tarea y tarea.',
+  git: 'Control de versiones: el cliente de git de todos los repos de la taberna (preparar por archivos, bloques o líneas, commits, historial con su grafo, ramas y cajón), tu matriz de contribuciones de GitHub y tus pull requests. La Octocat vive aquí. G lo abre desde cualquier sitio.',
+  logistica: 'Tableros de Linear: tus incidencias y el ciclo del equipo. Su aventurero usa el MCP oficial de Linear para crear, mover o comentar incidencias, siempre con tu permiso.',
+  hidroponia: 'Los cultivos de la taberna, para cuidarlos entre tarea y tarea.',
   galeria: 'Galería de tiro para despejarse un rato. Guarda los récords.',
   discoteca: 'La música para currar, en la planta de ocio. La cabina del DJ abre Spotify, que suena aquí dentro: elige lo que quieras y minimízalo; la pletina de abajo a la izquierda sigue con lo que suena y los mandos.',
-  chapa: 'Barbería y ropería del refugio. En el sillón de Fito se cambia el aspecto del Supervisor o de cualquier habitante: humano o robot, cara, pelo, barba, ropa, sombreros, gafas, mochilas y colores. P lo abre desde cualquier sitio. La Octocat es como es.',
+  chapa: 'Barbería y ropería de la taberna. En el sillón de Fito se cambia el aspecto de la Tabernera o de cualquier aventurero: humano o robot, cara, pelo, barba, ropa, sombreros, gafas, mochilas y colores. P lo abre desde cualquier sitio. La Octocat es como es.',
   coordinacion: 'Una carpeta con varios repos dentro: aquí se coordina el trabajo entre ellos.',
 };
-const INFO_REPO = 'Sala de un repositorio: sus habitantes trabajan aquí con Claude Code. Desde el panel de la sala se abre una terminal en la carpeta o se trabaja en una copia aparte (un worktree), que aparece en la sala como el holograma de quien la creó.';
+const INFO_REPO = 'Sala de un repositorio: sus aventureros trabajan aquí con Claude Code. Desde el panel de la sala se abre una terminal en la carpeta o se trabaja en una copia aparte (un worktree), que aparece en la sala como el espectro de quien la creó.';
 const TECLA_SALA: Record<string, string> = { comunicaciones: 'N', planificacion: 'C', logistica: 'L', chapa: 'P' };
 const ESTADO_INT: Record<string, string> = { demo: 'DEMO (datos simulados)', conectada: 'conectada', error: 'con error', 'sin-configurar': 'sin configurar' };
 const haceCuanto = (t: number) => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? `hace ${Math.max(1, m)} min` : m < 2880 ? `hace ${Math.round(m / 60)} h` : `hace ${Math.round(m / 1440)} días`; };
@@ -237,7 +237,7 @@ function FichaSala({ sala, habitantes }: { sala: any; habitantes: ResumenHabitan
     {desc && <div className="ficha-desc">{desc}</div>}
     <p className="ficha-info">{INFO_SALA[sala.tipo] ?? (esRepo ? INFO_REPO : '')}</p>
     {datos.length > 0 && <dl className="ficha-datos">{datos.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>}
-    <div className="ficha-seccion">Habitantes</div>
+    <div className="ficha-seccion">Aventureros</div>
     <ul className="plano-hab">{habitantes.map(h => <li key={h.id} className={h.estado}><b>{h.nombre}</b> <span className="tenue">{h.estado}</span> {h.detalle && <span className="det">{h.detalle}</span>}</li>)}{!habitantes.length && <li className="tenue">Nadie vive aquí.</li>}</ul>
   </>;
 }
@@ -257,40 +257,40 @@ function Ocupados() {
   const [i, setI] = useMenu(items.length, k => items[k].f(), e => (e.code === 'Tab' ? (cerrarPanel(), true) : undefined));
   return (
     <Aparato rotulo="QUÉ PASA AHORA" ancho={46} piloto={hs.some(h => h.estado === 'esperando') ? 'esperando' : hs.length ? 'trabajando' : 'ociosa'}>
-      {!hs.length && <p className="tenue">Nadie trabaja ahora mismo. El refugio descansa.</p>}
+      {!hs.length && <p className="tenue">Nadie trabaja ahora mismo. La taberna descansa.</p>}
       <Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} />
-      <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>ir (y hablar si te espera) <kbd>Q</kbd>en el refugio: ir al primero que te espera <kbd>Esc</kbd>cerrar</Teclas>
+      <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>ir (y hablar si te espera) <kbd>Q</kbd>en la taberna: ir al primero que te espera <kbd>Esc</kbd>cerrar</Teclas>
     </Aparato>
   );
 }
 
 // ---------------------------------------------------------------- ayuda: todos los controles
 const CONTROLES: [string, string][] = [
-  ['WASD / flechas', 'andar; mantenidas, corre (Shift: correr ya)'], ['W / S en el rellano', 'subir y bajar en ascensor'], ['E / Enter', 'hablar, usar, avanzar, elegir'],
-  ['clic', 'ir a un sitio; clic en un habitante: ir y hablar'], ['rueda / Z / − =', 'zoom, vista general y vista de sala'],
+  ['WASD / flechas', 'andar; mantenidas, corre (Shift: correr ya)'], ['W / S en el rellano', 'subir y bajar en montacargas'], ['E / Enter', 'hablar, usar, avanzar, elegir'],
+  ['clic', 'ir a un sitio; clic en un aventurero: ir y hablar'], ['rueda / Z / − =', 'zoom, vista general y vista de sala'],
   ['M', 'plano con viaje rápido y reorganización'], ['Tab', 'qué pasa ahora: ocupados, notificaciones y próximo evento'],
-  ['Q', 'ir directo al primer habitante que te espera'], ['T', 'terminal real de la sala (shell sobre PTY)'],
+  ['Q', 'ir directo al primer aventurero que te espera'], ['T', 'terminal real de la sala (shell sobre PTY)'],
   ['R', 'cuaderno: transcripción completa de una conversación'], ['I', 'inventario, guía de campo y tienda'],
-  ['N / C / L', 'ir a comunicaciones, planificación o logística'], ['G', 'cliente de git (en una sala de repo, con su repo)'], ['P', 'Chapa y Pintura: cambiar el aspecto (tuyo o de un habitante)'],
-  ['⌘K', 'buscador, desde cualquier sitio: conversaciones abiertas y recientes, acciones (con su tecla), habitantes y salas; escribe y Enter'],
-  ['Esc', 'cierra lo abierto; en el refugio, el menú del juego: opciones, atajos, reiniciar, salir a la superficie y salir'],
+  ['N / C / L', 'ir a comunicaciones, planificación o logística'], ['G', 'cliente de git (en una sala de repo, con su repo)'], ['P', 'Chapa y Pintura: cambiar el aspecto (tuyo o de un aventurero)'],
+  ['⌘K', 'buscador, desde cualquier sitio: conversaciones abiertas y recientes, acciones (con su tecla), aventureros y salas; escribe y Enter'],
+  ['Esc', 'cierra lo abierto; en la taberna, el menú del juego: opciones, atajos, reiniciar, salir a la superficie y salir'],
 ];
 const CONTROLES_DIALOGO: [string, string][] = [
   ['Enter', 'enviar (Shift+Enter: salto de línea)'], ['/', 'menú de comandos de Claude Code con autocompletado'],
   ['/btw pregunta', 'pregunta lateral sin interrumpir el trabajo'], ['Ctrl+↑↓, RePág/AvPág', 'desplazar la conversación mientras escribes'],
-  ['Ctrl+C', 'parar al habitante (también /stop)'], ['Esc', 'atrás; en la conversación borra lo escrito; arriba del todo, vuelves al refugio y el trabajo sigue'],
+  ['Ctrl+C', 'parar al aventurero (también /stop)'], ['Esc', 'atrás; en la conversación borra lo escrito; arriba del todo, vuelves a la taberna y el trabajo sigue'],
   ['← en los menús', 'atrás'], ['pegar, arrastrar · ⌘U · 📎', 'adjuntar capturas, imágenes o archivos (las imágenes las ve directamente)'],
   ['⌘D · 🎙', 'dictar: habla y pulsa Espacio (o ⌘D otra vez) para terminar; Enter termina y envía, Esc descarta. Lo transcribe macOS en tu Mac (idioma en Opciones)'],
   ['1 / 2 / 3 en permisos', 'permitir, permitir siempre en la sesión, denegar'],
   ['repo con configuración propia', 'si trae .claude/, .mcp.json o CLAUDE.md y no te fías aún de él, pregunta antes de empezar: 1 cargarla esta vez, 2 siempre para esa carpeta, 3 trabajar sin ella (sin sus hooks, MCP ni instrucciones)'],
 ];
 const CONTROLES_VENTANA: [string, string][] = [
-  ['⌘T', 'pestaña nueva: otro trabajo con el mismo habitante, u otro shell en la terminal'],
+  ['⌘T', 'pestaña nueva: otro trabajo con el mismo aventurero, u otro shell en la terminal'],
   ['⌘W / ⌘⇧W', 'cerrar la pestaña / la ventana; con algo en marcha, pregunta antes'], ['⌘1…⌘9, ⌃Tab', 'cambiar de pestaña'],
   ['⌘↓ · ⌘M · _', 'minimizar a la barra de abajo a la izquierda; todo sigue y al volver se ve igual'],
   ['⌘↑ · ▢', 'pantalla completa (⌘↓ la restaura; también doble clic en la cabecera)'],
-  ['⌘B (B en el refugio)', 'barra de ventanas con el teclado: ←→ elegir, ↑↓ fila, Intro abrir, X cerrar, M minimizar, Esc salir'],
-  ['⌘J (J en el refugio)', 'la música: sin Spotify, lo abre; con Spotify delante, lo minimiza; con la pletina, la despliega en mano: Espacio ⏯, ←→ ±10 s, ⇧←→ temas, ↑↓ volumen, Intro abre Spotify, Esc salir'],
+  ['⌘B (B en la taberna)', 'barra de ventanas con el teclado: ←→ elegir, ↑↓ fila, Intro abrir, X cerrar, M minimizar, Esc salir'],
+  ['⌘J (J en la taberna)', 'la música: sin Spotify, lo abre; con Spotify delante, lo minimiza; con la pletina, la despliega en mano: Espacio ⏯, ←→ ±10 s, ⇧←→ temas, ↑↓ volumen, Intro abre Spotify, Esc salir'],
   ['Esc y Ctrl+C en la terminal', 'van al programa, como en iTerm: paran a Claude Code o salen de él'],
   ['⌘⇧E · ↗', 'sacar la pestaña a una terminal de tu escritorio (ver «A la superficie»)'],
 ];
@@ -299,7 +299,7 @@ const CONTROLES_SUPERFICIE: [string, string][] = [
   ['⇧⌥⌘Esc', 'tecla de pánico, desde cualquier app: el juego desaparece (ventana, Dock y sonido) y todo lo abierto sale a una ventana de iTerm. Otra vez (o abrir la app): vuelve como estaba'],
   ['↗ · ⌘⇧E', 'saca solo la pestaña activa de un intercomunicador o de una terminal'],
   ['conversaciones', 'se cierran aquí y siguen fuera con claude --resume, en su carpeta y con sus permisos; si estaban trabajando, se interrumpen y fuera se les pide que sigan'],
-  ['volver a traerlas', '/exit en iTerm y «Retomar un trabajo anterior» en el habitante; mientras sigan abiertas fuera, el archivo las marca con ↗ y no se retoman aquí'],
+  ['volver a traerlas', '/exit en iTerm y «Retomar un trabajo anterior» en el aventurero; mientras sigan abiertas fuera, el archivo las marca con ↗ y no se retoman aquí'],
   ['terminales', 'son la misma (el mismo shell, con lo que tenga en marcha) aquí y fuera; mientras esté fuera manda su tamaño y sobrevive aunque cierres el juego'],
   ['si el juego se cae', 'a los 20 s sin ventana (sin pasar por «Salir»), todo sale solo a tu escritorio'],
   ['./shelter superficie', 'desde cualquier terminal: lo saca todo, también con el juego caído; con --lista solo enseña qué hay'],
@@ -315,11 +315,11 @@ const CONTROLES_GIT: [string, string][] = [
 function Ayuda() {
   useTeclas(e => { if (e.code === 'Escape' || e.code === 'F1' || e.code === 'Enter') volver(); });
   return (
-    <Aparato rotulo="MANUAL DEL SUPERVISOR" ancho={64} alto alCerrar={volver}>
+    <Aparato rotulo="MANUAL DE LA TABERNERA" ancho={64} alto alCerrar={volver}>
       <div className="lista-desplazable ayuda-columnas">
-        <section><h3>En el refugio</h3><dl className="tabla-teclas">{CONTROLES.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>
+        <section><h3>En la taberna</h3><dl className="tabla-teclas">{CONTROLES.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>
           <h3>A la superficie (fuera del juego)</h3><dl className="tabla-teclas">{CONTROLES_SUPERFICIE.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl></section>
-        <section><h3>Hablando con un habitante</h3><dl className="tabla-teclas">{CONTROLES_DIALOGO.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>
+        <section><h3>Hablando con un aventurero</h3><dl className="tabla-teclas">{CONTROLES_DIALOGO.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>
           <h3>Intercomunicadores y terminales</h3><dl className="tabla-teclas">{CONTROLES_VENTANA.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>
           <h3>Cliente de git</h3><dl className="tabla-teclas">{CONTROLES_GIT.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>
           <h3>Señales</h3>
@@ -328,7 +328,7 @@ function Ayuda() {
             <dt><span className="glifo-estado terminado" /> verde</dt><dd>terminó y no has leído la respuesta</dd>
             <dt><span className="glifo-estado error" /> rojo</dt><dd>avería: la sesión ha fallado</dd>
             <dt><span className="glifo-estado trabajando" /> fósforo</dt><dd>trabajando (las pantallas, el vapor y la luz de la sala lo cuentan)</dd>
-            <dt>robots pequeños</dt><dd>ayudantes (subagentes) en la sala cuyos archivos tocan</dd>
+            <dt>robots pequeños</dt><dd>duendes (subagentes) en la sala cuyos archivos tocan</dd>
             <dt>DEMO</dt><dd>esa integración muestra datos simulados; se configura en la cámara acorazada</dd>
             <dt>pletina</dt><dd>abajo a la izquierda con Spotify minimizado: lo que suena, mandos, progreso y volumen; el disco la pliega</dd>
           </dl></section>
@@ -344,7 +344,7 @@ function OpcionesJuego() {
   const [, refrescar] = useState(0);
   const au = sonido.ajustes;
   const pct = ['0 %', '10 %', '20 %', '30 %', '40 %', '50 %', '60 %', '70 %', '80 %', '90 %', '100 %'];
-  const vol = (k: string) => ({ etq: ({ maestro: 'Volumen general', ambiente: 'Ambiente', musica: 'Música de las salas', sfx: 'Efectos', ui: 'Interfaz', voces: 'Murmullo de habitantes', teclado: 'Tecleo (tu teclado)' } as any)[k], valores: pct, actual: Math.round((au as any)[k] * 10), poner: (n: number) => { sonido.guardar({ [k]: n / 10 }); refrescar(x => x + 1); SFX.tick(); } });
+  const vol = (k: string) => ({ etq: ({ maestro: 'Volumen general', ambiente: 'Ambiente', musica: 'Música de las salas', sfx: 'Efectos', ui: 'Interfaz', voces: 'Murmullo de aventureros', teclado: 'Tecleo (tu teclado)' } as any)[k], valores: pct, actual: Math.round((au as any)[k] * 10), poner: (n: number) => { sonido.guardar({ [k]: n / 10 }); refrescar(x => x + 1); SFX.tick(); } });
   const filas: Fila[] = [
     vol('maestro'), vol('ambiente'), vol('musica'), vol('sfx'), vol('ui'), vol('voces'), vol('teclado'),
     { etq: 'Silencio', valores: ['no', 'sí'], actual: au.silencio ? 1 : 0, poner: k => { sonido.guardar({ silencio: k === 1 }); refrescar(x => x + 1); } },
@@ -381,19 +381,19 @@ function MenuJuego() {
   const algo = vivas + terms > 0;
   const sub = (p: Panel) => () => { SFX.clic(); abrirPanel(p, { desde: 'menu' }); };
   const items: (ItemMenu & { f: () => void })[] = [
-    { texto: 'Volver al refugio', pista: 'Esc', f: cerrarPanel },
+    { texto: 'Volver a la taberna', pista: 'Esc', f: cerrarPanel },
     { texto: 'Buscar conversaciones, acciones y salas', pista: `${MAC_K}K`, f: () => { cerrarPanel(); abrirBuscador(); } },
     { texto: 'Opciones', pista: 'sonido e idioma del dictado', f: sub('opciones') },
     { texto: 'Atajos de teclado', pista: 'F1', f: sub('ayuda') },
     { texto: 'Reiniciar el juego', pista: 'aplica los cambios del servidor; las terminales siguen', f: sub('reiniciar') },
     { texto: 'Salir a la superficie', pista: algo ? 'todo lo abierto, a tu escritorio (⇧⌥⌘Esc)' : 'no hay nada abierto que sacar', apagado: !algo, f: () => { if (!algo) { SFX.noPermitido(); return; } cerrarPanel(); sacarASuperficie({ todo: true }); } },
-    { texto: 'Salir del refugio', peligro: true, f: sub('salir') },
+    { texto: 'Salir de la taberna', peligro: true, f: sub('salir') },
   ];
   const [i, setI] = useMenu(items.length, k => items[k].f());
   return (
-    <Aparato rotulo="MENÚ DEL SUPERVISOR" ancho={46}>
+    <Aparato rotulo="MENÚ DE LA TABERNERA" ancho={46}>
       <Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} />
-      <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>aceptar <kbd>Esc</kbd>volver al refugio <kbd>{MAC_K}K</kbd>buscar todo lo demás</Teclas>
+      <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>aceptar <kbd>Esc</kbd>volver a la taberna <kbd>{MAC_K}K</kbd>buscar todo lo demás</Teclas>
     </Aparato>
   );
 }
@@ -401,12 +401,12 @@ function MenuJuego() {
 // ---------------------------------------------------------------- salir
 function Salir() {
   const vivas = Object.values(vivo.usar(e => e.sesiones)).filter(s => s.estado !== 'cerrada').length;
-  const items: ItemMenu[] = [{ texto: 'Quedarse' }, { texto: vivas ? `Salir y parar ${vivas === 1 ? 'la sesión viva' : `las ${vivas} sesiones vivas`}` : 'Salir del refugio', peligro: true }];
+  const items: ItemMenu[] = [{ texto: 'Quedarse' }, { texto: vivas ? `Salir y parar ${vivas === 1 ? 'la sesión viva' : `las ${vivas} sesiones vivas`}` : 'Salir de la taberna', peligro: true }];
   const elegir = (k: number) => { if (k === 0) volver(); else { SFX.apagado(); cliente.enviar({ t: 'salir' }); abrirPanel('despedida'); } };
   const [i, setI] = useMenu(2, elegir, undefined, volver);
   return (
     <Aparato rotulo="ESCOTILLA PRINCIPAL" ancho={34} piloto={vivas ? 'esperando' : 'ociosa'} alCerrar={volver}>
-      <p className="voz">¿Cerrar el refugio, Supervisor?</p>
+      <p className="voz">¿Cerrar la taberna, Tabernera?</p>
       {vivas > 0 && <p className="aviso-consola">Hay {vivas} {vivas === 1 ? 'sesión viva' : 'sesiones vivas'}: se pararán. Las conversaciones quedan guardadas y se pueden retomar.</p>}
       <Opciones items={items} i={i} setI={setI} alElegir={elegir} />
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>confirmar <kbd>Esc</kbd>quedarse</Teclas>
@@ -427,9 +427,9 @@ function Reiniciar() {
   const [i, setI] = useMenu(2, elegir, undefined, volver);
   return (
     <Aparato rotulo="REINICIO" alCerrar={volver} ancho={40} piloto={estado.error ? 'error' : vivas ? 'esperando' : 'ociosa'}>
-      <p className="voz">¿Reiniciar el juego, Supervisor?</p>
+      <p className="voz">¿Reiniciar el juego, Tabernera?</p>
       <p>Se reinicia el servidor (con los cambios que haya en el código) y se recarga la ventana. Las terminales siguen abiertas, con lo que tengan dentro.</p>
-      {vivas > 0 && <p className="aviso-consola">Hay {vivas} {vivas === 1 ? 'habitante trabajando o esperándote' : 'habitantes trabajando o esperándote'}: su trabajo se corta. Las conversaciones quedan guardadas y se pueden retomar.</p>}
+      {vivas > 0 && <p className="aviso-consola">Hay {vivas} {vivas === 1 ? 'aventurero trabajando o esperándote' : 'aventureros trabajando o esperándote'}: su trabajo se corta. Las conversaciones quedan guardadas y se pueden retomar.</p>}
       {estado.enCurso && <p className="aviso-consola">Comprobando el código nuevo{' '}y recompilando si hace falta…</p>}
       {estado.error && <p className="aviso-consola">{estado.error}</p>}
       <Opciones items={items} i={i} setI={setI} alElegir={elegir} />
@@ -439,5 +439,5 @@ function Reiniciar() {
 }
 function Despedida() {
   useEffect(() => { teclado.bloqueado = true; document.title = 'work-shelter · sellado'; }, []);
-  return <div className="despedida interactivo"><div className="placa-despedida">El refugio queda sellado.<small>Hasta pronto, Supervisor. Para volver: work-shelter en el Dock o <code>./shelter</code></small></div></div>;
+  return <div className="despedida interactivo"><div className="placa-despedida">La taberna queda sellada.<small>Hasta pronto, Tabernera. Para volver: La Taberna en el Dock o <code>./shelter</code></small></div></div>;
 }

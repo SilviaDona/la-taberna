@@ -13,11 +13,11 @@ export type IdSector = 'acceso' | 'mando' | 'enlace' | 'talleres' | 'ocio';
 export interface Sector { id: IdSector; nombre: string; codigo: string; color: string; oscuro: string; tinta: string; lema: string }
 
 export const SECTORES: Record<IdSector, Sector> = {
-  acceso: { id: 'acceso', nombre: 'ACCESO', codigo: 'A', color: '#d6a52b', oscuro: '#6e5416', tinta: '#16140f', lema: 'Entrada y reclutamiento' },
-  mando: { id: 'mando', nombre: 'MANDO', codigo: 'M', color: '#b0392e', oscuro: '#5a1c17', tinta: '#16140f', lema: 'Gobierno y seguridad del refugio' },
-  enlace: { id: 'enlace', nombre: 'ENLACE', codigo: 'E', color: '#3f74ad', oscuro: '#1f3a5a', tinta: '#0f141a', lema: 'Correo, agenda, tableros y GitHub' },
-  talleres: { id: 'talleres', nombre: 'TALLERES', codigo: 'T', color: '#c67b32', oscuro: '#673e1b', tinta: '#16140f', lema: 'Un repo por sala' },
-  ocio: { id: 'ocio', nombre: 'OCIO', codigo: 'O', color: '#5b9150', oscuro: '#2c4a27', tinta: '#10160e', lema: 'Cultivos, discoteca, tiro al blanco y Chapa y Pintura' },
+  acceso: { id: 'acceso', nombre: 'POSADA', codigo: 'P', color: '#d6a52b', oscuro: '#6e5416', tinta: '#16140f', lema: 'La puerta y el libro de huéspedes' },
+  mando: { id: 'mando', nombre: 'SÓTANO', codigo: 'S', color: '#b0392e', oscuro: '#5a1c17', tinta: '#16140f', lema: 'El mago y el tesoro de la taberna' },
+  enlace: { id: 'enlace', nombre: 'GREMIOS', codigo: 'G', color: '#3f74ad', oscuro: '#1f3a5a', tinta: '#0f141a', lema: 'Cartas, almanaque, encargos y el escriba' },
+  talleres: { id: 'talleres', nombre: 'MESAS', codigo: 'M', color: '#c67b32', oscuro: '#673e1b', tinta: '#16140f', lema: 'Una mesa con estandarte por repo' },
+  ocio: { id: 'ocio', nombre: 'FIESTA', codigo: 'F', color: '#5b9150', oscuro: '#2c4a27', tinta: '#10160e', lema: 'Huerto, bardo, arqueros y sastre' },
 };
 export const ORDEN_SECTORES: IdSector[] = ['acceso', 'mando', 'enlace', 'talleres', 'ocio'];
 

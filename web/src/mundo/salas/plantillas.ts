@@ -14,7 +14,8 @@ import { pantallaEstadoRepo } from './generica';
 export type Plantilla = 'fundicion' | 'laboratorio' | 'estudio' | 'archivo' | 'banco';
 
 // (qué plantilla le toca a cada repo según su tipo: plantillaDe, en shared/decorado.ts)
-export const SUBTITULO_PLANTILLA: Record<Plantilla, string> = { fundicion: 'FUNDICIÓN', laboratorio: 'LABORATORIO', estudio: 'ESTUDIO', archivo: 'ARCHIVO', banco: 'TALLER' };
+// La Taberna: cada plantilla es un oficio (estudio → la taberna de la fase 0, laboratorio → alquimista, fundición → herrería)
+export const SUBTITULO_PLANTILLA: Record<Plantilla, string> = { fundicion: 'HERRERÍA', laboratorio: 'ALQUIMISTA', estudio: 'TABERNA', archivo: 'BIBLIOTECA', banco: 'TALLER' };
 export const PANELES_PLANTILLA: Record<Plantilla, string[]> = {
   fundicion: ['Wall_5', 'Wall_Empty', 'Wall_5'], laboratorio: ['Wall_2', 'Wall_1', 'Wall_4'],
   estudio: ['Wall_4', 'Wall_3', 'Wall_1'], archivo: ['Wall_3', 'Wall_5', 'Wall_1'], banco: ['Wall_4', 'Wall_1', 'Wall_3'],

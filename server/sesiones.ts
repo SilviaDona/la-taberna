@@ -17,7 +17,7 @@ import { describirHerramienta, describirEntrada, tituloPermiso, modoHerramienta,
 import { ES_WINDOWS, buscarPrograma } from './plataforma.ts';
 
 const ANEXO = [
-  'You are being driven from «work-shelter», a vault-management game UI where the user (the Overseer) talks to you through a dweller character.',
+  'You are being driven from «La Taberna», a vault-management game UI where the user (the Overseer) talks to you through a dweller character.',
   'Your final message of each turn is shown in an in-world speech panel that the user can expand, so open it with a one-line summary of the outcome.',
   'Reply in the language the user writes in. Everything else works exactly like a normal Claude Code session.',
 ].join(' ');
@@ -180,8 +180,8 @@ export class Sesiones extends EventEmitter {
 
   async empezar(habitanteId: string, salaId: string, cwd: string, prompt: string, o: OpcionesTrabajo, adjuntos: Adjunto[] = []): Promise<ResumenSesion> {
     const clave = this.claveEnAjustes(o.cwd || cwd);
-    if (clave) throw new Error(`Tus ajustes de Claude Code imponen una clave de API (${clave}). work-shelter solo trabaja con tu sesión de Claude Code: quítala para que los habitantes puedan trabajar.`);
-    if (o.reanudar && [...this.s.values()].some(x => x.viva && x.r.claudeId === o.reanudar)) throw new Error('Esa conversación ya está en curso en el refugio.');
+    if (clave) throw new Error(`Tus ajustes de Claude Code imponen una clave de API (${clave}). La Taberna solo trabaja con tu sesión de Claude Code: quítala para que los aventureros puedan trabajar.`);
+    if (o.reanudar && [...this.s.values()].some(x => x.viva && x.r.claudeId === o.reanudar)) throw new Error('Esa conversación ya está en curso en la taberna.');
     if (!existsSync(o.cwd || cwd)) throw new Error(`La carpeta no existe: ${o.cwd || cwd}`);
     const id = randomUUID();
     const r: ResumenSesion = {
@@ -236,7 +236,7 @@ export class Sesiones extends EventEmitter {
       id: randomUUID(), tipo: 'confianza', herramienta: 'confianza', puedeSiempre: true,
       titulo: '¿Te fías de esta carpeta? Trae configuración de Claude Code',
       entrada: [
-        { tipo: 'texto', texto: 'Puede ejecutar órdenes sin preguntar (hooks), arrancar servidores MCP, darse permisos y dar instrucciones al habitante. Cárgala solo si el repo es tuyo o te fías de quien lo hizo; si no, se trabaja sin ella, con tus ajustes.' },
+        { tipo: 'texto', texto: 'Puede ejecutar órdenes sin preguntar (hooks), arrancar servidores MCP, darse permisos y dar instrucciones al aventurero. Cárgala solo si el repo es tuyo o te fías de quien lo hizo; si no, se trabaja sin ella, con tus ajustes.' },
         ...configDeProyecto(x.r.cwd).map(f => ({ tipo: 'ruta' as const, texto: path.join(x.r.cwd, f) })),
       ],
     };
@@ -283,7 +283,7 @@ export class Sesiones extends EventEmitter {
 
   enviar(id: string, texto: string, adjuntos: Adjunto[] = []) {
     const x = this.debe(id);
-    if (x.r.estado === 'cerrada') throw new Error('Esa conversación está cerrada. Retómala desde el habitante («Retomar un trabajo anterior»).');
+    if (x.r.estado === 'cerrada') throw new Error('Esa conversación está cerrada. Retómala desde el aventurero («Retomar un trabajo anterior»).');
     if (texto.trim() === '/stop') return this.interrumpir(id);
     if (!x.viva && !x.esperandoConfianza) this.lanzar(x, x.r.claudeId).catch(e => console.error('No se pudo reanudar la sesión:', e));
     this.anadir(x, this.entrada('usuario', texto, adjuntos.length ? { adjuntos } : {}));
@@ -381,7 +381,7 @@ export class Sesiones extends EventEmitter {
     switch (m.subtype) {
       case 'init':
         if (m.apiKeySource && m.apiKeySource !== 'none') {
-          this.anadir(x, this.entrada('error', `Esta sesión iba a usar una clave de API (${m.apiKeySource}). work-shelter solo trabaja con tu sesión de Claude Code: la he parado. Quita esa clave de tus ajustes o variables de entorno.`));
+          this.anadir(x, this.entrada('error', `Esta sesión iba a usar una clave de API (${m.apiKeySource}). La Taberna solo trabaja con tu sesión de Claude Code: la he parado. Quita esa clave de tus ajustes o variables de entorno.`));
           x.cerrando = true; x.q?.close(); return;
         }
         r.claudeId = m.session_id; r.cwd = m.cwd; r.modelo = m.model; r.modoPermisos = m.permissionMode;
@@ -441,7 +441,7 @@ export class Sesiones extends EventEmitter {
       // las del juego para decorar la propia sala no piden permiso: solo tocan el decorado de esa sala (datos validados)
       if (nombre.startsWith('mcp__refugio__')) { resolver({ behavior: 'allow', updatedInput: e }); return; }
       const id = randomUUID();
-      const deAyudante = op.agentID ? [...x.ayudantes.values()].find(a => a.id === op.agentID || x.tareaAAyudante.get(op.agentID!) === a.id)?.descripcion ?? 'un ayudante' : undefined;
+      const deAyudante = op.agentID ? [...x.ayudantes.values()].find(a => a.id === op.agentID || x.tareaAAyudante.get(op.agentID!) === a.id)?.descripcion ?? 'un duende' : undefined;
       let pet: PeticionPendiente;
       if (nombre === 'AskUserQuestion') pet = { id, tipo: 'pregunta', herramienta: nombre, titulo: 'Tengo una pregunta para ti', preguntas: (e.questions as Pregunta[]) ?? [], puedeSiempre: false, deAyudante };
       else if (nombre === 'ExitPlanMode') pet = { id, tipo: 'plan', herramienta: nombre, titulo: 'Mi plan está listo para que lo revises', detalle: String(e.plan ?? ''), puedeSiempre: false, deAyudante };
@@ -525,7 +525,7 @@ export class Sesiones extends EventEmitter {
     if (continuar) { await this.interrumpir(id); await esperar(() => !ocupada(), 10_000); }
     this.anadir(x, this.entrada('sistema', '↗ Sigue en una terminal de tu escritorio'));
     this.cerrar(id);
-    if (!(await esperar(() => !x.viva, 8000))) throw new Error(`«${x.r.titulo}» no termina de cerrarse en el refugio: no la saco para no tenerla abierta en dos sitios.`);
+    if (!(await esperar(() => !x.viva, 8000))) throw new Error(`«${x.r.titulo}» no termina de cerrarse en la taberna: no la saco para no tenerla abierta en dos sitios.`);
     return { claudeId: x.r.claudeId, cwd: x.r.cwd, titulo: x.r.titulo, habitanteId: x.r.habitanteId, continuar, modelo: x.opciones.modelo || undefined, esfuerzo: x.opciones.esfuerzo || undefined, permisos: x.r.modoPermisos };
   }
 

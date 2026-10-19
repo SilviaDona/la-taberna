@@ -44,8 +44,8 @@ function Inventario() {
     if (p === 0) return inv.length ? inv.map(([k, n]) => {
       const pieza = PIEZAS.find(x => 'pieza:' + x.id === k); const cos = COSECHAS[k.slice(8)];
       const nombre = pieza?.nombre ?? cos?.nombre ?? k; const valor = pieza?.valor ?? cos?.valor ?? 1;
-      return { texto: <>{nombre} <span className="tenue">×{n}</span></>, pista: `${valor} de chatarra c/u`, detalle: <><p>{pieza?.texto ?? 'Recién cosechada en hidroponía.'}</p><p className="tenue">Enter: vender una · V: vender todas</p></>, f: () => vender(k, 1), f2: () => vender(k, n) };
-    }) : [{ texto: <span className="tenue">Bolsillos vacíos.</span>, detalle: <p className="tenue">Cada tarea que termina un habitante deja chatarra y, a veces, una pieza. La hidroponía da cosechas.</p> }];
+      return { texto: <>{nombre} <span className="tenue">×{n}</span></>, pista: `${valor} de oro c/u`, detalle: <><p>{pieza?.texto ?? 'Recién cosechada en hidroponía.'}</p><p className="tenue">Enter: vender una · V: vender todas</p></>, f: () => vender(k, 1), f2: () => vender(k, n) };
+    }) : [{ texto: <span className="tenue">Bolsillos vacíos.</span>, detalle: <p className="tenue">Cada tarea que termina un aventurero deja oro y, a veces, una pieza. La hidroponía da cosechas.</p> }];
     if (p === 1) return [
       ...PIEZAS.map(x => { const tiene = (j.inventario['pieza:' + x.id] ?? 0) > 0 || (j.vistas ?? []).includes(x.id); return { texto: tiene ? <>{x.nombre} <span className={'rareza ' + x.rareza}>{x.rareza}</span></> : <span className="tenue">??? <span className={'rareza ' + x.rareza}>{x.rareza}</span></span>, detalle: tiene ? <p>{x.texto}</p> : <p className="tenue">Aún no la has encontrado.</p>, apagado: !tiene }; }),
       ...SENALES.map(s => { const tiene = (j.senales ?? []).includes(s.id); return { texto: tiene ? <>📻 {s.titulo}</> : <span className="tenue">📻 señal sin captar</span>, pista: tiene ? `${s.frecuencia.toFixed(1)} MHz` : '', detalle: tiene ? <p>{s.texto}</p> : <p className="tenue">Sintoniza la radio de comunicaciones.</p>, apagado: !tiene }; }),
@@ -55,8 +55,8 @@ function Inventario() {
       const puesto = sup?.accesorios?.includes(a.id);
       return {
         texto: <>{a.nombre} {tiene && <span className="tenue">· {a.tipo === 'accesorio' ? (puesto ? 'lo llevas' : 'tuyo') : a.tipo === 'arma' ? (j.arma === a.id ? 'en uso' : 'tuya') : 'plantable'}</span>}</>,
-        pista: tiene ? '' : `${a.precio} de chatarra`,
-        detalle: <><p>{a.texto}</p><p className="tenue">{tiene ? (a.tipo === 'accesorio' ? 'Enter: ponértelo o quitártelo · G: regalárselo a un habitante' : a.tipo === 'arma' ? 'Enter: usarla en la galería' : 'Ya puedes plantarla en hidroponía.') : `Enter: comprar (${a.precio}). Tienes ${j.chatarra}.`}</p></>,
+        pista: tiene ? '' : `${a.precio} de oro`,
+        detalle: <><p>{a.texto}</p><p className="tenue">{tiene ? (a.tipo === 'accesorio' ? 'Enter: ponértelo o quitártelo · G: regalárselo a un aventurero' : a.tipo === 'arma' ? 'Enter: usarla en la galería' : 'Ya puedes plantarla en hidroponía.') : `Enter: comprar (${a.precio}). Tienes ${j.chatarra}.`}</p></>,
         f: () => tiene ? (a.tipo === 'accesorio' ? equipar(a.id, 'supervisor') : a.tipo === 'arma' ? usarArma(a.id) : undefined) : comprar(a.id),
         f2: tiene && a.tipo === 'accesorio' ? () => setRegalo(a.id) : undefined,
       };
@@ -66,13 +66,13 @@ function Inventario() {
       { texto: 'Tiro al blanco', pista: `${r.tiro ?? 0} puntos`, detalle: <p>Mejor ronda en la galería de tiro ({r.partidasTiro ?? 0} rondas).</p> },
       { texto: 'Radio', pista: `${(j.senales ?? []).length} / ${SENALES.length} señales`, detalle: <p>Transmisiones captadas desde la sala de comunicaciones.</p> },
       { texto: 'Cosecha', pista: `${r.cosecha ?? 0} piezas`, detalle: <p>Todo lo cosechado en hidroponía.</p> },
-      { texto: 'Tareas terminadas', pista: `${j.tareasTerminadas ?? 0}`, detalle: <p>Trabajo real de los habitantes en tus repos.</p> },
+      { texto: 'Tareas terminadas', pista: `${j.tareasTerminadas ?? 0}`, detalle: <p>Trabajo real de los aventureros en tus repos.</p> },
       { texto: 'Llamadas a herramientas', pista: `${j.llamadasHerramientas ?? 0}`, detalle: <p>Cada una riega un poco los cultivos.</p> },
       { texto: 'Generador', pista: `${r.generador ?? 0} reparaciones`, detalle: <p>Reconexiones del núcleo del Puente de Mando.</p> },
     ];
   }, [j, p, sup]);
   const aviso = (t: string, ok = true) => { setMsg(t); ok ? SFX.monedas() : SFX.noPermitido(); };
-  async function vender(k: string, n: number) { try { const r = await accionJuego('vender', { objeto: k, n }); aviso(`+${r.chatarra} de chatarra`); } catch (e) { aviso((e as Error).message, false); } }
+  async function vender(k: string, n: number) { try { const r = await accionJuego('vender', { objeto: k, n }); aviso(`+${r.chatarra} de oro`); } catch (e) { aviso((e as Error).message, false); } }
   async function comprar(id: string) { try { await accionJuego('comprar', { articulo: id }); aviso('¡Comprado!'); } catch (e) { aviso((e as Error).message, false); } }
   async function equipar(id: string, quien: string) { try { await accionJuego('equipar', { articulo: id, quien }); SFX.conmutar(); setMsg(''); } catch (e) { aviso((e as Error).message, false); } }
   async function usarArma(id: string) { try { await accionJuego('arma', { arma: id }); SFX.conmutar(); } catch (e) { aviso((e as Error).message, false); } }
@@ -89,8 +89,8 @@ function Inventario() {
   }, [filas, i, p, regalo]);
   if (!j) return null;
   return (
-    <Aparato rotulo="MOCHILA DEL SUPERVISOR" ancho={68}>
-      <div className="pestanas">{PESTANAS.map((t, k) => <button key={t} className={'chip' + (k === p ? ' on' : '')} onClick={() => { setP(k); setI(0); }}>{t}</button>)}<span className="derecha chatarra-txt">⚙ {j.chatarra} de chatarra</span></div>
+    <Aparato rotulo="MOCHILA DE LA TABERNERA" ancho={68}>
+      <div className="pestanas">{PESTANAS.map((t, k) => <button key={t} className={'chip' + (k === p ? ' on' : '')} onClick={() => { setP(k); setI(0); }}>{t}</button>)}<span className="derecha chatarra-txt">⚙ {j.chatarra} de oro</span></div>
       <div className="feed">
         <ul className="feed-lista lista-desplazable lista-inv">{filas.map((f, k) => <li key={k} className={(k === i ? 'activa' : '') + (f.apagado ? ' vista' : '')} onMouseEnter={() => setI(k)} onClick={() => f.f?.()} ref={el => { if (k === i) el?.scrollIntoView({ block: 'nearest' }); }}><span className="titulo">{f.texto}</span><span className="cuando">{f.pista}</span></li>)}</ul>
         <div className="feed-detalle">{sel?.detalle}{msg && <p className="aviso-consola">{msg}</p>}</div>
@@ -124,7 +124,7 @@ function Galeria() {
   return (
     <Aparato rotulo="GALERÍA DE TIRO" ancho={46}>
       <p className="voz">Apunta a los bugs, no a los compañeros. Los blancos que se mueven rápido y los tiros centrados valen más.</p>
-      <p className="tenue">Récord: {j?.records?.tiro ?? 0} puntos. Cada 12 puntos, una de chatarra.</p>
+      <p className="tenue">Récord: {j?.records?.tiro ?? 0} puntos. Cada 12 puntos, una de oro.</p>
       <Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} />
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>aceptar <kbd>Esc</kbd>salir</Teclas>
     </Aparato>
@@ -187,8 +187,8 @@ function FinTiro({ r, otra }: { r: any; otra: () => void }) {
     <Aparato rotulo="GALERÍA · RESULTADO" ancho={40} piloto={r.record ? 'trabajando' : 'ociosa'}>
       <div className="titulo-ficha">{r.puntos} puntos</div>
       <p>{r.aciertos} aciertos de {r.disparos} disparos{r.disparos ? ` (${Math.round(r.aciertos / r.disparos * 100)} %)` : ''}.</p>
-      {r.record ? <p className="aviso-consola">¡Nuevo récord del refugio!</p> : <p className="tenue">Récord: {r.mejor ?? 0}</p>}
-      <p>+{r.premio} de chatarra</p>
+      {r.record ? <p className="aviso-consola">¡Nuevo récord de la taberna!</p> : <p className="tenue">Récord: {r.mejor ?? 0}</p>}
+      <p>+{r.premio} de oro</p>
       <Opciones items={items} i={i} setI={setI} alElegir={elegir} />
     </Aparato>
   );
@@ -206,7 +206,7 @@ function Hidroponia() {
   const elegida = eleccion[i] ?? c?.especie;
   const cosechar = async () => {
     if (!c) return;
-    if (c.fase < 4) { SFX.noPermitido(); setMsg('Aún no está madura: crece con cada herramienta que usan los habitantes.'); return; }
+    if (c.fase < 4) { SFX.noPermitido(); setMsg('Aún no está madura: crece con cada herramienta que usan los aventureros.'); return; }
     try { const r = await accionJuego('cosechar', { bancal: i, especie: elegida }); SFX.cosecha(); setMsg(`+${r.n} ${r.cosecha?.toLowerCase()} a la mochila. Replantado: ${COSECHAS[elegida]?.nombre.toLowerCase()}.`); } catch (e) { setMsg((e as Error).message); }
   };
   const plantar = async () => { if (!c || elegida === c.especie) return; try { await accionJuego('plantar', { bancal: i, especie: elegida }); SFX.cosecha(); setMsg(`Bancal ${i + 1}: ahora ${COSECHAS[elegida].nombre.toLowerCase()}.`); } catch (e) { setMsg((e as Error).message); } };
@@ -220,7 +220,7 @@ function Hidroponia() {
   }, [i, cultivos, elegida]);
   return (
     <Aparato rotulo="HIDROPONÍA · BANCALES" ancho={56}>
-      <p className="voz">Cada herramienta que usan los habitantes riega un poco. Lo maduro se cosecha y se replanta.</p>
+      <p className="voz">Cada herramienta que usan los aventureros riega un poco. Lo maduro se cosecha y se replanta.</p>
       <ul className="opciones-consola bancales">{cultivos.map((x, k) => (
         <li key={k} className={k === i ? 'activa' : ''} onMouseEnter={() => setI(k)} onClick={() => { setI(k); cosechar(); }}>
           <span className="cursor">{k === i ? '▶' : ' '}</span><span className="txt">Bancal {k + 1}: <b>{COSECHAS[x.especie]?.nombre}</b></span>
@@ -336,7 +336,7 @@ function Cuaderno() {
   if (sel) return <Transcripcion sesionId={sel} volver={() => (pedida ? cerrarPanel() : setSel(null))} />;
   return (
     <Aparato rotulo="CUADERNO DE BITÁCORA" ancho={56}>
-      {lista.length ? <Opciones items={items} i={i} setI={setI} alElegir={k => setSel(lista[k].id)} /> : <p className="tenue">Aún no hay conversaciones en esta partida. Las antiguas se retoman hablando con un habitante («Retomar un trabajo anterior»).</p>}
+      {lista.length ? <Opciones items={items} i={i} setI={setI} alElegir={k => setSel(lista[k].id)} /> : <p className="tenue">Aún no hay conversaciones en esta partida. Las antiguas se retoman hablando con un aventurero («Retomar un trabajo anterior»).</p>}
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>abrir <kbd>Esc</kbd>cerrar</Teclas>
     </Aparato>
   );

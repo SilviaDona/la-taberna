@@ -56,7 +56,7 @@ class Cliente {
     ws.onclose = () => {
       vivo.set(e => ({ conectado: false, intentos: e.intentos + 1 }));
       // si el servidor responde pero el WebSocket se niega varias veces, es otro arranque (otro secreto): hay que recargar
-      if (vivo.get().intentos >= 4) fetch('/salud').then(r => { if (r.ok) vivo.set(e => ({ avisos: [...e.avisos.slice(-4), { id: Date.now(), nivel: 'error', texto: 'El servidor del refugio se ha reiniciado: vuelve a abrir work-shelter con ./shelter (o recarga con el enlace nuevo).' }] })); }).catch(() => {});
+      if (vivo.get().intentos >= 4) fetch('/salud').then(r => { if (r.ok) vivo.set(e => ({ avisos: [...e.avisos.slice(-4), { id: Date.now(), nivel: 'error', texto: 'El servidor de la taberna se ha reiniciado: vuelve a abrir La Taberna con ./shelter (o recarga con el enlace nuevo).' }] })); }).catch(() => {});
       const espera = Math.min(4000, 400 * (vivo.get().intentos + 1));
       setTimeout(() => this.conectar(), espera);
     };
@@ -73,7 +73,7 @@ class Cliente {
     return new Promise<T>((ok, ko) => {
       this.pendientes.set(peticion, { ok, ko });
       this.enviar({ ...m, peticion } as any);
-      setTimeout(() => { if (this.pendientes.delete(peticion)) ko(new Error('El refugio no responde.')); }, espera);
+      setTimeout(() => { if (this.pendientes.delete(peticion)) ko(new Error('La taberna no responde.')); }, espera);
     });
   }
   accion<T = unknown>(nombre: string, datos?: Record<string, unknown>, espera?: number) { return this.pedir<T>({ t: 'accion', nombre, datos }, espera); }

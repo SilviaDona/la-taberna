@@ -14,18 +14,18 @@ const CORREOS: [string, string, string, Prioridad][] = [
   ['Nerea Calvo', 'Plan de pruebas de la nueva versión', 'He dejado el plan de pruebas en la wiki. ¿Le echas un ojo antes del viernes?', 'media'],
   ['Avisos de CI', '[express] Build fallida en la rama main', 'El job «test» ha fallado en el commit a3f9c21: 2 tests en router.test.js no pasan.', 'alta'],
   ['Bruno Esteve', 'Resultados del benchmark', 'Con el corpus grande sale un 12 % más rápido que la versión anterior. ¿Lo contamos en el changelog?', 'media'],
-  ['Intendencia del Refugio', 'Inventario mensual del almacén', 'Antes del día 30, apuntad en la hoja lo que hayáis sacado del almacén de la planta -2.', 'baja'],
+  ['Intendencia de la Taberna', 'Inventario mensual del almacén', 'Antes del día 30, apuntad en la hoja lo que hayáis sacado del almacén de la planta -2.', 'baja'],
   ['Olga Prieto', 'Reunión con el cliente movida al jueves', 'El cliente no puede el miércoles; la pasamos al jueves a las 11:30 con el mismo enlace.', 'media'],
 ];
 const GMAIL: [string, string, string, Prioridad][] = [
-  ['Asociación de Vecinos del Refugio', 'Turnos de limpieza del filtro de aire', 'Esta semana te toca el jueves. Si no puedes, cámbialo con alguien en el tablón de la planta baja.', 'baja'],
+  ['Asociación de Vecinos de la Taberna', 'Turnos de limpieza del filtro de aire', 'Esta semana te toca el jueves. Si no puedes, cámbialo con alguien en el tablón de la planta baja.', 'baja'],
   ['Hugo Lara', '¿Quedamos para el hackathon?', 'Tengo una idea para el reto de accesibilidad: necesito a alguien que sepa de Rust. ¿Te apuntas?', 'media'],
-  ['Biblioteca Municipal', 'Tu préstamo vence mañana', '«Patrones de diseño para refugios» vence mañana. Puedes renovarlo una vez desde tu cuenta.', 'baja'],
+  ['Biblioteca Municipal', 'Tu préstamo vence mañana', '«Patrones de diseño para tabernas» vence mañana. Puedes renovarlo una vez desde tu cuenta.', 'baja'],
   ['Rosa Quintana', 'Fotos del viaje', 'Ya están las fotos en la carpeta compartida. La del atardecer es para enmarcar.', 'alta'],
 ];
 const DISCORD: [string, string, string, Prioridad][] = [
   ['#express', 'Iker', '¿Alguien ha tocado la configuración de los tests? Me tardan el doble en arrancar.', 'media'],
-  ['#express', 'Irene', '@Supervisor ¿puedes aprobar el PR #42? Es solo documentación.', 'alta'],
+  ['#express', 'Irene', '@Tabernera ¿puedes aprobar el PR #42? Es solo documentación.', 'alta'],
   ['#awesome', 'Nerea', 'He ordenado la lista por temas. Quedan tres enlaces rotos.', 'baja'],
   ['#sala-comun', 'Tomás', 'Hoy hay sopa de setas de la hidroponía en el comedor 🍲', 'baja'],
   ['#avisos-ci', 'bot-ci', 'La documentación, desplegada en preview: https://preview.example.com/docs', 'baja'],
@@ -70,8 +70,8 @@ export function demoNotificaciones(fuente: FuenteId): Notificacion[] {
 type EventoDemo = [number, number, number, string, string?, string?];
 const EVENTOS: Partial<Record<FuenteId, EventoDemo[]>> = {
   outlook: [
-    [0, 10, 0.25, 'Cambio de turno del refugio', 'https://teams.microsoft.com/l/meetup-join/demo'], [0, 12, 1, 'Revisión del plan de pruebas con Nerea', 'https://teams.microsoft.com/l/meetup-join/demo2'],
-    [0, 16.5, 0.5, 'Llamada con el cliente: lanzamiento', 'https://teams.microsoft.com/l/meetup-join/demo3'], [1, 10, 0.25, 'Cambio de turno del refugio', 'https://teams.microsoft.com/l/meetup-join/demo'],
+    [0, 10, 0.25, 'Cambio de turno de la taberna', 'https://teams.microsoft.com/l/meetup-join/demo'], [0, 12, 1, 'Revisión del plan de pruebas con Nerea', 'https://teams.microsoft.com/l/meetup-join/demo2'],
+    [0, 16.5, 0.5, 'Llamada con el cliente: lanzamiento', 'https://teams.microsoft.com/l/meetup-join/demo3'], [1, 10, 0.25, 'Cambio de turno de la taberna', 'https://teams.microsoft.com/l/meetup-join/demo'],
     [1, 11, 1.5, 'Planificación del ciclo 14'], [2, 10, 1, 'Demo interna: la versión 5'], [3, 11.5, 1, 'Reunión con el cliente (movida)', 'https://teams.microsoft.com/l/meetup-join/demo4'],
     [4, 13, 0, 'Simulacro de evacuación', undefined, 'Puerta Principal, planta baja'],
   ],
@@ -101,7 +101,7 @@ export function demoPanelLinear() {
     { tipo: 'unstarted', nombre: 'Por hacer', issues: [issue(231, 'Reintentos con espera exponencial', 'unstarted', 'Por hacer', 3, 'Requests', ['mejora']), issue(244, 'Sección nueva: herramientas de terminal', 'unstarted', 'Por hacer', 2, 'Awesome'), issue(247, 'Revisar la licencia de los ejemplos', 'unstarted', 'Por hacer', 4, 'Express')] },
     { tipo: 'backlog', nombre: 'Backlog', issues: [issue(198, 'Binarios para más arquitecturas', 'backlog', 'Backlog', 0, 'Ripgrep'), issue(201, 'Tipos para los adaptadores', 'backlog', 'Backlog', 4, 'Requests')] },
   ];
-  return { yo: { name: 'Supervisor (demo)' }, misIssues: grupos, ciclos: [{ equipoId: 'demo', equipo: 'REF', nombre: 'Refugio', ciclo: { id: 'c14', numero: 14, nombre: 'Ciclo 14', inicio: ahora - 6 * dia, fin: ahora + 8 * dia, progreso: 46 } }], cuando: ahora, demo: true };
+  return { yo: { name: 'Tabernera (demo)' }, misIssues: grupos, ciclos: [{ equipoId: 'demo', equipo: 'REF', nombre: 'Refugio', ciclo: { id: 'c14', numero: 14, nombre: 'Ciclo 14', inicio: ahora - 6 * dia, fin: ahora + 8 * dia, progreso: 46 } }], cuando: ahora, demo: true };
 }
 
 // Tablero del equipo en DEMO (mismo formato que tableroDeEquipo): columnas por estado del equipo con sus incidencias
@@ -111,7 +111,7 @@ export function demoTableroLinear() {
   const extra = [
     { id: 'demo-251', identificador: 'REF-251', titulo: 'Caché de imágenes en la portada', prioridad: 3, prioridadTexto: 'Media', estado: { id: 'started', nombre: 'En curso', tipo: 'started' }, proyecto: 'Taller', asignado: 'Iker Sáez' },
     { id: 'demo-188', identificador: 'REF-188', titulo: 'Plantilla de correo de bienvenida', prioridad: 4, prioridadTexto: 'Baja', estado: { id: 'completed', nombre: 'Hecho', tipo: 'completed' }, proyecto: 'Escaparate', asignado: 'Irene Valdés' },
-    { id: 'demo-190', identificador: 'REF-190', titulo: 'Exportar la paleta a la herramienta de diseño', prioridad: 3, prioridadTexto: 'Media', estado: { id: 'completed', nombre: 'Hecho', tipo: 'completed' }, proyecto: 'Marca', asignado: 'Supervisor (demo)' },
+    { id: 'demo-190', identificador: 'REF-190', titulo: 'Exportar la paleta a la herramienta de diseño', prioridad: 3, prioridadTexto: 'Media', estado: { id: 'completed', nombre: 'Hecho', tipo: 'completed' }, proyecto: 'Marca', asignado: 'Tabernera (demo)' },
   ];
   const issues = [...todas, ...extra] as any[];
   const estados = [['backlog', 'Backlog'], ['unstarted', 'Por hacer'], ['started', 'En curso'], ['review', 'En revisión'], ['completed', 'Hecho']];

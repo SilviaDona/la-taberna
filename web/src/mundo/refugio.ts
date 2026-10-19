@@ -822,7 +822,7 @@ export class Refugio {
     }
     // al rellano, subir a la cabina cuando esté aquí, viajar y seguir andando
     this.supervisor.irA([new THREE.Vector3(sp.x, sp.y, pasillo), new THREE.Vector3(0, sp.y, pasillo), new THREE.Vector3(0, sp.y, 0.35)], correr, () => {
-      juego.set({ indicacion: { tecla: '', texto: 'Llamando al ascensor…' } });
+      juego.set({ indicacion: { tecla: '', texto: 'Llamando al montacargas…' } });
       this.ascensor.llamar(yo, () => {
         this.montado = true; this.supervisor.giroObjetivo = 0; juego.set({ indicacion: null });
         this.ascensor.llamar(alla, () => {
@@ -904,7 +904,7 @@ export class Refugio {
     const destino = planta - dir; // dir 1 = subir = planta menor
     if (destino < 0 || destino >= this.plantas) { SFX.noPermitido(); return; }
     if (this.ascensor.moviendose || this.ascensor.plantaActual !== planta) {
-      juego.set({ indicacion: { tecla: dir > 0 ? 'W' : 'S', texto: 'Llamando al ascensor…' } });
+      juego.set({ indicacion: { tecla: dir > 0 ? 'W' : 'S', texto: 'Llamando al montacargas…' } });
       this.ascensor.llamar(planta, () => juego.set({ indicacion: null })); return;
     }
     this.montado = true;

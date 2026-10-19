@@ -148,7 +148,7 @@ class Maqueta {
 }
 
 // Columna de lluvia de código: palabras del propio refugio que caen en fósforo
-const GLIFOS = 'const sala = await crearSala(); refugio habitante supervisor puente {}[]()<>=;:/*+-|&!? 0123456789 async return';
+const GLIFOS = 'const sala = await crearSala(); taberna aventurero supervisor puente {}[]()<>=;:/*+-|&!? 0123456789 async return';
 class Lluvia {
   c: HTMLCanvasElement; g: CanvasRenderingContext2D; tex: THREE.CanvasTexture;
   private gotas: { y: number; v: number }[] = []; private acum = 0; private r: () => number;

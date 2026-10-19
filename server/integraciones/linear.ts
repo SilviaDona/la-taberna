@@ -15,7 +15,7 @@ export const MCP_LINEAR_LECTURA = 'https://mcp.linear.app/mcp/readonly';
 export const VAR_CLAVE_MCP = 'SHELTER_LINEAR_CLAVE';
 
 export const CAMPOS_LINEAR: Campo[] = [
-  { nombre: 'apiKey', etiqueta: 'Clave de API de Linear', secreto: true, ayuda: 'En Linear: Settings → Account → Security & access → Personal API keys → nueva clave «work-shelter». Para los paneles basta «Read»; para que el habitante de Logística cree, mueva o comente issues, añade «Write», «Create issues» y «Create comments». Empieza por lin_api_.', ejemplo: 'lin_api_…' },
+  { nombre: 'apiKey', etiqueta: 'Clave de API de Linear', secreto: true, ayuda: 'En Linear: Settings → Account → Security & access → Personal API keys → nueva clave «La Taberna». Para los paneles basta «Read»; para que el aventurero de Logística cree, mueva o comente issues, añade «Write», «Create issues» y «Create comments». Empieza por lin_api_.', ejemplo: 'lin_api_…' },
 ];
 
 export const Q = {

@@ -20,7 +20,7 @@ const cadena = (s: string) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MODOS_CLI = ['acceptEdits', 'auto', 'plan', 'dontAsk', 'manual'];
 // si estaba trabajando, se interrumpe en el juego y sigue fuera sin que haga falta pedírselo
-export const PROMPT_CONTINUAR = 'Sigue con lo que estabas haciendo: te he sacado del refugio a esta terminal a mitad de trabajo.';
+export const PROMPT_CONTINUAR = 'Sigue con lo que estabas haciendo: te he sacado de la taberna a esta terminal a mitad de trabajo.';
 
 export interface Reanudar { claudeId: string; cwd: string; continuar?: boolean; modelo?: string; esfuerzo?: string; permisos?: string }
 export function comandoReanudar(r: Reanudar, windows = ES_WINDOWS) {
@@ -79,7 +79,7 @@ export function abrirEnEscritorio(items: ItemEscritorio[], o: { ventanaNueva?: b
     if (!err) { ok(app); return; }
     const texto = String(errOut || err.message);
     ko(new Error(/-1743|not authori[sz]ed|no autorizad/i.test(texto)
-      ? `macOS no deja que work-shelter maneje ${app}: permítelo en Ajustes del Sistema › Privacidad y seguridad › Automatización.`
+      ? `macOS no deja que La Taberna maneje ${app}: permítelo en Ajustes del Sistema › Privacidad y seguridad › Automatización.`
       : `No he podido abrir ${app}: ${texto.trim().split('\n').pop()}`));
   }));
 }

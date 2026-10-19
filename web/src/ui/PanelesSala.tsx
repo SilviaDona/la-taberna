@@ -159,7 +159,7 @@ function ConfirmarVincular({ sala, ejemplo, ruta, nombre, volver }: { sala: any;
   return (
     <Aparato rotulo={`PANEL DE SALA · ${sala.nombre} · VINCULAR`} ancho={52} alCerrar={volver}>
       <p className="voz">La sala pasa a <code>{ruta}</code> y se llamará <b>{nombre}</b>.</p>
-      <p className="tenue">Su habitante se queda, con su aspecto; las conversaciones de la carpeta de antes se cierran y siguen en su historial. La escena vuelve a la plantilla del tipo de repo nuevo{sala.decorado ? ' (se quita el decorado)' : ''}. {ejemplo ? 'La copia del repo de ejemplo va a la papelera.' : 'La carpeta de antes no se toca.'}</p>
+      <p className="tenue">Su aventurero se queda, con su aspecto; las conversaciones de la carpeta de antes se cierran y siguen en su historial. La escena vuelve a la plantilla del tipo de repo nuevo{sala.decorado ? ' (se quita el decorado)' : ''}. {ejemplo ? 'La copia del repo de ejemplo va a la papelera.' : 'La carpeta de antes no se toca.'}</p>
       {error && <p className="aviso-consola">{error}</p>}
       <Opciones items={items} i={i} setI={setI} alElegir={k => (k === 0 ? vincular() : volver())} />
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>confirmar <kbd>Esc</kbd>volver</Teclas>
@@ -201,20 +201,20 @@ function MenuDeSala({ salaId, sala, alVincular }: { salaId: string; sala: any; a
   const items: (ItemMenu & { f: () => void })[] = [
     ...(sala.tipo === 'puente' ? [{ texto: 'Aplicar los cambios del juego', pista: enDesarrollo ? 'en desarrollo se aplican solos' : 'recompila y recarga sin cortar sesiones', f: async () => {
       if (enDesarrollo) { setAviso('Con el servidor de desarrollo (Vite) los cambios del cliente ya se aplican solos al guardar.'); return; }
-      try { await cliente.accion('aplicarCliente'); setAviso('Recompilando… el refugio se recargará solo al terminar.'); } catch (e) { setAviso((e as Error).message); }
+      try { await cliente.accion('aplicarCliente'); setAviso('Recompilando… la taberna se recargará sola al terminar.'); } catch (e) { setAviso((e as Error).message); }
     } }] : []),
     ...(repo?.esGit ? [{ texto: 'Abrir en el cliente de git', pista: repo.cambios ? `${repo.cambios} cambios · G` : 'G', f: () => { cerrarPanel(); abrirGit({ ruta: repo.ruta, vista: 'cambios' }); } }] : []),
     { texto: 'Abrir la terminal de la sala', pista: 'T', f: () => { cerrarPanel(); window.dispatchEvent(new CustomEvent('refugio:terminal', { detail: { salaId } })); } },
     { texto: 'Abrir en Finder', f: () => abrir('finder') },
     { texto: 'Abrir en el editor', f: () => abrir('editor') },
     { texto: 'Abrir en Terminal.app', f: () => abrir('terminal') },
-    ...(repo?.worktrees ?? []).filter(w => !w.principal).map(w => ({ texto: <>Copia holográfica <b>{w.rama || 'sin rama'}</b> <span className="tenue">(worktree)</span></>, pista: w.ocupado ? `dentro: ${w.ocupado}` : w.cambios ? `${w.cambios} cambios` : w.adelantados ? `${w.adelantados} commits` : 'limpia', f: () => juego.set({ panel: 'worktree', panelDatos: { salaId, aparato: 'wt:' + w.ruta } }) })),
+    ...(repo?.worktrees ?? []).filter(w => !w.principal).map(w => ({ texto: <>Espectro <b>{w.rama || 'sin rama'}</b> <span className="tenue">(worktree)</span></>, pista: w.ocupado ? `dentro: ${w.ocupado}` : w.cambios ? `${w.cambios} cambios` : w.adelantados ? `${w.adelantados} commits` : 'limpia', f: () => juego.set({ panel: 'worktree', panelDatos: { salaId, aparato: 'wt:' + w.ruta } }) })),
     ...(deRepo && habs[0] && repo?.existe !== false ? [{ texto: <>Adaptar la sala al repo: que <b>{habs[0].nombre}</b> le diseñe una escena</>, pista: sala.decorado ? 'o retocar la que tiene' : 'lee el repo y la decora', f: () => adaptarSala(salaId).catch(e => setAviso((e as Error).message)) }] : []),
     ...(deRepo && sala.decorado ? [{ texto: 'Volver a la escena de serie', pista: 'quita el decorado', f: async () => {
       try { await cliente.accion('sala.quitarDecorado', { salaId }); setAviso('La sala vuelve a su plantilla de serie.'); } catch (e) { setAviso((e as Error).message); }
     } }] : []),
-    ...(deRepo ? [{ texto: 'Vincular la sala a otra carpeta…', pista: 'un repo tuyo: la sala y su habitante se quedan', f: alVincular }] : []),
-    ...(deRepo ? [{ texto: confirmar ? '¿Seguro? Enter otra vez para retirar la sala' : 'Retirar la sala del refugio', pista: repo?.ejemplo ? 'la copia del repo de ejemplo va a la papelera' : 'la carpeta no se toca', peligro: true, f: async () => {
+    ...(deRepo ? [{ texto: 'Vincular la sala a otra carpeta…', pista: 'un repo tuyo: la sala y su aventurero se quedan', f: alVincular }] : []),
+    ...(deRepo ? [{ texto: confirmar ? '¿Seguro? Enter otra vez para retirar la sala' : 'Retirar la sala de la taberna', pista: repo?.ejemplo ? 'la copia del repo de ejemplo va a la papelera' : 'la carpeta no se toca', peligro: true, f: async () => {
       if (!confirmar) { setConfirmar(true); return; }
       try { await cliente.accion('retirarSala', { salaId }); cerrarPanel(); } catch (e) { setAviso((e as Error).message); setConfirmar(false); }
     } }] : []),
@@ -229,8 +229,8 @@ function MenuDeSala({ salaId, sala, alVincular }: { salaId: string; sala: any; a
           <dt>último commit</dt><dd>{repo.ultimoCommit?.mensaje ?? '—'} <span className="tenue">{repo.ultimoCommit ? hace(repo.ultimoCommit.fecha) : ''}</span></dd>
         </> : <><dt>git</dt><dd className="tenue">{repo?.subrepos?.length ? `ala con ${repo.subrepos.length} repos` : 'no es un repo'}</dd></>}
         <dt>tipo</dt><dd>{TIPO[repo?.tipo ?? ''] ?? repo?.tipo ?? '—'}{repo?.ejemplo && <span className="tenue"> · repo de ejemplo</span>}</dd>
-        <dt>habitantes</dt><dd>{habs.map(h => h.nombre).join(', ') || '—'}</dd>
-        {deRepo && <><dt>escena</dt><dd>{sala.decorado ? <>{sala.decorado.resumen || 'decorado propio'} <span className="tenue">(diseñada por su habitante)</span></> : <span className="tenue">la de serie de su tipo de repo</span>}</dd></>}
+        <dt>aventureros</dt><dd>{habs.map(h => h.nombre).join(', ') || '—'}</dd>
+        {deRepo && <><dt>escena</dt><dd>{sala.decorado ? <>{sala.decorado.resumen || 'decorado propio'} <span className="tenue">(diseñada por su aventurero)</span></> : <span className="tenue">la de serie de su tipo de repo</span>}</dd></>}
       </dl></div>
       {aviso && <p className="aviso-consola">{aviso}</p>}
       <Opciones items={items} i={i} setI={k => { setI(k); if (k !== items.length - 1) setConfirmar(false); }} alElegir={k => items[k].f()} />
@@ -268,7 +268,7 @@ function PanelWorktree() {
       cliente.enviar({ t: 'empezar', habitanteId: libre.id, salaId, prompt, opciones: {} });
       cerrarPanel(); irA(salaId, libre.id, true);
     } }] : []),
-    { texto: info.ocupado ? 'Desechar (no: hay alguien trabajando dentro)' : confirmar ? 'Otra vez (Enter o clic): eliminar el worktree y su rama' : 'Desechar la copia (apaga el holograma)…', peligro: true, apagado: info.ocupado, f: async () => {
+    { texto: info.ocupado ? 'Desechar (no: hay alguien trabajando dentro)' : confirmar ? 'Otra vez (Enter o clic): eliminar el worktree y su rama' : 'Desechar la copia (apaga el espectro)…', peligro: true, apagado: info.ocupado, f: async () => {
       if (info.ocupado) { SFX.noPermitido(); return; }
       if (!confirmar) { setConfirmar(true); return; }
       try {
@@ -320,7 +320,7 @@ function PanelVisitante() {
   return (
     <Aparato rotulo="VISITANTE · SESIÓN DE TERMINAL" ancho={52}>
       <p className="voz">Alguien trabaja con Claude Code en una terminal de esta carpeta{v ? `, desde hace ${Math.max(1, Math.round((Date.now() - v.modificada) / 60000))} min sin parar` : ''}.</p>
-      <p className="tenue">Si la traes al refugio, un habitante la retoma con todo su historial. Conviene cerrarla antes en la terminal para no escribir los dos a la vez.</p>
+      <p className="tenue">Si la traes a la taberna, un aventurero la retoma con todo su historial. Conviene cerrarla antes en la terminal para no escribir los dos a la vez.</p>
       <Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} />
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>aceptar <kbd>Esc</kbd>cerrar</Teclas>
     </Aparato>

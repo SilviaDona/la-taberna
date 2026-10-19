@@ -151,10 +151,10 @@ function Ventana({ v, repos, ruta }: { v: VentanaGit; repos: Repo[]; ruta: strin
         <span className="vt-ruta" title={ruta ?? ''}>{ocupado || ruta}</span>
         <BotonesVentana maximizada={v.maximizada} minimizar={minimizarGit} alternarMaximizar={alternarMaximizarGit} cerrar={cerrarGit} queCierra="el cliente de git" />
       </div>
-      {!ruta ? <div className="gd-vacio">No hay ningún repo de git en el refugio. Recluta uno en la Puerta Principal.</div> : (
+      {!ruta ? <div className="gd-vacio">No hay ningún repo de git en la taberna. Recluta uno en la Puerta Principal.</div> : (
         <div className="gc-cuerpo">
           <aside className="gc-lateral">
-            <select className="gc-repo" value={ruta} onChange={e => elegirRuta(e.target.value)} title="Repo (los de las salas del refugio y sus worktrees)">
+            <select className="gc-repo" value={ruta} onChange={e => elegirRuta(e.target.value)} title="Repo (los de las salas de la taberna y sus worktrees)">
               {repos.map(r => <option key={r.ruta} value={r.ruta}>{r.nombre}{r.cambios ? ` · ${r.cambios} cambios` : ''}</option>)}
             </select>
             <Rama estado={estado} ocupado={!!ocupado} hacer={hacer} />
@@ -187,8 +187,8 @@ function Ventana({ v, repos, ruta }: { v: VentanaGit; repos: Repo[]; ruta: strin
               ))}
               <span className="gc-pestanas-der">
                 <button className={'gc-boton' + (paralelo ? ' on' : '')} onClick={() => { setParalelo(p => { localStorage.setItem('refugio.git.paralelo', p ? '0' : '1'); return !p; }); SFX.conmutar(); }} title="Diff unificado o en paralelo">{paralelo ? '◫ En paralelo' : '☰ Unificado'}</button>
-                <button className="gc-boton" onClick={() => abrirArchivos({ raiz: ruta, ...(archivoSel && archivoSel.letra !== 'D' ? { rel: archivoSel.ruta } : {}) })} title="Explorar y editar los archivos de este repo (F en el refugio)">▤ Archivos</button>
-                {repo && <button className="gc-boton" onClick={() => abrirTerminalEn('git:' + ruta, repo.salaId, repo.nombre, ruta)} title="Abrir una terminal del refugio en este repo">⌨ Terminal</button>}
+                <button className="gc-boton" onClick={() => abrirArchivos({ raiz: ruta, ...(archivoSel && archivoSel.letra !== 'D' ? { rel: archivoSel.ruta } : {}) })} title="Explorar y editar los archivos de este repo (F en la taberna)">▤ Archivos</button>
+                {repo && <button className="gc-boton" onClick={() => abrirTerminalEn('git:' + ruta, repo.salaId, repo.nombre, ruta)} title="Abrir una terminal de la taberna en este repo">⌨ Terminal</button>}
               </span>
             </div>
             <div className="gc-vista">
@@ -262,7 +262,7 @@ function CajaCommit({ ruta, estado, ocupado, hacer, avisar }: { ruta: string; es
         <textarea value={msg} onChange={e => cambiar(e.target.value)} rows={Math.min(8, Math.max(2, msg.split('\n').length))} spellCheck={false}
           placeholder={`Mensaje (${CMD}Intro para hacer commit${estado?.rama ? ` en «${estado.rama}»` : ''})`}
           onKeyDown={e => { if (e.key === 'Enter' && (MAC ? e.metaKey : e.ctrlKey)) { e.preventDefault(); commit(); } }} />
-        <button className="gc-ia" disabled title="Generar el mensaje con IA: llegará cuando el refugio tenga inferencia">✨</button>
+        <button className="gc-ia" disabled title="Generar el mensaje con IA: llegará cuando la taberna tenga inferencia">✨</button>
       </div>
       <div className="gc-commit-botones">
         <button className="gc-boton principal ancho" disabled={!puede} onClick={() => commit()} title={todo ? 'No hay nada preparado: se prepara todo y se hace el commit' : `Commit de lo preparado (${CMD}Intro)`}>

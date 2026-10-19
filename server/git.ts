@@ -272,7 +272,7 @@ export function githubDemo(): DatosGitHub {
   const pr = (numero: number, titulo: string, repo: string, horas: number, revision?: string): { numero: number; titulo: string; url: string; repo: string; borrador: boolean; actualizado: number; revision?: string } =>
     ({ numero, titulo, url: `https://github.com/pulls#demo-${numero}`, repo, borrador: false, actualizado: Date.now() - horas * 3600_000, revision });
   return {
-    fuente: 'github', demo: true, usuario: 'supervisor-demo', nombre: 'Supervisor (DEMO)', total: dias.reduce((s, d) => s + d.n, 0), dias, ts: Date.now(),
+    fuente: 'github', demo: true, usuario: 'supervisor-demo', nombre: 'Tabernera (DEMO)', total: dias.reduce((s, d) => s + d.n, 0), dias, ts: Date.now(),
     prs: { mios: [pr(42, 'Rutas con parámetros opcionales', 'refugio/express', 3, 'REVIEW_REQUIRED'), pr(17, 'El reintento respeta el timeout', 'refugio/requests', 26, 'APPROVED')], revisar: [pr(8, 'Buscar dentro de archivos comprimidos', 'refugio/ripgrep', 5)], nMios: 2, nRevisar: 1 },
     error: 'DEMO: conecta GitHub en la cámara acorazada (tu token o la sesión de gh) para ver tu perfil y tus pull requests.',
   };
@@ -296,7 +296,7 @@ export function github(rutas: string[], forzar = false, conexion: { real: boolea
         prs: { mios: (j.data.mios?.nodes ?? []).filter((n: any) => n?.number).map(pr), revisar: (j.data.revisar?.nodes ?? []).filter((n: any) => n?.number).map(pr), nMios: j.data.mios?.issueCount ?? 0, nRevisar: j.data.revisar?.issueCount ?? 0 },
       };
     } catch (err) {
-      cache = { ...(await contribucionesLocales(rutas)), error: 'Sin GitHub (' + String((err as Error).message).split('\n')[0].slice(0, 160) + '): la matriz cuenta tus commits en los repos del refugio. Para la de tu perfil, instala gh y entra con «gh auth login».', ts: Date.now() };
+      cache = { ...(await contribucionesLocales(rutas)), error: 'Sin GitHub (' + String((err as Error).message).split('\n')[0].slice(0, 160) + '): la matriz cuenta tus commits en los repos de la taberna. Para la de tu perfil, instala gh y entra con «gh auth login».', ts: Date.now() };
     }
     return cache;
   })().finally(() => { pidiendo = null; });
@@ -330,7 +330,7 @@ const ESCRIBEN = new Set(['abortar', 'continuar', 'preparar', 'quitar', 'descart
 export async function accionGit(nombre: string, d: Record<string, any>, ctx: CtxGit): Promise<unknown> {
   if (nombre === 'github') return github(ctx.rutasRepos(), !!d.forzar, (await ctx.github?.()) ?? { real: false });
   const ruta = path.resolve(String(d.ruta ?? ''));
-  if (!ctx.rutaPermitida(ruta)) throw new Error('Esa carpeta no es un repo del refugio.');
+  if (!ctx.rutaPermitida(ruta)) throw new Error('Esa carpeta no es un repo de la taberna.');
   const lista = (v: unknown) => (Array.isArray(v) ? v.map(String) : []);
   const r = await (async () => {
     switch (nombre) {

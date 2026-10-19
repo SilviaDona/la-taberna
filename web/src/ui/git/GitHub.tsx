@@ -34,7 +34,7 @@ export function GitHub({ avisar }: { avisar: (t: string, error?: boolean) => voi
       <div className="gg-hoja">
         <div className="gg-cab">
           <div className="gg-quien">
-            <div className="gg-usuario">{d.usuario ? <>@{d.usuario}{d.nombre ? <span className="tenue"> · {d.nombre}</span> : null}</> : 'Tus commits en el refugio'}</div>
+            <div className="gg-usuario">{d.usuario ? <>@{d.usuario}{d.nombre ? <span className="tenue"> · {d.nombre}</span> : null}</> : 'Tus commits en la taberna'}</div>
             <div className="tenue">{d.total.toLocaleString('es-ES')} {d.fuente === 'github' ? 'contribuciones' : 'commits'} en el último año</div>
           </div>
           <span className="gg-mandos">

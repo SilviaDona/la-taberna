@@ -19,7 +19,7 @@ const GUIAS: Record<FuenteId, { que: string; pasos: React.ReactNode[] }> = {
   outlook: {
     que: 'correo sin leer de los últimos 7 días y calendario de los próximos 14 (solo lectura)',
     pasos: [
-      <>En {enlace('https://entra.microsoft.com')} → Aplicaciones → <b>Registros de aplicaciones</b> → <b>Nuevo registro</b>. Nombre: «work-shelter». Tipos de cuenta: los que uses (de trabajo, personales o ambas).</>,
+      <>En {enlace('https://entra.microsoft.com')} → Aplicaciones → <b>Registros de aplicaciones</b> → <b>Nuevo registro</b>. Nombre: «La Taberna». Tipos de cuenta: los que uses (de trabajo, personales o ambas).</>,
       <>Redirección: plataforma <b>Cliente público/nativo (móvil y escritorio)</b> con la URI <code>http://localhost</code>.</>,
       <>En <b>Permisos de API</b> → Microsoft Graph → permisos delegados: <code>Mail.Read</code>, <code>Calendars.Read</code>, <code>User.Read</code> y <code>offline_access</code>. No hace falta secreto de cliente.</>,
       <>Copia el <b>Id. de aplicación (cliente)</b> (y, si la app es de una sola organización, el <b>Id. de directorio</b>), pégalo aquí y <b>Guardar</b>. Después, <b>Conectar con Microsoft</b> e inicia sesión.</>,
@@ -62,10 +62,10 @@ const GUIAS: Record<FuenteId, { que: string; pasos: React.ReactNode[] }> = {
     ],
   },
   linear: {
-    que: 'notificaciones e incidencias asignadas; el habitante de Logística usa el MCP oficial de Linear para escribir',
+    que: 'notificaciones e incidencias asignadas; el aventurero de Logística usa el MCP oficial de Linear para escribir',
     pasos: [
       <>En Linear → Settings → Account → Security &amp; access → <b>Personal API keys</b> → New key (solo lectura basta para el tablero) y cópiala.</>,
-      <>Para que el habitante de Logística pueda crear o mover incidencias, la primera vez que lo use te pedirá autorizar el MCP oficial de Linear en el navegador.</>,
+      <>Para que el aventurero de Logística pueda crear o mover incidencias, la primera vez que lo use te pedirá autorizar el MCP oficial de Linear en el navegador.</>,
     ],
   },
 };
@@ -87,16 +87,16 @@ function MenuCamara({ ir }: { ir: (v: Vista) => void }) {
   const ints = vivo.usar(e => e.integraciones);
   const items: (ItemMenu & { f: () => void })[] = [
     ...INTEGRACIONES.map(f => { const st = ints[f.id]; return { texto: <><span className={'piloto-mini ' + (st?.estado ?? 'demo')} /> {f.nombre}</>, pista: TXT_ESTADO[st?.estado ?? 'demo'] + (st?.detalle && st.estado === 'error' ? ' — ' + st.detalle : ''), f: () => ir({ tipo: 'integracion', id: f.id }) }; }),
-    { texto: 'El refugio: nombre, raíz de repos, límite de sesiones', f: () => ir({ tipo: 'refugio' }) },
-    { texto: 'Atuendo del Supervisor', f: () => ir({ tipo: 'supervisor' }) },
+    { texto: 'La taberna: nombre, raíz de repos, límite de sesiones', f: () => ir({ tipo: 'refugio' }) },
+    { texto: 'Atuendo de la Tabernera', f: () => ir({ tipo: 'supervisor' }) },
     { texto: 'Opciones: sonido e idioma del dictado', pista: 'Esc', f: () => juego.set({ panel: 'opciones' }) },
     { texto: 'Atajos de teclado', pista: 'F1', f: () => juego.set({ panel: 'ayuda' }) },
-    { texto: 'Resetear el refugio…', peligro: true, f: () => ir({ tipo: 'reset' }) },
+    { texto: 'Resetear la taberna…', peligro: true, f: () => ir({ tipo: 'reset' }) },
   ];
   const [i, setI] = useMenu(items.length, k => items[k].f());
   return (
     <Aparato rotulo="CÁMARA ACORAZADA" ancho={54}>
-      <p className="voz">Llaves, credenciales y ajustes. Hanzo vigila; lo secreto se guarda en el llavero de tu Mac, nunca en el refugio.</p>
+      <p className="voz">Llaves, credenciales y ajustes. Hanzo vigila; lo secreto se guarda en el llavero de tu Mac, nunca en la taberna.</p>
       <Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} />
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>abrir <kbd>Esc</kbd>cerrar</Teclas>
     </Aparato>
@@ -158,7 +158,7 @@ function FormIntegracion({ ficha, valoresIni, guardadosIni, volver }: { ficha: F
     <Aparato rotulo={`CÁMARA · ${ficha.nombre.toUpperCase()}`} ancho={62} alto alCerrar={volver} piloto={st?.estado === 'conectada' ? 'trabajando' : st?.estado === 'error' ? 'error' : 'esperando'}>
       <div className="lista-desplazable">
         <p><b>Estado:</b> {TXT_ESTADO[st?.estado ?? 'demo']}{st?.detalle ? <span className="tenue"> — {st.detalle}</span> : null}{st?.ultima ? <span className="tenue"> · última lectura {new Date(st.ultima).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span> : null}</p>
-        <p className="tenue">Qué trae al refugio: {ficha.que}.</p>
+        <p className="tenue">Qué trae a la taberna: {ficha.que}.</p>
         <h3>Paso a paso</h3>
         <ol className="pasos">{ficha.pasos.map((p, k) => <li key={k}>{p}</li>)}</ol>
         {ficha.campos.length > 0 && <h3>Datos</h3>}
@@ -188,7 +188,7 @@ function VistaRefugio({ volver }: { volver: () => void }) {
   const [v, setV] = useState({ nombre: e?.nombre || NOMBRE_JUEGO, raizRepos: e?.raizRepos ?? '~', limiteSesiones: String(e?.limiteSesiones ?? 6) });
   const [msg, setMsg] = useState('');
   const [foco, setFoco] = useState(0);
-  const campos: [keyof typeof v, string][] = [['nombre', 'Nombre del refugio'], ['raizRepos', 'Raíz de repos (sugerencias de la puerta)'], ['limiteSesiones', 'Límite de sesiones simultáneas']];
+  const campos: [keyof typeof v, string][] = [['nombre', 'Nombre de la taberna'], ['raizRepos', 'Raíz de repos (sugerencias de la puerta)'], ['limiteSesiones', 'Límite de sesiones simultáneas']];
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   useEffect(() => { refs.current[foco]?.focus(); }, [foco]);
   const guardar = async () => {
@@ -223,9 +223,9 @@ function VistaSupervisor({ volver }: { volver: () => void }) {
   ];
   const [i, setI] = useMenu(items.length, k => items[k].f(), undefined, volver);
   return (
-    <Aparato rotulo="CÁMARA · ATUENDO DEL SUPERVISOR" ancho={44} alCerrar={volver}>
+    <Aparato rotulo="CÁMARA · ATUENDO DE LA TABERNERA" ancho={44} alCerrar={volver}>
       <Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} />
-      {!atuendos.length && <p className="tenue">Los accesorios se compran con chatarra en la tienda (I).</p>}
+      {!atuendos.length && <p className="tenue">Los accesorios se compran con oro en la tienda (I).</p>}
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>ponérselo <kbd>Esc</kbd>volver</Teclas>
     </Aparato>
   );
@@ -233,7 +233,7 @@ function VistaSupervisor({ volver }: { volver: () => void }) {
 
 function VistaReset({ volver }: { volver: () => void }) {
   const [paso, setPaso] = useState(0);
-  const items: ItemMenu[] = [{ texto: 'No, volver' }, { texto: paso ? 'Sí, de verdad: borrar el refugio' : 'Resetear el refugio', peligro: true }];
+  const items: ItemMenu[] = [{ texto: 'No, volver' }, { texto: paso ? 'Sí, de verdad: borrar la taberna' : 'Resetear la taberna', peligro: true }];
   const elegir = async (k: number) => {
     if (k === 0) return volver();
     if (!paso) { setPaso(1); return; }
@@ -242,7 +242,7 @@ function VistaReset({ volver }: { volver: () => void }) {
   const [i, setI] = useMenu(2, elegir, undefined, volver);
   return (
     <Aparato rotulo="CÁMARA · RESETEO" ancho={44} piloto="error" alCerrar={volver}>
-      <p className="aviso-consola">Se paran todas las sesiones y el refugio vuelve a su estado inicial: salas, habitantes, disposición, progreso, inventario y récords.</p>
+      <p className="aviso-consola">Se paran todas las sesiones y la taberna vuelve a su estado inicial: salas, aventureros, disposición, progreso, inventario y récords.</p>
       <p className="tenue">No se toca ninguna carpeta ni ningún repo. Las credenciales del llavero se conservan. Las conversaciones de Claude Code siguen en su sitio y se pueden retomar.</p>
       <Opciones items={items} i={i} setI={setI} alElegir={elegir} />
     </Aparato>

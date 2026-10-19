@@ -8,9 +8,16 @@ describe('estado guardado', () => {
     viejo.salas = viejo.salas.filter((s: any) => s.id !== 'git').concat([{ id: 'mio', tipo: 'repo', nombre: 'mio', ruta: '/tmp/mio', planta: 3, lado: 'izq', orden: 0, variante: 'taller' }]);
     const s = sanear(viejo);
     expect(anadirSalasDeServicio(s)).toBe(true);
-    expect(s.salas.find(x => x.id === 'git')).toMatchObject({ tipo: 'git', nombre: 'Control de Versiones', planta: 2, lado: 'der', orden: 1 });
+    expect(s.salas.find(x => x.id === 'git')).toMatchObject({ tipo: 'git', nombre: 'Archivo del Escriba', planta: 2, lado: 'der', orden: 1 });
     expect(s.salas.find(x => x.id === 'mio')?.ruta).toBe('/tmp/mio');
     expect(anadirSalasDeServicio(s)).toBe(false);
+  });
+  it('La Taberna: las salas especiales con su nombre de refugio pasan al de la taberna; las renombradas, no', () => {
+    const viejo: any = estadoInicial();
+    for (const s of viejo.salas) { if (s.id === 'git') s.nombre = 'Control de Versiones'; if (s.id === 'puente') s.nombre = 'Mi sótano'; }
+    const s = sanear(viejo);
+    expect(s.salas.find(x => x.id === 'git')?.nombre).toBe('Archivo del Escriba');
+    expect(s.salas.find(x => x.id === 'puente')?.nombre).toBe('Mi sótano');
   });
   it('sin salas no se acepta (el almacén aparta la copia y arranca de cero)', () => {
     expect(() => sanear({ salas: null })).toThrow();

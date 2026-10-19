@@ -113,7 +113,7 @@ export async function amueblarChapa(ctx: Contexto) {
     g.add(o);   // cada sombrero, apoyado en su balda (la altura medida)
   });
   ctx.sala.obstaculos.push(new THREE.Box2(new THREE.Vector2(4.2, zB), new THREE.Vector2(5.9, zB + 0.75)));
-  cartelEnPared(g, cartel(['SE PRUEBA', 'SIN', 'COMPROMISO'], 'ROPERÍA DEL REFUGIO', '#efe4c8', '#2d4f3f', 'engranaje', semilla + 3), 0.45, 2.15, 0.48, 0.66, zB + 0.33, -0.02);
+  cartelEnPared(g, cartel(['SE PRUEBA', 'SIN', 'COMPROMISO'], 'ROPERÍA DE LA TABERNA', '#efe4c8', '#2d4f3f', 'engranaje', semilla + 3), 0.45, 2.15, 0.48, 0.66, zB + 0.33, -0.02);
 
   // ---- el puesto: la mesa de corte de la ropería, de pie (un mueble bajo con cajones, a la altura de las manos), con
   // el monitor del catálogo, tela, tijeras y la cinta

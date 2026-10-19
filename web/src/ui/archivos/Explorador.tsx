@@ -530,7 +530,7 @@ function Ventana({ v, raices, raiz }: { v: VentanaArchivos; raices: Raiz[]; raiz
         <span className="vt-ruta" title={rutaCabeza}>{rutaCabeza}</span>
         <BotonesVentana maximizada={v.maximizada} minimizar={minimizarArchivos} alternarMaximizar={alternarMaximizarArchivos} cerrar={cerrarArchivos} queCierra="la ventana de archivos" />
       </div>
-      {!raiz ? <div className="gd-vacio">No hay ninguna sala con carpeta en el refugio. Recluta un repo en la Puerta Principal.</div> : (
+      {!raiz ? <div className="gd-vacio">No hay ninguna sala con carpeta en la taberna. Recluta un repo en la Puerta Principal.</div> : (
         <div className="ex-cuerpo">
           <aside className="ex-lateral">
             <div className="ex-lateral-cabeza">

@@ -70,9 +70,9 @@ describe('aspectos de los habitantes', () => {
     expect(vistos.size).toBeGreaterThan(110);
     expect(resumenAspecto(aspectoAlAzar(azar(5), 'robot'))).toMatch(/^robot: /);
   });
-  it('el guardián de la puerta es un androide por piezas', () => {
+  it('el guardián de la puerta es el bárbaro de KayKit; su aspecto de androide sigue siendo válido', () => {
     const g = HABITANTES_INICIALES.find(h => h.id === 'guardian')!;
-    expect(g.aspecto?.especie).toBe('robot');
+    expect(g.tipo).toBe('Barbarian');
     expect(sanearAspecto(ASPECTO_GUARDIAN)).toBeTruthy();
   });
   it('la Octocat no tiene aspecto por piezas', () => {

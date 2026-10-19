@@ -77,7 +77,7 @@ export function PanelComunicaciones({ soloFuente }: { soloFuente?: string } = {}
           </> : null}
         </div>
       </div>
-      {webs.length > 0 && <div className="botonera abrir-webs"><span className="tenue">Abrir aquí:</span>{webs.map((x, k) => <button key={x} className="boton-taller" onClick={() => abrirNavegador(x)} title={`Abrir ${SITIOS[x].nombre} en su navegador del refugio (${k + 1})`}>{k + 1} · {SITIOS[x].nombre}</button>)}</div>}
+      {webs.length > 0 && <div className="botonera abrir-webs"><span className="tenue">Abrir aquí:</span>{webs.map((x, k) => <button key={x} className="boton-taller" onClick={() => abrirNavegador(x)} title={`Abrir ${SITIOS[x].nombre} en su navegador de la taberna (${k + 1})`}>{k + 1} · {SITIOS[x].nombre}</button>)}</div>}
       <Teclas><kbd>↑↓</kbd>avisos {!soloFuente && <><kbd>←→</kbd>fuente </>}<kbd>Enter</kbd>abrir el original <kbd>N</kbd>solo sin ver <kbd>V</kbd>marcar todo visto {webs.length > 0 && <><kbd>1–{webs.length}</kbd>abrir la web </>}<kbd>Esc</kbd>cerrar</Teclas>
     </Aparato>
   );
@@ -165,7 +165,7 @@ export function PanelLogistica() {
   if (vista === 'tablero') return <TableroLinear volver={() => setVista('menu')} />;
   return (
     <Aparato rotulo="LOGÍSTICA · LINEAR" ancho={52} piloto={st?.estado === 'conectada' ? 'trabajando' : 'esperando'}>
-      <p className="voz">El tablero muestra lo que Linear te cuenta. Para escribir en Linear, habla con el habitante de la sala: trabaja con el MCP oficial de Linear y cada cambio pasa por tu permiso.</p>
+      <p className="voz">El tablero muestra lo que Linear te cuenta. Para escribir en Linear, habla con el aventurero de la sala: trabaja con el MCP oficial de Linear y cada cambio pasa por tu permiso.</p>
       <p className="tenue">Estado: {st?.estado === 'demo' ? 'DEMO (configúralo en la cámara acorazada)' : st?.estado ?? 'DEMO'}</p>
       <ul className="opciones-consola">{items.map((it, k) => <li key={k} className={k === i ? 'activa' : ''} onMouseEnter={() => setI(k)} onClick={() => it.f()}><span className="cursor">{k === i ? '▶' : ' '}</span><span>{it.texto}</span></li>)}</ul>
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>usar <kbd>Esc</kbd>cerrar</Teclas>
@@ -223,7 +223,7 @@ function TableroLinear({ volver }: { volver: () => void }) {
           </div>
         ))}
       </div>
-      <Teclas><kbd>←→</kbd>columna <kbd>↑↓</kbd>incidencia <kbd>Enter</kbd>abrir en Linear <kbd>P</kbd>proyecto <kbd>U</kbd>urgentes <kbd>T</kbd>{verEquipo ? 'mis incidencias' : 'tablero del equipo'} <kbd>R</kbd>recargar <kbd>Esc</kbd>volver · para cambiarlas, habla con el habitante de la sala</Teclas>
+      <Teclas><kbd>←→</kbd>columna <kbd>↑↓</kbd>incidencia <kbd>Enter</kbd>abrir en Linear <kbd>P</kbd>proyecto <kbd>U</kbd>urgentes <kbd>T</kbd>{verEquipo ? 'mis incidencias' : 'tablero del equipo'} <kbd>R</kbd>recargar <kbd>Esc</kbd>volver · para cambiarlas, habla con el aventurero de la sala</Teclas>
     </Aparato>
   );
 }

@@ -89,7 +89,7 @@ class Outlook extends ConectorBase {
           await this.token({ grant_type: 'authorization_code', code: codigo, redirect_uri: redireccion, code_verifier: verificador, scope: SCOPES });
           this.yo = null; const yo = await this.quienSoy();
           this.bien(`Conectado como ${yo.nombre ?? yo.correo}.`); this.avisar?.('activar');
-          return { ok: true, titulo: 'Conectado', texto: `Listo${yo.nombre ? ', ' + yo.nombre : ''}: el refugio ya ve tu correo sin leer y tu calendario. Puedes volver a work-shelter.` };
+          return { ok: true, titulo: 'Conectado', texto: `Listo${yo.nombre ? ', ' + yo.nombre : ''}: la taberna ya ve tu correo sin leer y tu calendario. Puedes volver a La Taberna.` };
         } catch (e) { this.mal((e as Error).message); this.avisar?.('estado'); return { ok: false, titulo: 'No se pudo conectar con Microsoft', texto: (e as Error).message }; }
       },
     });

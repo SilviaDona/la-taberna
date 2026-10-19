@@ -34,7 +34,7 @@ class Matriz {
     g.textBaseline = 'middle';
     // cabecera
     g.fillStyle = '#e6edf3'; g.font = `700 40px ${FUENTES.mono}`;
-    g.fillText(d?.usuario ? '@' + d.usuario : d ? 'tus commits en el refugio' : 'conectando con GitHub…', 36, 48);
+    g.fillText(d?.usuario ? '@' + d.usuario : d ? 'tus commits en la taberna' : 'conectando con GitHub…', 36, 48);
     if (d) {
       g.textAlign = 'right'; g.fillStyle = '#9aa7b4'; g.font = `500 30px ${FUENTES.mono}`;
       g.fillText(`${fmtN.format(d.total)} ${d.fuente === 'github' ? 'contribuciones' : 'commits'} en el último año`, W - 36, 50); g.textAlign = 'left';
@@ -140,7 +140,7 @@ export async function amueblarGit(ctx: Contexto) {
   for (const [id, dx] of [['grafo', -1.45], ['grafo-2', 1.45]] as const) ctx.sala.puntos.push({ id, tipo: 'pieza', pos: new THREE.Vector3(XM + dx, 0, ZE + 1.05), giro: Math.atan2(-dx, -1.05),
     acciones: [{ clip: 'Interact', alHacer: latir }, { clip: 'Ranged_Magic_Raise', alHacer: latir }, { clip: 'Holding_A', utensilio: 'diario', dur: 4 }] });
   // ---- izquierda: el puesto del cliente de git y la flota de repos en la pared
-  const flota = new PantallaLista('REPOS DEL REFUGIO', 640, 400, v.pantalla);
+  const flota = new PantallaLista('REPOS DE LA TABERNA', 640, 400, v.pantalla);
   await monitorPared(ctx, -4.45, 2.45, 1.3, flota.tex, 1.15);
   // el puesto del cliente de git, de tres cuartos: mesa con el terminal (los últimos commits del refugio), teclado y taza
   const consola = new PantallaFosforo(256, 256, v.pantalla); consola.velocidad = 22; consola.escribir(['$ git status', 'leyendo repos…']); ctx.sala.pantallas.push(consola);

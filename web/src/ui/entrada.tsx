@@ -138,7 +138,7 @@ export function useDictado({ area, texto, setTexto, alEnviar }: { area: React.Re
       else if (m.estado === 'final') acabar(m.texto ?? x.dicho);
       else if (m.estado === 'error') { setAviso(m.texto || 'El dictado ha fallado.'); SFX.error(); acabar(x.dicho || null); }
     });
-    const SIN_PERMISO = 'No tengo permiso para el micrófono: dáselo a work-shelter en Ajustes del Sistema → Privacidad y seguridad → Micrófono.';
+    const SIN_PERMISO = 'No tengo permiso para el micrófono: dáselo a La Taberna en Ajustes del Sistema → Privacidad y seguridad → Micrófono.';
     // en la app, el permiso de macOS lo pide Electron (la primera vez sale el aviso del sistema)
     const permiso = await (window as any).shelterVentana?.pedirMicrofono?.().catch(() => true);
     if (permiso === false) { setAviso(SIN_PERMISO); SFX.error(); acabar(null); return; }

@@ -59,10 +59,10 @@ delete process.env.SHELTER_TOKEN;   // que no lo herede nada de lo que lanza el 
 const escribirToken = () => { try { mkdirSync(DATOS, { recursive: true, mode: 0o700 }); writeFileSync(path.join(DATOS, 'token'), TOKEN, { mode: 0o600 }); } catch (e) { console.error('No pude escribir el token:', (e as Error).message); } };
 const tokenValido = (t: string | null) => { if (!t) return false; const a = Buffer.from(t), b = Buffer.from(TOKEN); return a.length === b.length && timingSafeEqual(a, b); };
 const HOSTS = /^(127\.0\.0\.1|localhost):\d+$/;
-process.on('uncaughtException', e => console.error('Error no capturado (el refugio sigue):', e));
+process.on('uncaughtException', e => console.error('Error no capturado (la taberna sigue):', e));
 // si se cae la ventana que lo lanzó, su salida ya no va a ningún sitio: escribir en ella no puede tumbar el servidor
 for (const f of [process.stdout, process.stderr]) f.on('error', () => {});
-process.on('unhandledRejection', e => console.error('Promesa rechazada sin capturar (el refugio sigue):', e));
+process.on('unhandledRejection', e => console.error('Promesa rechazada sin capturar (la taberna sigue):', e));
 
 const almacen = new Almacen();
 asegurarJugador(almacen);
@@ -148,7 +148,7 @@ sesiones.on('turno', r => {
     const p = recompensaTarea(almacen, r.herramientasTurno);
     const quien = almacen.estado.habitantes.find(x => x.id === r.habitanteId)?.nombre ?? 'Alguien';
     difundir({ t: 'estado', estado: almacen.estado as any });
-    difundir({ t: 'aviso', nivel: 'info', texto: `${quien} ha terminado: +${p.chatarra} de chatarra${p.pieza ? ` y ha encontrado ${p.pieza.nombre} (${p.pieza.rareza})` : ''}.` });
+    difundir({ t: 'aviso', nivel: 'info', texto: `${quien} ha terminado: +${p.chatarra} de oro${p.pieza ? ` y ha encontrado ${p.pieza.nombre} (${p.pieza.rareza})` : ''}.` });
   }
   const h = almacen.estado.habitantes.find(x => x.id === r.habitanteId); if (h && r.claudeId) { h.ultimaSesion = r.claudeId; almacen.guardar(); }
 });
@@ -192,7 +192,7 @@ async function subir(d: Record<string, any>, idsSes: string[]) {
   const sacadas = (await Promise.all(idsSes.map(id => sesiones.sacar(id).catch(e => { avisos.push((e as Error).message); return null; })))).filter(Boolean) as Awaited<ReturnType<typeof sesiones.sacar>>[];
   const conv = sacadas.map(r => ({ titulo: `${nombre(r.habitanteId)} · ${r.titulo}`, comando: comandoReanudar(r) }));
   if (conv.length && !(await abrir(conv, !!d.ventanaNueva && !terms.length)))
-    avisos.push('Las conversaciones están guardadas: retómalas desde su habitante o con ' + sacadas.map(r => `claude --resume ${r.claudeId}`).join(', ') + '.');
+    avisos.push('Las conversaciones están guardadas: retómalas desde su aventurero o con ' + sacadas.map(r => `claude --resume ${r.claudeId}`).join(', ') + '.');
   if (terms.length || conv.length) difundir({ t: 'aviso', nivel: 'info', texto: `A la superficie: ${[conv.length && `${conv.length} conversaci${conv.length > 1 ? 'ones' : 'ón'}`, terms.length && `${terms.length} terminal${terms.length > 1 ? 'es' : ''}`].filter(Boolean).join(' y ')} en ${app || 'tu escritorio'}.` });
   for (const a of avisos) difundir({ t: 'aviso', nivel: 'aviso', texto: a });
   return { sesiones: conv.length, terminales: terms.length, avisos, app };
@@ -302,7 +302,7 @@ async function accion(nombre: string, d: Record<string, any> = {}): Promise<unkn
     case 'retirarSala': {
       const sr = e.salas.find(s => s.id === d.salaId);
       if (!sr) throw new Error('Esa sala no existe.');
-      if (sr.tipo !== 'repo' && sr.tipo !== 'coordinacion') throw new Error('Las salas de servicio del refugio no se retiran.');
+      if (sr.tipo !== 'repo' && sr.tipo !== 'coordinacion') throw new Error('Las salas de servicio de la taberna no se retiran.');
       // primero se comprueba (nada se corta) y luego se cierran las conversaciones terminadas de la sala
       if (sesiones.lista().some(s => s.salaId === d.salaId && ['arrancando', 'trabajando', 'esperando'].includes(s.estado))) throw new Error('Hay alguien trabajando en esa sala. Párale antes de retirarla.');
       for (const ses of sesiones.lista()) if (ses.salaId === d.salaId) sesiones.cerrar(ses.id);
@@ -355,7 +355,7 @@ async function accion(nombre: string, d: Record<string, any> = {}): Promise<unkn
       if (d.aspecto !== null && !a) throw new Error('Ese aspecto no es válido.');
       if (d.quien === 'supervisor') almacen.cambiar(x => { if (a) x.supervisor.aspecto = a; else delete x.supervisor.aspecto; });
       else {
-        const h = e.habitantes.find(x => x.id === d.quien); if (!h) throw new Error('No hay nadie con ese nombre en el refugio.');
+        const h = e.habitantes.find(x => x.id === d.quien); if (!h) throw new Error('No hay nadie con ese nombre en la taberna.');
         if (h.tipo === 'Octocat') throw new Error('La Octocat es como es: su aspecto no se toca.');
         almacen.cambiar(() => { if (a) { h.aspecto = a; delete h.tono; } else delete h.aspecto; });
       }
@@ -460,7 +460,7 @@ function compilarCliente() {
 }
 function aplicarCliente() {
   if (compilando) throw new Error('Ya estoy recompilando el cliente.');
-  difundir({ t: 'aviso', nivel: 'info', texto: 'Mantenimiento: recompilando el cliente del refugio…' });
+  difundir({ t: 'aviso', nivel: 'info', texto: 'Mantenimiento: recompilando el cliente de la taberna…' });
   compilarCliente().then(() => {
     difundir({ t: 'aviso', nivel: 'info', texto: 'Cliente nuevo listo. Recargando sin cortar las sesiones…' });
     setTimeout(() => difundir({ t: 'recargar' }), 900);
@@ -486,7 +486,7 @@ async function reiniciarJuego() {
     await comprobarServidor();
   } catch (e) { reiniciando = false; throw e; }
   const relevo = !!process.env.SHELTER_HUELLA_APP && process.env.SHELTER_HUELLA_APP !== huellas.huella('app');
-  console.log(relevo ? '\nReiniciando la app entera a petición del Supervisor…' : '\nReiniciando el servidor a petición del Supervisor…');
+  console.log(relevo ? '\nReiniciando la app entera a petición de la Tabernera…' : '\nReiniciando el servidor a petición de la Tabernera…');
   difundir({ t: 'reiniciando' });
   soltarTodo();
   setTimeout(() => process.exit(relevo ? CODIGO_RELEVO : CODIGO_REINICIO), 400);
@@ -544,7 +544,7 @@ async function empezarTrabajo(ws: WebSocket, m: Extract<MensajeCliente, { t: 'em
   if (!sala.ruta) mkdirSync(carpeta, { recursive: true });
   const cwd = m.opciones.cwd ? path.resolve(m.opciones.cwd) : carpeta;
   if (cwd !== carpeta && salaDeRuta(cwd) !== sala.id) throw new Error('Esa carpeta no es de esta sala.');
-  if (!e.habitantes.some(h => h.id === m.habitanteId && h.salaId === sala.id)) throw new Error('Ese habitante no vive en esta sala.');
+  if (!e.habitantes.some(h => h.id === m.habitanteId && h.salaId === sala.id)) throw new Error('Ese aventurero no vive en esta sala.');
   // retomar una conversación que ya está abierta no la duplica: se vuelve a ella
   const abierta = m.opciones.reanudar ? sesiones.lista().find(p => p.claudeId === m.opciones.reanudar && p.estado !== 'cerrada') : undefined;
   if (abierta) return abierta.id;
@@ -601,7 +601,7 @@ async function manejar(ws: WebSocket, m: MensajeCliente) {
     case 'terminalEntrada': terminales.entrada(m.id, m.datos); break;
     case 'terminalTamano': terminales.tamano(m.id, m.cols, m.filas); break;
     case 'terminalCerrar': terminales.cerrar(m.id); break;
-    case 'salir': apagar('El Supervisor ha cerrado el refugio.'); break;
+    case 'salir': apagar('La Tabernera ha cerrado la taberna.'); break;
     case 'accion': {
       try { enviar(ws, { t: 'respuesta', peticion: m.peticion ?? '', datos: await accion(m.nombre, m.datos) }); }
       catch (err) { enviar(ws, { t: 'respuesta', peticion: m.peticion ?? '', error: (err as Error).message }); }
@@ -692,10 +692,10 @@ wss.on('connection', ws => {
 let apagando = false;
 function apagar(motivo: string) {
   if (apagando) return; apagando = true;
-  console.log(`\nApagando el refugio (${motivo})…`);
+  console.log(`\nApagando la taberna (${motivo})…`);
   // cada paso por separado: si uno falla (p. ej. no se puede guardar), el resto se hace igual y el proceso sale
   // al salir de verdad no queda nada abierto (para `./shelter superficie`, si luego no hay refugio)
-  for (const paso of [() => sesiones.cerrarTodas(), () => dictados.pararTodos(), () => writeFileSync(path.join(DATOS, 'abiertas.json'), '[]'), () => terminales.apagar(), () => integraciones.parar(), () => pararClones(), () => almacen.guardarYa(), () => difundir({ t: 'aviso', nivel: 'info', texto: 'work-shelter se ha cerrado. Hasta pronto, Supervisor.' })])
+  for (const paso of [() => sesiones.cerrarTodas(), () => dictados.pararTodos(), () => writeFileSync(path.join(DATOS, 'abiertas.json'), '[]'), () => terminales.apagar(), () => integraciones.parar(), () => pararClones(), () => almacen.guardarYa(), () => difundir({ t: 'aviso', nivel: 'info', texto: 'La Taberna se ha cerrado. Hasta pronto, Tabernera.' })])
     try { paso(); } catch (e) { console.error('Al apagar:', (e as Error).message); }
   setTimeout(() => process.exit(0), 1200);
 }
@@ -703,13 +703,13 @@ process.on('SIGINT', () => apagar('Ctrl+C'));
 process.on('SIGTERM', () => apagar('SIGTERM'));
 
 servidor.on('error', (e: NodeJS.ErrnoException) => {
-  if (e.code === 'EADDRINUSE') { console.error(`El puerto ${PUERTO} ya está en uso: ¿hay otro work-shelter abierto? Ciérralo o usa SHELTER_PUERTO.`); process.exit(2); }
+  if (e.code === 'EADDRINUSE') { console.error(`El puerto ${PUERTO} ya está en uso: ¿hay otra Taberna abierta? Ciérralo o usa SHELTER_PUERTO.`); process.exit(2); }
   throw e;
 });
 servidor.listen(PUERTO, '127.0.0.1', async () => {
   escribirToken();
-  console.log(`work-shelter escucha en http://127.0.0.1:${PUERTO}  (datos: ${DATOS})`);
-  if (!sesiones.claude) console.warn('AVISO: no encuentro el binario `claude`. Instala Claude Code e inicia sesión para que los habitantes trabajen.');
+  console.log(`La Taberna escucha en http://127.0.0.1:${PUERTO}  (datos: ${DATOS})`);
+  if (!sesiones.claude) console.warn('AVISO: no encuentro el binario `claude`. Instala Claude Code e inicia sesión para que los aventureros trabajen.');
   else console.log(`Claude Code: ${sesiones.version}`);
   await refrescarRepos();
   integraciones.arrancar();

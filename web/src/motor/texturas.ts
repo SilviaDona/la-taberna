@@ -322,7 +322,7 @@ export function maquetaLanding(titulo: string, variante = 0, w = 512, h = 320) {
   g.fillStyle = tintas[variante % 3];
   g.fillRect(24, 18, 70, 12); for (let i = 0; i < 4; i++) g.fillRect(w - 260 + i * 56, 20, 40, 8);
   g.font = `800 ${Math.round(h * 0.13)}px ${FUENTES.titulo}`; g.fillText(titulo, 24, h * 0.36);
-  g.font = `500 ${Math.round(h * 0.05)}px ${FUENTES.mono}`; g.globalAlpha = 0.7; g.fillText('Aire limpio en todo el refugio.', 24, h * 0.47); g.globalAlpha = 1;
+  g.font = `500 ${Math.round(h * 0.05)}px ${FUENTES.mono}`; g.globalAlpha = 0.7; g.fillText('Aire limpio en todo la taberna.', 24, h * 0.47); g.globalAlpha = 1;
   g.fillStyle = acento; g.fillRect(24, h * 0.54, 150, 34); g.fillStyle = fondos[variante % 3]; g.font = `700 ${Math.round(h * 0.05)}px ${FUENTES.mono}`; g.fillText('Resérvalo', 36, h * 0.54 + 23);
   g.fillStyle = tintas[variante % 3]; g.globalAlpha = 0.12;
   for (let i = 0; i < 3; i++) g.fillRect(24 + i * ((w - 48) / 3), h * 0.72, (w - 48) / 3 - 12, h * 0.22);

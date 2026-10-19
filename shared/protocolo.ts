@@ -157,7 +157,8 @@ export type MensajeServidor =
   | { t: 'reiniciando' };
 
 // el nombre del juego y, por defecto, del refugio
-export const NOMBRE_JUEGO = 'work-shelter';
+// nombre que se ve (la identidad en disco, el llavero y el puerto siguen siendo los de work-shelter-public)
+export const NOMBRE_JUEGO = 'La Taberna';
 
 export const MODELOS = [
   { valor: '', texto: 'El de tus ajustes' },

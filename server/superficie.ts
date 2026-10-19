@@ -47,12 +47,12 @@ function enganchar(id: string, socket: string) {
     while ((i = resto.indexOf('\n')) >= 0) {
       let m: any; try { m = JSON.parse(resto.slice(0, i)); } catch { m = null; } resto = resto.slice(i + 1);
       if (m?.ev === 'datos') salida.write(m.datos);
-      else if (m?.ev === 'fin') acabar(0, 'La terminal del refugio ha terminado.');
+      else if (m?.ev === 'fin') acabar(0, 'La terminal de la taberna ha terminado.');
       else if (m?.ev === 'error') acabar(1, m.texto);
     }
   });
-  s.on('error', e => acabar(1, `No encuentro el refugio (${(e as NodeJS.ErrnoException).code ?? e.message}): ¿sigue abierto work-shelter?`));
-  s.on('close', () => acabar(0, 'Desenganchada del refugio.'));
+  s.on('error', e => acabar(1, `No encuentro la taberna (${(e as NodeJS.ErrnoException).code ?? e.message}): ¿sigue abierta La Taberna?`));
+  s.on('close', () => acabar(0, 'Desenganchada de la taberna.'));
 }
 
 // ---------------------------------------------------------------- con el juego en marcha
@@ -64,7 +64,7 @@ function pedirAlServidor(nombre: string, datos: Record<string, unknown>) {
   const origen = `http://127.0.0.1:${PUERTO}`;
   return new Promise<any>((ok, ko) => {
     const ws = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws?t=${encodeURIComponent(token)}`, { origin: origen });
-    const reloj = setTimeout(() => { ws.terminate(); ko(new Error('El refugio no responde.')); }, 60_000);
+    const reloj = setTimeout(() => { ws.terminate(); ko(new Error('La taberna no responde.')); }, 60_000);
     ws.on('open', () => ws.send(JSON.stringify({ t: 'accion', nombre, datos, peticion: 'superficie' })));
     ws.on('message', raw => {
       let m: any; try { m = JSON.parse(String(raw)); } catch { return; }
@@ -95,9 +95,9 @@ function terminalesVivas(): Promise<{ id: string; cwd: string; programa?: string
 
 async function superficie(soloLista: boolean) {
   if (await servidorVivo()) {
-    if (soloLista) { console.log('El refugio está abierto: lo que tenga abierto saldrá a tu escritorio con `./shelter superficie`.'); return; }
+    if (soloLista) { console.log('La taberna está abierta: lo que tenga abierto saldrá a tu escritorio con `./shelter superficie`.'); return; }
     const r = await pedirAlServidor('superficie.sacar', { todo: true, ventanaNueva: true });
-    console.log(r.sesiones || r.terminales ? `A la superficie: ${r.sesiones} conversaciones y ${r.terminales} terminales en ${r.app || 'tu escritorio'}.` : 'No había nada abierto en el refugio.');
+    console.log(r.sesiones || r.terminales ? `A la superficie: ${r.sesiones} conversaciones y ${r.terminales} terminales en ${r.app || 'tu escritorio'}.` : 'No había nada abierto en la taberna.');
     for (const a of r.avisos ?? []) console.log('· ' + a);
     return;
   }
@@ -106,7 +106,7 @@ async function superficie(soloLista: boolean) {
   const conv = abiertasEnDisco().filter(a => !fuera.has(a.claudeId.toLowerCase()));
   const terms = (await terminalesVivas()).filter(t => !t.fuera);
   if (soloLista) {
-    console.log(conv.length || terms.length ? 'El refugio no está abierto. Quedó esto:' : 'El refugio no está abierto y no quedó nada abierto.');
+    console.log(conv.length || terms.length ? 'La taberna no está abierta. Quedó esto:' : 'La taberna no está abierta y no quedó nada abierto.');
     for (const a of conv) console.log(`  conversación  ${a.habitante ?? ''} · ${a.titulo ?? a.claudeId}  (${a.cwd})`);
     for (const t of terms) console.log(`  terminal      ${t.id}${t.programa ? ' · ' + t.programa : ''}  (${t.cwd})`);
     return;
@@ -115,7 +115,7 @@ async function superficie(soloLista: boolean) {
     ...terms.map(t => ({ titulo: `Terminal · ${path.basename(t.cwd)}`, comando: comandoEnganchar(path.join(RAIZ, 'shelter'), SOCKET_TERMINALES, t.id) })),
     ...conv.map(a => ({ titulo: `${a.habitante ?? 'Habitante'} · ${a.titulo ?? 'Conversación'}`, comando: comandoReanudar({ claudeId: a.claudeId, cwd: a.cwd, permisos: a.permisos }) })),
   ];
-  if (!items.length) { console.log('El refugio no está abierto y no quedó nada abierto.'); return; }
+  if (!items.length) { console.log('La taberna no está abierta y no quedó nada abierto.'); return; }
   const app = await abrirEnEscritorio(items, { ventanaNueva: true });
   console.log(`A la superficie: ${conv.length} conversaciones y ${terms.length} terminales en ${app}.`);
 }

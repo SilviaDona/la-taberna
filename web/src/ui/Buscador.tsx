@@ -56,19 +56,19 @@ function acciones(): Accion[] {
   return [
     { id: 'esperan', texto: 'Ir al que te espera', tecla: 'Q', claves: 'pendiente permiso pregunta urgente', f: () => { const h = ocupados([...j.habitantes, ...j.copias]).find(x => x.estado === 'esperando' || x.estado === 'error'); if (h) irA(h.sala, h.id, true); else SFX.noPermitido(); } },
     { id: 'ocupados', texto: 'Quién está ocupado', pista: 'trabajando, esperando, con avería', tecla: 'Tab', claves: 'ocupados trabajos estado', f: () => { alRefugio(); abrirPanel('ocupados'); } },
-    { id: 'plano', texto: 'Plano del refugio', pista: 'viaje rápido a cualquier sala', tecla: 'M', claves: 'mapa viajar salas', f: () => { alRefugio(); abrirPanel('plano'); } },
+    { id: 'plano', texto: 'Plano de la taberna', pista: 'viaje rápido a cualquier sala', tecla: 'M', claves: 'mapa viajar salas', f: () => { alRefugio(); abrirPanel('plano'); } },
     { id: 'cuaderno', texto: 'Cuaderno de una conversación', pista: 'la transcripción completa', tecla: 'R', claves: 'transcripcion historial leer', f: () => { alRefugio(); abrirPanel('cuaderno'); } },
     ...(conCarpeta ? [{ id: 'terminal', texto: `Terminal de ${sala.nombre}`, pista: 'shell en la carpeta de la sala', tecla: 'T', claves: 'terminal shell consola pty', f: () => window.dispatchEvent(new CustomEvent('refugio:terminal', { detail: { salaId: sala.id } })) }] : []),
-    ...(sala && (sala.tipo === 'repo' || sala.tipo === 'coordinacion') ? [{ id: 'adaptar', texto: `Adaptar ${sala.nombre} al repo`, pista: 'su habitante le diseña una escena', claves: 'decorar decorado escena sala personalizar atrezo', f: () => { alRefugio(); adaptarSala(sala.id).catch(() => SFX.error()); } }] : []),
+    ...(sala && (sala.tipo === 'repo' || sala.tipo === 'coordinacion') ? [{ id: 'adaptar', texto: `Adaptar ${sala.nombre} al repo`, pista: 'su aventurero le diseña una escena', claves: 'decorar decorado escena sala personalizar atrezo', f: () => { alRefugio(); adaptarSala(sala.id).catch(() => SFX.error()); } }] : []),
     { id: 'git', texto: 'Control de versiones', pista: 'cambios, commits, ramas y GitHub', tecla: 'G', claves: 'git github commit rama pull push pr', f: () => abrirGitDeSala(j.salaActual) },
     { id: 'comunicaciones', texto: 'Comunicaciones', pista: 'correo y chats', tecla: 'N', claves: 'correo mail chats avisos notificaciones tablon', f: () => { alRefugio(); irA('comunicaciones'); } },
     { id: 'planificacion', texto: 'Planificación', pista: 'calendario y agenda', tecla: 'C', claves: 'calendario agenda reuniones eventos', f: () => { alRefugio(); irA('planificacion'); } },
     { id: 'logistica', texto: 'Logística', pista: 'tablero de Linear', tecla: 'L', claves: 'linear tareas issues tablero', f: () => { alRefugio(); irA('logistica'); } },
     { id: 'musica', texto: 'Música', pista: 'Spotify y la pletina', tecla: `${K}J`, claves: 'spotify musica discoteca pletina', f: () => atajoMusica() },
     { id: 'barra', texto: 'Ventanas abiertas', pista: 'la barra de abajo, con el teclado', tecla: `${K}B`, claves: 'barra ventanas minimizadas', f: () => entrarBarra() },
-    { id: 'chapa', texto: 'Chapa y Pintura', pista: 'cambiar tu aspecto o el de un habitante', tecla: 'P', claves: 'aspecto ropa pelo probador personaje', f: () => { alRefugio(); abrirPanel('chapa'); } },
-    { id: 'inventario', texto: 'Inventario y tienda', tecla: 'I', claves: 'tienda chatarra accesorios guia', f: () => { alRefugio(); abrirPanel('inventario'); } },
-    { id: 'camara', texto: 'Cámara acorazada', pista: 'credenciales, integraciones y ajustes del refugio', claves: 'credenciales claves integraciones ajustes llavero limite sesiones raiz repos atuendo', f: () => { alRefugio(); irA('camara'); abrirPanel('camara'); } },
+    { id: 'chapa', texto: 'Chapa y Pintura', pista: 'cambiar tu aspecto o el de un aventurero', tecla: 'P', claves: 'aspecto ropa pelo probador personaje', f: () => { alRefugio(); abrirPanel('chapa'); } },
+    { id: 'inventario', texto: 'Inventario y tienda', tecla: 'I', claves: 'tienda oro accesorios guia', f: () => { alRefugio(); abrirPanel('inventario'); } },
+    { id: 'camara', texto: 'Cámara acorazada', pista: 'credenciales, integraciones y ajustes de la taberna', claves: 'credenciales claves integraciones ajustes llavero limite sesiones raiz repos atuendo', f: () => { alRefugio(); irA('camara'); abrirPanel('camara'); } },
     { id: 'web-linear', texto: 'Abrir Linear', pista: 'web', claves: 'navegador web', f: () => abrirNavegador('linear') },
     { id: 'web-outlook', texto: 'Abrir Outlook', pista: 'web', claves: 'navegador web correo mail', f: () => abrirNavegador('outlook') },
     { id: 'web-discord', texto: 'Abrir Discord', pista: 'web', claves: 'navegador web chat', f: () => abrirNavegador('discord') },
@@ -163,10 +163,10 @@ function Ventana() {
 
   return (
     <div className="fondo-buscador interactivo" onMouseDown={e => { if (e.target === e.currentTarget) cerrarBuscador(); }}>
-      <div className="buscador" role="dialog" aria-label="Buscador del refugio">
+      <div className="buscador" role="dialog" aria-label="Buscador de la taberna">
         <div className="buscador-cabeza">
           <span className="prompt-sim">&gt;</span>
-          <input ref={entrada} value={q} placeholder="Buscar conversaciones, acciones, habitantes o salas…" spellCheck={false}
+          <input ref={entrada} value={q} placeholder="Buscar conversaciones, acciones, aventureros o salas…" spellCheck={false}
             onChange={e => setQ(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrarBuscador(); }

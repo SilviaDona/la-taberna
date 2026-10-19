@@ -54,7 +54,7 @@ export function Carga() {
   return (
     <div className={'pantalla-carga' + (fuera ? ' fuera' : '')}>
       <div className="engranaje-carga" aria-hidden />
-      <div className="titulo-carga">work-shelter</div>
+      <div className="titulo-carga">La Taberna</div>
       <div className="barra-carga"><span style={{ width: `${Math.max(6, p.progreso * 100)}%` }} /></div>
       <div className="texto-carga">{p.sala ? `Encendiendo ${p.sala}…` : 'Bajando la escotilla…'}</div>
     </div>
@@ -91,19 +91,19 @@ export function Bienvenida() {
   const refN = React.useRef<HTMLInputElement>(null);
   useEffect(() => { if (foco === 1) refN.current?.focus(); else (document.activeElement as HTMLElement)?.blur?.(); }, [foco]);
   return (
-    <Aparato rotulo="BIENVENIDA · REGISTRO DEL SUPERVISOR" ancho={52} alCerrar={entrar}>
-      <p className="voz">La superficie lleva años callada y el polvo lo cubre todo. Bajo la roca, el refugio sigue en pie: cada sala es un taller donde sus habitantes trabajan en tus proyectos. Tú eres el Supervisor: recorres los pasillos, hablas con ellos y decides.</p>
+    <Aparato rotulo="BIENVENIDA · REGISTRO DE LA TABERNERA" ancho={52} alCerrar={entrar}>
+      <p className="voz">Al pie de la colina, la taberna nunca cierra: bajo sus vigas, cada mesa con estandarte es un repo donde sus aventureros trabajan en tus proyectos. Tú eres la Tabernera: recorres las salas, hablas con ellos y decides.</p>
       <div className={'fila-chips' + (foco === 0 ? ' activa' : '')} onClick={() => setFoco(0)}>
         <span className="etq">tu aspecto</span>
         <button className="chip" onClick={() => cambiar(-1)}>◀</button><b className="eleccion">{ASPECTO[PERSONAJES[k]]}</b><button className="chip" onClick={() => cambiar(1)}>▶</button>
-        <span className="tenue">(se ve en el refugio, detrás; con <kbd>P</kbd>, en Chapa y Pintura, se cambia todo)</span>
+        <span className="tenue">(se ve en la taberna, detrás; con <kbd>P</kbd>, en Chapa y Pintura, se cambia todo)</span>
       </div>
       <label className={'campo-taller' + (foco === 1 ? ' activa' : '')} onClick={() => setFoco(1)}>
-        <span className="etq">nombre del refugio</span>
+        <span className="etq">nombre de la taberna</span>
         <input ref={refN} value={nombre} onChange={ev => setNombre(ev.target.value)} onKeyDown={ev => { if (ev.key === 'Enter') { ev.preventDefault(); entrar(); } else if (ev.key === 'ArrowUp') { ev.preventDefault(); setFoco(0); } }} spellCheck={false} />
       </label>
-      <div className="botonera"><button className={'boton-taller' + (foco === 2 ? ' activa' : '')} onClick={entrar}>Abrir el refugio</button></div>
-      <Teclas><kbd>←→</kbd>aspecto <kbd>↑↓</kbd>moverse <kbd>Enter</kbd>abrir el refugio · luego <kbd>F1</kbd> enseña todos los controles</Teclas>
+      <div className="botonera"><button className={'boton-taller' + (foco === 2 ? ' activa' : '')} onClick={entrar}>Abrir la taberna</button></div>
+      <Teclas><kbd>←→</kbd>aspecto <kbd>↑↓</kbd>moverse <kbd>Enter</kbd>abrir la taberna · luego <kbd>F1</kbd> enseña todos los controles</Teclas>
     </Aparato>
   );
 }

@@ -39,7 +39,7 @@ export class Visitantes {
     const destino = new THREE.Vector3(sala.grupo.position.x + lado * (sala.ancho / 2 - 1.1 - n * 0.9), sala.grupo.position.y, 1.45);
     p.irA([destino], false, () => { f.listo = true; p.giroObjetivo = -lado * 0.6; p.enReposo = 'Idle_B'; p.reproducir('Idle_B'); });
     SFX.puertaSala();
-    sala.interactivos = [...(sala.interactivos ?? []).filter(i => i.id !== 'vis:' + v.claudeId), { id: 'vis:' + v.claudeId, x: destino.x - sala.grupo.position.x, z: 1.45, texto: 'Visitante: sesión de terminal', panel: 'visitante' }];
+    sala.interactivos = [...(sala.interactivos ?? []).filter(i => i.id !== 'vis:' + v.claudeId), { id: 'vis:' + v.claudeId, x: destino.x - sala.grupo.position.x, z: 1.45, texto: 'Viajero: sesión de terminal', panel: 'visitante' }];
   }
 
   private irse(f: Figura) {

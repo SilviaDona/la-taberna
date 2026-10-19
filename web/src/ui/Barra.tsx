@@ -122,7 +122,7 @@ export function Barra() {
             return (
               <button key={v.habitanteId} className={'chip-terminal' + (h!.copia ? ' de-copia' : '') + (abierto ? ' delante' : ' minimizada') + (peor?.estado === 'esperando' ? ' urgente' : '') + (marcado(0, i) ? ' marcado' : '')}
                 onClick={() => (abierto ? minimizarIntercom() : restaurarIntercom(v.habitanteId))}
-                title={`Intercomunicador con ${h!.copia ? `la copia holográfica de ${h!.copia.autorNombre} (rama ${h!.copia.rama})` : h!.nombre} (${h!.salaNombre})\n${abierto ? 'Clic para minimizarlo' : 'Clic para volver con ' + h!.nombre}`}>
+                title={`Intercomunicador con ${h!.copia ? `el espectro de ${h!.copia.autorNombre} (rama ${h!.copia.rama})` : h!.nombre} (${h!.salaNombre})\n${abierto ? 'Clic para minimizarlo' : 'Clic para volver con ' + h!.nombre}`}>
                 <span className={'piloto ' + pilotoSesion(peor)} />
                 {h!.copia ? <span className="marca-copia">◇ </span> : null}{h!.nombre}{peor ? ` · ${TEXTO_ESTADO[peor.estado] ?? peor.estado}` : ''}{ses.length > 1 ? <small> ({ses.length})</small> : null}
               </button>

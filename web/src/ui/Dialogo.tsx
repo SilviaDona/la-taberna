@@ -333,13 +333,13 @@ function Consola({ h, v }: { h: ResumenHabitante; v: VentanaCom }) {
           <span className="consola-rotulo">{copia ? <>INTERCOMUNICADOR · COPIA HOLOGRÁFICA DE {copia.autorNombre.toUpperCase()} · {rotuloRama(copia.rama)} · {h.salaNombre}</> : <>INTERCOMUNICADOR · {h.nombre} · {h.salaNombre}</>}</span>
           <BotonesVentana sacar={s ? () => sacarPestana(hid, p.id) : undefined} queSaca="esta conversación" maximizada={v.maximizada} minimizar={minimizarIntercom} alternarMaximizar={() => alternarMaximizar(hid)} cerrar={() => pedirCerrar(hid)} queCierra="el intercomunicador y sus conversaciones" />
         </div>
-        <Pestanas items={items} activa={v.activa} activar={pid => activar(hid, pid)} cerrar={pid => pedirCerrar(hid, [pid])} nueva={() => nuevaPestana(hid)} queAbre={copia ? 'Pestaña nueva: otro trabajo dentro de esta copia' : 'Pestaña nueva: otro trabajo con este habitante'} />
+        <Pestanas items={items} activa={v.activa} activar={pid => activar(hid, pid)} cerrar={pid => pedirCerrar(hid, [pid])} nueva={() => nuevaPestana(hid)} queAbre={copia ? 'Pestaña nueva: otro trabajo dentro de esta copia' : 'Pestaña nueva: otro trabajo con este aventurero'} />
         <div className="consola-cuerpo">
           <aside className="consola-lado">
             <div className={'retrato-crt' + (copia ? ' holo' : '')}><RetratoVivo /></div>
             {copia ? <>
               <div className="consola-nombre">{copia.autorNombre} <span className="marca-copia">◇</span></div>
-              <div className="consola-mote">copia holográfica</div>
+              <div className="consola-mote">espectro</div>
               <EstadoChip s={s} />
               <div className="consola-dato">rama <b>{copia.rama || 'sin rama'}</b></div>
               <div className="consola-dato">{copia.cambios ? `${copia.cambios} cambios` : 'sin cambios'}{copia.adelantados ? ` · ${copia.adelantados} commits por integrar` : ''}</div>
@@ -393,10 +393,10 @@ function EstadoChip({ s }: { s?: ResumenSesion }) {
 
 function SinConexion() {
   const intentos = vivo.usar(e => e.intentos);
-  return <div className="pantalla-consola fosforo"><p className="aviso-consola">Sin enlace con el servidor del refugio. Reintentando{'.'.repeat(1 + (intentos % 3))}</p><p className="tenue">Si lo has cerrado, vuelve a abrir el juego con <code>./shelter</code>.</p></div>;
+  return <div className="pantalla-consola fosforo"><p className="aviso-consola">Sin enlace con el servidor de la taberna. Reintentando{'.'.repeat(1 + (intentos % 3))}</p><p className="tenue">Si lo has cerrado, vuelve a abrir el juego con <code>./shelter</code>.</p></div>;
 }
 function SinClaude() {
-  return <div className="pantalla-consola fosforo"><p className="aviso-consola">No encuentro Claude Code en este equipo.</p><p>Los habitantes trabajan con tu sesión de Claude Code. Instálalo y entra con tu cuenta (<code>claude</code> en una terminal, luego <code>/login</code>) y vuelve a abrir el refugio.</p></div>;
+  return <div className="pantalla-consola fosforo"><p className="aviso-consola">No encuentro Claude Code en este equipo.</p><p>Los aventureros trabajan con tu sesión de Claude Code. Instálalo y entra con tu cuenta (<code>claude</code> en una terminal, luego <code>/login</code>) y vuelve a abrir la taberna.</p></div>;
 }
 
 // ---------------------------------------------------------------- menús con teclado: Esc (y ←) es «atrás»
@@ -421,7 +421,7 @@ function Menu({ h, ir, salir }: { h: ResumenHabitante; ir: (v: Vista) => void; s
     { texto: 'Ver su ficha', f: () => ir({ tipo: 'ficha' }) },
     // su aspecto se cambia en el probador de Chapa y Pintura (la Octocat es como es)
     ...(!copia && h.tipo !== 'Octocat' ? [{ texto: 'Cambiarle el aspecto', pista: 'Chapa y Pintura', f: () => { salir(); juego.set({ panel: 'chapa', panelDatos: { quien: h.id } }); } }] : []),
-    { texto: 'Volver al refugio', pista: 'Esc', f: salir },
+    { texto: 'Volver a la taberna', pista: 'Esc', f: salir },
   ];
   const items = opciones;
   const elegir = (j: number) => opciones[j]?.f();
@@ -431,7 +431,7 @@ function Menu({ h, ir, salir }: { h: ResumenHabitante; ir: (v: Vista) => void; s
     <div className="pantalla-consola fosforo">
       <p className="voz">{saludo}</p>
       <Opciones items={items} i={i} setI={setI} alElegir={elegir} />
-      <p className="ayuda-consola"><kbd>↑↓</kbd> elegir <kbd>Enter</kbd> aceptar <kbd>Esc</kbd> volver al refugio <kbd>{CMD}T</kbd> otra pestaña</p>
+      <p className="ayuda-consola"><kbd>↑↓</kbd> elegir <kbd>Enter</kbd> aceptar <kbd>Esc</kbd> volver a la taberna <kbd>{CMD}T</kbd> otra pestaña</p>
     </div>
   );
 }
@@ -443,9 +443,9 @@ function saludoDe(h: ResumenHabitante) {
     return frases[Math.floor(Math.random() * frases.length)];
   }
   const frases = h.robot
-    ? ['Unidad lista. Indique la tarea, Supervisor.', 'Diagnóstico completo. Esperando órdenes.', 'Mis circuitos están a su disposición. Con moderación.']
-    : h.estado === 'durmiendo' ? ['¿Eh? ¿Qué? Ah, Supervisor. Estaba… revisando el techo por dentro.', 'Cinco minutos más… Vale, vale. ¿Qué necesitas?']
-    : ['¿Qué hacemos hoy, Supervisor?', 'Dime qué toca y me pongo.', 'Aquí estoy. ¿Arreglamos algo o lo rompemos con estilo?', `Todo tranquilo en ${h.salaNombre}. Por ahora.`];
+    ? ['Unidad lista. Indique la tarea, Tabernera.', 'Diagnóstico completo. Esperando órdenes.', 'Mis circuitos están a su disposición. Con moderación.']
+    : h.estado === 'durmiendo' ? ['¿Eh? ¿Qué? Ah, Tabernera. Estaba… revisando el techo por dentro.', 'Cinco minutos más… Vale, vale. ¿Qué necesitas?']
+    : ['¿Qué hacemos hoy, Tabernera?', 'Dime qué toca y me pongo.', 'Aquí estoy. ¿Arreglamos algo o lo rompemos con estilo?', `Todo tranquilo en ${h.salaNombre}. Por ahora.`];
   return frases[Math.floor(Math.random() * frases.length)];
 }
 
@@ -693,7 +693,7 @@ function Sesion({ h, s, p, salir, alCerrar }: { h: ResumenHabitante; s: ResumenS
       {!s.pendiente && <div className="linea-estado">
         {vivaTrabajando ? <span className="girando">◐</span> : s.estado === 'esperando' ? <span className="urgente">?</span> : s.estado === 'terminada' ? <span>✓</span> : <span>·</span>}
         <span className="txt"><TextoHerramienta t={estadoLinea || (s.estado === 'terminada' || s.estado === 'ociosa' ? 'Listo. Puedes responder, abrir otra pestaña o cerrar esta.' : '')} /></span>
-        {ayudantes > 0 && <span className="tenue"> · {ayudantes} ayudante{ayudantes > 1 ? 's' : ''}</span>}
+        {ayudantes > 0 && <span className="tenue"> · {ayudantes} duende{ayudantes > 1 ? 's' : ''}</span>}
         {s.lateral && !s.lateral.respuesta && <span className="tenue"> · pregunta lateral…</span>}
         <span className="modo">{MODOS_PERMISO.find(m => m.valor === s.modoPermisos)?.texto ?? s.modoPermisos}</span>
       </div>}
@@ -721,7 +721,7 @@ function Sesion({ h, s, p, salir, alCerrar }: { h: ResumenHabitante; s: ResumenS
       )}
       {!s.pendiente && <BandejaAdjuntos lista={p.adjuntos} quitar={quitarAdjunto(h.id, p.id)} />}
       {!s.pendiente && <TiraDictado dictado={dictado} />}
-      <p className="ayuda-consola"><kbd>Enter</kbd> enviar <kbd>{CMD}D</kbd> dictar <kbd>{CMD}U</kbd> adjuntar <kbd>Ctrl C</kbd> parar <kbd>Esc</kbd> {esc.armado ? <span className="urgente">otra vez: borrar lo escrito</span> : texto ? 'dos veces: borrar lo escrito' : 'volver al refugio (sigue trabajando)'} <kbd>{CMD}T</kbd> otro trabajo <kbd>{CMD}↑↓</kbd> ampliar/minimizar</p>
+      <p className="ayuda-consola"><kbd>Enter</kbd> enviar <kbd>{CMD}D</kbd> dictar <kbd>{CMD}U</kbd> adjuntar <kbd>Ctrl C</kbd> parar <kbd>Esc</kbd> {esc.armado ? <span className="urgente">otra vez: borrar lo escrito</span> : texto ? 'dos veces: borrar lo escrito' : 'volver a la taberna (sigue trabajando)'} <kbd>{CMD}T</kbd> otro trabajo <kbd>{CMD}↑↓</kbd> ampliar/minimizar</p>
     </div>
   );
 }
@@ -782,7 +782,7 @@ function Pendiente({ s, p, tab, hid, salir }: { s: ResumenSesion; p: PeticionPen
   const [i, setI] = useMenuBase(items.length, k => items[k]?.f(), e => motivo !== null && e.code !== 'Escape' ? false : undefined, salir);
   return (
     <div className={'peticion ' + p.tipo}>
-      <div className="peticion-titulo">{p.deAyudante ? `Un ayudante («${p.deAyudante}») pregunta: ` : ''}{preg ? preg.question : p.titulo}</div>
+      <div className="peticion-titulo">{p.deAyudante ? `Un duende («${p.deAyudante}») pregunta: ` : ''}{preg ? preg.question : p.titulo}</div>
       {/* lo que pide una herramienta, siempre en texto plano (textoPlano.tsx); el plan, que es prosa, en markdown */}
       {(p.tipo === 'permiso' || p.tipo === 'confianza') && (p.entrada?.length || p.motivo) ? <VistaPeticion bloques={p.entrada ?? []} motivo={p.motivo} /> : null}
       {p.tipo === 'plan' && p.detalle && <div className="peticion-detalle" dangerouslySetInnerHTML={{ __html: markdown(p.detalle) }} />}
