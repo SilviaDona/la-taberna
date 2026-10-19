@@ -82,11 +82,22 @@ export function rutaClaude(): string | undefined {
   if (ES_WINDOWS) {
     // el instalador nativo de Claude Code lo deja en ~/.local/bin; el de npm, en %APPDATA%\npm (claude.cmd)
     const npm = path.join(process.env.APPDATA || '', 'npm');
-    return [path.join(os.homedir(), '.local', 'bin', 'claude.exe'), buscarPrograma('claude.exe'), buscarPrograma('claude.cmd'), path.join(npm, 'claude.cmd')].find(r => !!r && existsSync(r)) ?? undefined;
+    const r = [path.join(os.homedir(), '.local', 'bin', 'claude.exe'), buscarPrograma('claude.exe'), buscarPrograma('claude.cmd'), path.join(npm, 'claude.cmd')].find(r => !!r && existsSync(r)) ?? undefined;
+    // un .cmd no se puede lanzar sin shell (Node lo rechaza con EINVAL): se usa el cli.js del paquete de npm, que el SDK
+    // arranca con node, y si no está, el claude.exe nativo que traen los paquetes nuevos
+    if (r && /\.cmd$/i.test(r)) {
+      const pkg = path.join(path.dirname(r), 'node_modules', '@anthropic-ai', 'claude-code');
+      return [path.join(pkg, 'cli.js'), path.join(pkg, 'bin', 'claude.exe')].find(existsSync) ?? r;
+    }
+    return r;
   }
   try { return execFileSync('/bin/zsh', ['-lc', 'command -v claude'], { encoding: 'utf8', timeout: 5000 }).trim() || undefined; } catch { return undefined; }
 }
-export function versionClaude(bin?: string) { try { return bin ? execFileSync(bin, ['--version'], { encoding: 'utf8', timeout: 8000 }).trim() : undefined; } catch { return undefined; } }
+export function versionClaude(bin?: string) {
+  if (!bin) return undefined;
+  const [orden, args] = /\.[cm]?js$/i.test(bin) ? [process.execPath, [bin, '--version']] : [bin, ['--version']];
+  try { return execFileSync(orden, args, { encoding: 'utf8', timeout: 8000, windowsHide: true, shell: ES_WINDOWS && /\.cmd$/i.test(bin) }).trim() || undefined; } catch { return undefined; }
+}
 
 // Entorno del hijo: el del usuario SIN credenciales de API (consume el plan del usuario, nunca claves)
 export function entornoLimpio(): Record<string, string> {

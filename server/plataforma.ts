@@ -43,7 +43,7 @@ export const esTuberia = (canal: string) => canal.startsWith('\\\\.\\pipe\\');
 export function buscarPrograma(nombre: string): string | null {
   try {
     const out = ES_WINDOWS
-      ? execFileSync('where.exe', [nombre], { encoding: 'utf8', timeout: 5000, windowsHide: true })
+      ? execFileSync('where.exe', [nombre], { encoding: 'utf8', timeout: 5000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] })
       : execFileSync('/bin/sh', ['-c', 'command -v "$1"', 'sh', nombre], { encoding: 'utf8', timeout: 5000 });
     return out.split(/\r?\n/).map(l => l.trim()).find(Boolean) ?? null;
   } catch { return null; }
