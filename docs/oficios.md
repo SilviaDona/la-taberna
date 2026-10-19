@@ -1,5 +1,7 @@
 # Salas de oficio de UX
 
+![Torre del Vigía](media/oficio-vigia.png)
+
 Plantillas de sala que se reclutan en la **Puerta de la Posada** («Contratar un oficio», o ⌘K/Ctrl+K → «Contratar un
 oficio de UX»). Cada una trae su aventurero, una carpeta propia en los datos de la app
 (`%APPDATA%\work-shelter-public\salas\<id>` en Windows, `~/Library/Application Support/work-shelter-public/salas/<id>`
@@ -41,3 +43,16 @@ Código: `shared/oficios.ts` (plantillas), `server/oficios.ts` (carpeta), acció
 `web/src/ui/Oficios.tsx` (Puerta y acciones), `shared/encargos.ts` y `Ocupados` en `web/src/ui/Paneles.tsx` (tablón).
 Para añadir un oficio: una entrada más en `PLANTILLAS` (las pruebas de `shared/oficios.test.ts` comprueban decorado,
 skills, acciones y que no haya datos reales).
+
+## Capturas
+
+| | |
+|---|---|
+| ![Puerta: oficios](media/oficio-puerta.png) Puerta · Contratar un oficio | ![Panel del Vigía](media/oficio-panel-vigia.png) Panel de la Torre del Vigía con sus acciones |
+| ![Biblioteca](media/oficio-biblioteca.png) Biblioteca | ![Taller](media/oficio-taller.png) Taller |
+| ![Puerta del Mensajero](media/oficio-mensajero.png) Puerta del Mensajero | ![Armería](media/oficio-armeria.png) Armería |
+| ![Escenario](media/oficio-escenario.png) Escenario | ![Mesa de proyecto](media/oficio-mesa-proyecto.png) Mesa de proyecto |
+| ![Tablón de encargos](media/tablon-encargos.png) Tablón de encargos (encargos de ejemplo) | ![Goblin intendente](media/goblins-despensa.png) Grisko, el goblin de la despensa |
+
+Capturas hechas en Linux sin GPU (SwiftShader, resolución 0,6) con un refugio de prueba (`SHELTER_DATOS`) y sin
+Claude Code: el tablón lleva encargos de ejemplo inyectados en la página.

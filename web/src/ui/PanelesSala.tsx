@@ -40,14 +40,18 @@ type Sug = { ruta: string; nombre: string; esGit: boolean; tipo: string; modific
 const TIPO: Record<string, string> = { web: 'web', landing: 'landing', marca: 'marca', video: 'vídeo', node: 'node', python: 'python', generico: 'carpeta' };
 function hace(ms: number) { const d = (Date.now() - ms) / 86400_000; return d < 1 ? 'hoy' : d < 2 ? 'ayer' : d < 30 ? `hace ${Math.floor(d)} días` : d < 60 ? 'hace 1 mes' : d < 365 ? `hace ${Math.floor(d / 30)} meses` : 'hace más de un año'; }
 
+// (cada paso, su componente: la lista lleva su menú y sus teclas, y cambiar de paso no cambia los hooks de la Puerta)
 function Puerta() {
   const raiz = vivo.usar(e => e.estado?.raizRepos ?? '~');
-  const [sugs, setSugs] = useState<Sug[] | null>(null);
   const [paso, setPaso] = useState<{ tipo: 'lista' } | { tipo: 'oficios' } | { tipo: 'ruta'; crear: boolean } | { tipo: 'recluta'; ruta: string; nombre: string; crear?: boolean; git?: boolean }>({ tipo: 'lista' });
-  useEffect(() => { cliente.accion<Sug[]>('sugerencias').then(setSugs).catch(() => setSugs([])); }, []);
   if (paso.tipo === 'oficios') return <ContratarOficio volver={() => setPaso({ tipo: 'lista' })} />;
   if (paso.tipo === 'recluta') return <FichaNuevoRecluta {...paso} volver={() => setPaso({ tipo: 'lista' })} />;
   if (paso.tipo === 'ruta') return <PedirRuta crear={paso.crear} raiz={raiz} volver={() => setPaso({ tipo: 'lista' })} seguir={(ruta, git) => setPaso({ tipo: 'recluta', ruta, nombre: ruta.split('/').filter(Boolean).pop() ?? ruta, crear: paso.crear, git })} />;
+  return <ListaPuerta raiz={raiz} setPaso={setPaso} />;
+}
+function ListaPuerta({ raiz, setPaso }: { raiz: string; setPaso: (p: any) => void }) {
+  const [sugs, setSugs] = useState<Sug[] | null>(null);
+  useEffect(() => { cliente.accion<Sug[]>('sugerencias').then(setSugs).catch(() => setSugs([])); }, []);
   const items: (ItemMenu & { f: () => void })[] = [
     { texto: <><b>Contratar un oficio</b> <span className="tenue">· Biblioteca, Taller, Torre del Vigía… o una mesa de proyecto</span></>, pista: 'salas de UX', f: () => setPaso({ tipo: 'oficios' }) },
     ...(sugs ?? []).slice(0, 40).map(s => ({ texto: <><b>{s.nombre}</b> <span className="tenue">{s.esGit ? 'repo' : 'carpeta'} · {TIPO[s.tipo] ?? s.tipo}</span></>, pista: hace(s.modificada), f: () => setPaso({ tipo: 'recluta', ruta: s.ruta, nombre: s.nombre }) })),
