@@ -74,10 +74,11 @@ export const SUSTITUTOS: Record<string, string | null> = {
   [R.sf('Details_Plate_Small')]: null, [R.sf('Details_Plate_Long')]: null, [R.sf('Details_Plate_Details')]: null, [R.sf('Details_Plate_Large')]: null,
   [R.cy('Antenna_1')]: null, [R.cy('Antenna_2')]: null,
 };
-const HUECO = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false });
+const HUECO = new THREE.MeshStandardMaterial({ colorWrite: false, depthWrite: false });   // estándar: quien la retoca (color, emisivo) puede
 function hueco() {
   // (no basta con visible = false: la fusión estática de la sala junta mallas sin mirarlo; este material no pinta nada)
-  const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), HUECO); m.castShadow = m.receiveShadow = false; g.add(m); return g;
+  // (y la fusión estática no la junta con nada: userData.hueco, mundo/util3d.ts)
+  const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), HUECO); m.castShadow = m.receiveShadow = false; m.userData.hueco = true; g.add(m); return g;
 }
 
 export async function modelo(ruta: string, o: OpcionesModelo = {}): Promise<THREE.Object3D> {

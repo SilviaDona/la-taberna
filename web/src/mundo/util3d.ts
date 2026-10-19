@@ -58,7 +58,7 @@ export function fusionarEstaticos(grupo: THREE.Object3D) {
   const porMat = new Map<THREE.Material, { geos: THREE.BufferGeometry[]; sombra: boolean; recibe: boolean }>();
   const quitar: THREE.Mesh[] = [];
   grupo.traverse((n: any) => {
-    if (!n.isMesh || n.isSkinnedMesh || Array.isArray(n.material)) return;
+    if (!n.isMesh || n.isSkinnedMesh || Array.isArray(n.material) || n.userData.hueco) return;
     let p = n, estatico = true;
     while (p && p !== grupo) { if (p.userData.estatico === false) { estatico = false; break; } p = p.parent; }
     if (!estatico || n.material.transparent) return;
