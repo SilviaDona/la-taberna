@@ -16,8 +16,8 @@ export const SECTORES: Record<IdSector, Sector> = {
   acceso: { id: 'acceso', nombre: 'POSADA', codigo: 'P', color: '#d6a52b', oscuro: '#6e5416', tinta: '#16140f', lema: 'La puerta y el libro de huéspedes' },
   mando: { id: 'mando', nombre: 'SÓTANO', codigo: 'S', color: '#b0392e', oscuro: '#5a1c17', tinta: '#16140f', lema: 'El mago y el tesoro de la taberna' },
   enlace: { id: 'enlace', nombre: 'GREMIOS', codigo: 'G', color: '#3f74ad', oscuro: '#1f3a5a', tinta: '#0f141a', lema: 'Cartas, almanaque, encargos y el escriba' },
-  talleres: { id: 'talleres', nombre: 'MESAS', codigo: 'M', color: '#c67b32', oscuro: '#673e1b', tinta: '#16140f', lema: 'Una mesa con estandarte por repo' },
-  ocio: { id: 'ocio', nombre: 'FIESTA', codigo: 'F', color: '#5b9150', oscuro: '#2c4a27', tinta: '#10160e', lema: 'Huerto, bardo, arqueros y sastre' },
+  talleres: { id: 'talleres', nombre: 'MESAS', codigo: 'M', color: '#c67b32', oscuro: '#673e1b', tinta: '#16140f', lema: 'Los pasos del proceso, en su orden' },
+  ocio: { id: 'ocio', nombre: 'FIESTA', codigo: 'F', color: '#5b9150', oscuro: '#2c4a27', tinta: '#10160e', lema: 'El sastre y lo que se gana' },
 };
 export const ORDEN_SECTORES: IdSector[] = ['acceso', 'mando', 'enlace', 'talleres', 'ocio'];
 

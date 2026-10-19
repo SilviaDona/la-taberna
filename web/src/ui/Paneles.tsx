@@ -185,7 +185,7 @@ function Plano() {
           {sel ? <FichaSala key={sel.id} sala={sel} habitantes={selHs} /> : <div className="tenue">Pasa el ratón por una sala o elígela con las flechas.</div>}
         </div>
       </div>
-      <div className="plano-leyenda">{ORDEN_SECTORES.map(k => SECTORES[k]).map(x => <span key={x.id} style={{ ['--sector' as any]: x.color }}><b>{x.codigo}</b>{x.nombre}<i>{x.lema}</i></span>)}</div>
+      <div className="plano-leyenda">{ORDEN_SECTORES.map(k => SECTORES[k]).filter(x => Array.from({ length: plantas }, (_, p) => sectorDePlanta(p, plantas, pr).id).includes(x.id)).map(x => <span key={x.id} style={{ ['--sector' as any]: x.color }}><b>{x.codigo}</b>{x.nombre}<i>{x.lema}</i></span>)}</div>
       <Teclas><kbd>←↑↓→</kbd>elegir <kbd>Enter</kbd>viajar <kbd>Esc</kbd>cerrar</Teclas>
     </Aparato>
   );
@@ -240,7 +240,7 @@ function FichaSala({ sala, habitantes }: { sala: any; habitantes: ResumenHabitan
     <div className="titulo-ficha">{sala.nombre} <span className="tenue">· {rotuloPlanta(sala.planta)}</span></div>
     <div className="ficha-sector" style={{ ['--sector' as any]: tonoSala(sala)[0] }}><b>{sectorDe(sala.tipo).codigo}</b>Sector {sectorDe(sala.tipo).nombre.toLowerCase()}</div>
     {desc && <div className="ficha-desc">{desc}</div>}
-    <p className="ficha-info">{INFO_SALA[sala.tipo] ?? (esRepo ? INFO_REPO : '')}</p>
+    <p className="ficha-info">{sala.paso ? `Paso ${PASOS[sala.paso as PasoId].numero} del proceso: ${PASOS[sala.paso as PasoId].etapa.toLowerCase()}. Trabaja en la carpeta del proyecto${PASOS[sala.paso as PasoId].comando ? ' con ' + PASOS[sala.paso as PasoId].comando : ''}; en su panel están las historias de este paso y lo que hace falta para pasarlas.` : INFO_SALA[sala.tipo] ?? (esRepo ? INFO_REPO : '')}</p>
     {datos.length > 0 && <dl className="ficha-datos">{datos.map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>}
     <div className="ficha-seccion">Aventureros</div>
     <ul className="plano-hab">{habitantes.map(h => <li key={h.id} className={h.estado}><b>{h.nombre}</b> <span className="tenue">{h.estado}</span> {h.detalle && <span className="det">{h.detalle}</span>}</li>)}{!habitantes.length && <li className="tenue">Nadie vive aquí.</li>}</ul>

@@ -36,3 +36,13 @@ están: enlace (cartas, agenda, Linear, git), ocio salvo el sastre, repos de eje
 Código: `shared/pasos.ts` (pasos, prompts, puertas, oro e historias, puro y probado en `shared/pasos.test.ts`),
 `web/src/ui/Pasos.tsx` (paneles), acciones `proyecto.elegir` e `historia.*` en `server/main.ts`, y `migrarATabernaUX`
 y `ponerProyecto` en `server/estado.ts`.
+
+## Capturas
+
+| | |
+|---|---|
+| ![Panel de la Sala de Mapas](media/proceso-panel-mapas.png) Sala de Mapas: el paso 1 | ![Mostrador del BA](media/proceso-mostrador.png) Mostrador del BA: los supuestos, a mano |
+| ![Torre del Vigía](media/proceso-torre.png) Torre del Vigía: revisar o volver a la Forja | ![Tablón de encargos](media/proceso-tablon.png) Tablón de encargos con las historias |
+| ![Sala de Mapas](media/proceso-mapas.png) La Sala de Mapas | ![Plano](media/proceso-plano.png) Plano: los siete pasos en fila |
+
+Hechas en Linux sin GPU (SwiftShader) con una taberna y un proyecto de prueba, y sin Claude Code.
