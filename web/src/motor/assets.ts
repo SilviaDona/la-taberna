@@ -54,10 +54,37 @@ export interface OpcionesModelo {
   propios?: boolean;            // materiales propios (no compartidos) para animarlos aparte
 }
 
+// La Taberna: las piezas de ciencia ficción que solo eran ambiente se cambian por su equivalente de taberna (KayKit
+// Dungeon Remastered) al cargarlas; `colocar` las deja del mismo tamaño que pedía la sala. Con null, la pieza no se
+// pinta (un hueco invisible del mismo tamaño: lo que se apoya en ella sigue en su sitio). Las que llevan pantalla con
+// datos reales (ordenadores) se quedan: con la paleta de madera y latón son atriles con runas.
+const dun = (n: string) => `kaykit-extra/dungeon-remastered-1.1/Assets/gltf/${n}.gltf`;
+export const SUSTITUTOS: Record<string, string | null> = {
+  [R.sf('Props_Shelf')]: dun('shelves_decorated'), [R.sf('Props_Shelf_Tall')]: dun('bookcase_double_decoratedA'),
+  [R.sf('Props_Crate')]: dun('crate_small'), [R.sf('Props_CrateLong')]: dun('crate_large'), [R.sf('Props_Chest')]: dun('chest'),
+  [R.sf('Props_Vessel_Tall')]: dun('barrel_large'), [R.sf('Props_Pod')]: dun('keg_decorated'),
+  [R.cy('Support_Short')]: dun('post'), [R.cy('Support_Long')]: dun('post'), [R.sf('Column_Slim')]: dun('post'), [R.sf('Column_1')]: dun('post'),
+  [R.cy('Sign_1')]: dun('banner_shield_red'), [R.cy('Sign_2')]: dun('banner_patternA_brown'), [R.cy('Sign_Small_1')]: dun('banner_thin_red'), [R.cy('Sign_Corner_Hazard')]: dun('banner_thin_yellow'),
+  [R.cy('AC_Stacked')]: dun('barrel_small_stack'), [R.cy('AC')]: dun('barrel_small'), [R.cy('Tank')]: dun('barrel_large'),
+  [R.cy('Rail_Long')]: dun('barrier'), [R.cy('Fence')]: dun('barrier'),
+  [R.casa('Light_Floor1')]: dun('candle_lit'), [R.casa('Light_Floor3')]: dun('candle_lit'), [R.casa('Light_Stand1')]: dun('candle_triple'), [R.casa('Light_Desk')]: dun('candle_thin_lit'),
+  [R.cy('Cable_Thick')]: null, [R.cy('Cable_Long')]: null, [R.cy('Cable_Small')]: null, [R.cy('Pipe_1')]: null, [R.cy('Pipe_2')]: null, [R.sf('Pipes')]: null,
+  [R.sf('Details_Pipes_Long')]: null, [R.sf('Details_Pipes_Medium')]: null, [R.sf('Details_Output')]: null, [R.sf('Details_Output_Small')]: null,
+  [R.sf('Details_Cylinder')]: null, [R.sf('Details_Cylinder_Long')]: null, [R.sf('Details_Vent_1')]: null, [R.sf('Details_Vent_2')]: null, [R.sf('Details_Vent_3')]: null,
+  [R.sf('Details_Plate_Small')]: null, [R.sf('Details_Plate_Long')]: null, [R.sf('Details_Plate_Details')]: null, [R.sf('Details_Plate_Large')]: null,
+  [R.cy('Antenna_1')]: null, [R.cy('Antenna_2')]: null,
+};
+const HUECO = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false });
+function hueco() {
+  // (no basta con visible = false: la fusión estática de la sala junta mallas sin mirarlo; este material no pinta nada)
+  const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), HUECO); m.castShadow = m.receiveShadow = false; g.add(m); return g;
+}
+
 export async function modelo(ruta: string, o: OpcionesModelo = {}): Promise<THREE.Object3D> {
+  if (ruta in SUSTITUTOS) { const otra = SUSTITUTOS[ruta]; if (otra === null) return hueco(); ruta = otra; }
   const g = await gltf(ruta);
   const obj = SkeletonUtils.clone(g.scene);
-  const pack = ruta.split('/')[0] === 'quaternius' ? ruta.split('/')[1] : ruta.split('/')[0];
+  const pack = ruta.includes('dungeon-remastered') ? 'dungeon' : ruta.split('/')[0] === 'quaternius' ? ruta.split('/')[1] : ruta.split('/')[0];
   obj.traverse((n: any) => {
     if (!n.isMesh) return;
     n.castShadow = o.sombra ?? true;

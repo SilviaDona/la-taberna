@@ -1,5 +1,5 @@
 // Paleta del refugio y preparación de materiales por pack.
-// Lenguaje: acero remachado cálido, pintura industrial apagada, acentos por sala, luz de interior ámbar.
+// Lenguaje (La Taberna): roble y nogal, piedra, latón y paños de color por sala; luz de fuego y vela.
 import * as THREE from 'three';
 
 export interface Variante {
@@ -12,19 +12,20 @@ export interface Variante {
   mugre?: number;        // fuerza de la mugre procedural (1 por defecto)
 }
 
-// paredes en el valor del taller web (luma interior ~65): las claras dejaban las salas planas y quemadas
+// La Taberna: lo que queda de los módulos del kit (muebles, armarios, aparatos) va en roble y nogal, con herrajes de
+// latón; el acento es el paño del estandarte de cada sala y las «pantallas» brillan como runas (tinta luminosa cálida)
 export const VARIANTES: Record<string, Variante> = {
-  taller:   { id: 'taller',   acento: '#c9822f', acentoOscuro: '#7a4a22', pared: '#6f6b63', paredOscura: '#3f3e3a', pantalla: '#7dffb0' },
-  web:      { id: 'web',      acento: '#9a5a2e', acentoOscuro: '#55321b', pared: '#6a655c', paredOscura: '#363431', pantalla: '#8dffb0' },
-  marca:    { id: 'marca',    acento: '#b34a3c', acentoOscuro: '#6a2a24', pared: '#6e6963', paredOscura: '#3e3b38', pantalla: '#ffb36b' },
-  video:    { id: 'video',    acento: '#7a5ba8', acentoOscuro: '#45345f', pared: '#69676b', paredOscura: '#3a393f', pantalla: '#b8a0ff' },
-  landing:  { id: 'landing',  acento: '#d1a43a', acentoOscuro: '#7d5f1f', pared: '#706c63', paredOscura: '#403e38', pantalla: '#ffe28a' },
-  comms:    { id: 'comms',    acento: '#4f8a4a', acentoOscuro: '#2c4f2a', pared: '#6b6b65', paredOscura: '#3c3d38', pantalla: '#9dff8a' },
-  plan:     { id: 'plan',     acento: '#3d6aa8', acentoOscuro: '#223d63', pared: '#6a6b6e', paredOscura: '#3a3c40', pantalla: '#8ac8ff' },
-  logistica: { id: 'logistica', acento: '#a8423f', acentoOscuro: '#5e2423', pared: '#77736e', paredOscura: '#403d3b', pantalla: '#ff9a7a' },
-  acorazada: { id: 'acorazada', acento: '#a3322b', acentoOscuro: '#561a16', pared: '#5d6369', paredOscura: '#2b2f33', pantalla: '#8fe3ff', mugre: 0.7 },
-  puente:   { id: 'puente',   acento: '#b8913a', acentoOscuro: '#5e4a1c', pared: '#5b5d5f', paredOscura: '#252729', pantalla: '#7dffa0', mugre: 0.7 },
-  neutro:   { id: 'neutro',   acento: '#8a7a5a', acentoOscuro: '#4f4535', pared: '#6b6863', paredOscura: '#3d3b39', pantalla: '#7dffb0' },
+  taller:   { id: 'taller',   acento: '#a8482e', acentoOscuro: '#5e2618', pared: '#7a5a3c', paredOscura: '#3d2a1a', pantalla: '#ffcf7a' },
+  web:      { id: 'web',      acento: '#8c3a2a', acentoOscuro: '#4a1e16', pared: '#7d5c3e', paredOscura: '#3b2818', pantalla: '#ffd890' },
+  marca:    { id: 'marca',    acento: '#9b2f3f', acentoOscuro: '#561a24', pared: '#7a5a3e', paredOscura: '#3e2a1c', pantalla: '#ffb36b' },
+  video:    { id: 'video',    acento: '#5e3f86', acentoOscuro: '#35244d', pared: '#76583e', paredOscura: '#3a291c', pantalla: '#d8b8ff' },
+  landing:  { id: 'landing',  acento: '#b8892e', acentoOscuro: '#6b4f1a', pared: '#80603f', paredOscura: '#40301e', pantalla: '#ffe28a' },
+  comms:    { id: 'comms',    acento: '#4a6b2f', acentoOscuro: '#2a3d1b', pared: '#7a5c3d', paredOscura: '#3c2b1b', pantalla: '#c8f0a0' },
+  plan:     { id: 'plan',     acento: '#2c4a7a', acentoOscuro: '#1a2c49', pared: '#785a3d', paredOscura: '#3a2a1c', pantalla: '#a8d0ff' },
+  logistica: { id: 'logistica', acento: '#8c1c13', acentoOscuro: '#4e100b', pared: '#7e5e40', paredOscura: '#3f2c1d', pantalla: '#ffb08a' },
+  acorazada: { id: 'acorazada', acento: '#b8892e', acentoOscuro: '#5e4416', pared: '#6b5038', paredOscura: '#2e2016', pantalla: '#ffe08a', mugre: 0.7 },
+  puente:   { id: 'puente',   acento: '#3d2c6b', acentoOscuro: '#22183d', pared: '#5e4a3a', paredOscura: '#261b14', pantalla: '#b8a8ff', mugre: 0.7 },
+  neutro:   { id: 'neutro',   acento: '#8a6a3a', acentoOscuro: '#4f3a1f', pared: '#7a5a3c', paredOscura: '#3d2a1a', pantalla: '#ffcf7a' },
 };
 
 const c = (h: string) => new THREE.Color(h);
@@ -36,17 +37,17 @@ export function prepararMaterial(m: THREE.Material, pack: string, v?: Variante):
   if (sm.emissiveMap) sm.emissiveMap.colorSpace = THREE.SRGBColorSpace;
   const n = sm.name;
   if (pack === 'modular_sci_fi' || pack === 'cyberpunk_pack') {
-    sm.metalness = 0.12; sm.roughness = 0.62;
+    sm.metalness = 0; sm.roughness = 0.78;   // madera
     const vv = v ?? VARIANTES.neutro;
     if (n === 'Main' || n === 'Main2') sm.color.copy(c(vv.pared));
     else if (n === 'DarkGrey' || n === 'Grey') sm.color.copy(c(vv.paredOscura));
     else if (n === 'Accent' || n === 'Orange') sm.color.copy(c(vv.acento));
     else if (n === 'DarkAccent' || n === 'Accent_Dark') sm.color.copy(c(vv.acentoOscuro));
-    else if (n === 'Light' || n === 'LightGrey' || n === 'MetalLight') { sm.color.copy(c('#a39c8e')); }
-    else if (n === 'Black' || n === 'Dark') { sm.color.copy(c('#232325')); sm.roughness = 0.5; }
-    else if (n === 'Pipes') { sm.color.copy(c('#6b5640')); sm.metalness = 0.35; sm.roughness = 0.5; }
+    else if (n === 'Light' || n === 'LightGrey' || n === 'MetalLight') { sm.color.copy(c('#b8893a')); sm.metalness = 0.5; sm.roughness = 0.4; }   // latón
+    else if (n === 'Black' || n === 'Dark') { sm.color.copy(c('#22170f')); sm.roughness = 0.6; }
+    else if (n === 'Pipes') { sm.color.copy(c('#9a5a2e')); sm.metalness = 0.45; sm.roughness = 0.45; }   // cobre
     else if (n === 'Glass') { sm.color.copy(c('#9fc4c8')); sm.roughness = 0.15; sm.metalness = 0.1; sm.transparent = true; sm.opacity = 0.55; sm.depthWrite = false; }
-    else if (n === 'Screen' || n === 'Eye') { sm.color.copy(c('#0d1a14')); sm.emissive = c(vv.pantalla); sm.emissiveIntensity = 1.6; }
+    else if (n === 'Screen' || n === 'Eye') { sm.color.copy(c('#1a120a')); sm.emissive = c(vv.pantalla); sm.emissiveIntensity = 1.3; }
     else if (n === 'Texture_Signs') { sm.color.copy(c('#d8d2c4')); sm.roughness = 0.8; }
     if (!sm.transparent && !(sm.emissive && sm.emissive.getHex() !== 0)) conMugre(sm, (pack === 'modular_sci_fi' ? 1 : 0.6) * (vv.mugre ?? 1));
   } else if (pack === 'house_interior_pack') {
@@ -59,6 +60,9 @@ export function prepararMaterial(m: THREE.Material, pack: string, v?: Variante):
     sm.metalness = Math.min(sm.metalness, 0.15); sm.roughness = Math.max(sm.roughness, 0.65);
     if (/Metal/.test(n)) { sm.metalness = 0.4; sm.roughness = 0.45; }
     if (n === 'Fire') { sm.emissive = c('#ff8a2a'); sm.emissiveIntensity = 2.5; }
+  } else if (pack === 'dungeon') {
+    // KayKit Dungeon Remastered: su atlas es de piedra gris fría; en la taberna, piedra arenisca y madera más cálidas
+    sm.metalness = 0; sm.roughness = 0.8; sm.color.copy(c('#f2d7b6'));
   } else {
     // KayKit (personajes y bits): atlas de gradientes. Más mate para que la luz los modele como en sus previews.
     sm.metalness = 0; sm.roughness = 0.62;
@@ -69,7 +73,7 @@ export function prepararMaterial(m: THREE.Material, pack: string, v?: Variante):
 
 // Colores de la interfaz y de la señalética (diegética y de pantalla)
 export const UI = {
-  fosforo: '#9dffb8', fosforoTenue: '#4f9c6a', ambar: '#ffb347', rojo: '#ff5a4a', papel: '#e8dcc0', tinta: '#1a1712',
+  fosforo: '#ffd890', fosforoTenue: '#a0804a', ambar: '#ffb347', rojo: '#ff5a4a', papel: '#e8dcc0', tinta: '#1a1712',
 };
 
 // Mugre en el shader: manchas y churretes leídos de una textura de ruido en espacio de mundo (proyección biplanar),
@@ -112,7 +116,7 @@ export function conMugre(m: THREE.MeshStandardMaterial, fuerza = 1) {
         float suelo = 1.0 - smoothstep(0.0, 0.9, yl);
         float hollin = smoothstep(uAlto - 1.1, uAlto, yl);
         float m = clamp(manchas * 0.28 + churretes * 0.16 + suelo * 0.32 + hollin * 0.3, 0.0, 0.62) * uMugre;
-        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.42, 0.36, 0.3), m);`);
+        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.5, 0.38, 0.28), m * 0.6);   // hollín y años de uso, más suave sobre la madera`);
   };
   m.customProgramCacheKey = () => 'mugre2-' + fuerza;
   return m;

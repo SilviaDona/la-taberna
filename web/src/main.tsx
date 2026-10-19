@@ -20,7 +20,7 @@ import { cliente, vivo } from './red/cliente';
 import { juego } from './ui/estadoJuego';
 
 async function cargarFuentes() {
-  const familias = ['800 40px "Refugio Titulo"', '600 40px "Refugio Rotulo"', '400 20px "Refugio Mono"', '500 20px "Refugio Mono"', '600 20px "Refugio Mono"', '20px "Refugio CRT"'];
+  const familias = ['800 40px "Refugio Titulo"', '500 40px "Refugio Titulo"', '600 40px "Refugio Rotulo"', '500 40px "Refugio Rotulo"', '400 20px "Taberna Texto"', '700 20px "Taberna Texto"', '400 20px "Refugio Mono"', '500 20px "Refugio Mono"', '600 20px "Refugio Mono"', '20px "Refugio CRT"'];
   await Promise.all(familias.map(f => document.fonts.load(f, 'ÁÑáñ¿¡')));
 }
 

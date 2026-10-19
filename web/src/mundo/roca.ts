@@ -2,7 +2,7 @@
 // Se construye con tiras horizontales que dejan libres los huecos (soporta huecos que se tocan o se solapan).
 // La sombra de contacto y el resplandor cálido alrededor de cada hueco los calcula el shader (no tapan salas vecinas).
 import * as THREE from 'three';
-import { texturaEstratos } from '../motor/texturas';
+import { texturaSillares } from '../motor/texturas';
 
 const MAX_HUECOS = 48;
 
@@ -20,7 +20,7 @@ export function caraDeRoca(x0: number, x1: number, y0: number, y1: number, z: nu
       if (b - a < 1e-4) continue;
       const i = pos.length / 3;
       pos.push(a, ya, 0, b, ya, 0, b, yb, 0, a, yb, 0);
-      for (const [px, py] of [[a, ya], [b, ya], [b, yb], [a, yb]]) uv.push((px - x0) / 16, (py - y0) / Hh);
+      for (const [px, py] of [[a, ya], [b, ya], [b, yb], [a, yb]]) uv.push((px - x0) / 6, (py - y0) / 6);   // La Taberna: sillares de ~1 m (la textura se repite cada 6 m)
       idx.push(i, i + 1, i + 2, i, i + 2, i + 3);
     }
   }
@@ -29,8 +29,9 @@ export function caraDeRoca(x0: number, x1: number, y0: number, y1: number, z: nu
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   geo.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(pos.length).fill(0).map((_, i) => (i % 3 === 2 ? 1 : 0)), 3));
   geo.setIndex(idx);
-  const tex = texturaEstratos(); tex.wrapT = THREE.ClampToEdgeWrapping;
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 1, metalness: 0 });
+  void Hh;
+  const tex = texturaSillares();
+  const mat = new THREE.MeshStandardMaterial({ map: tex, color: '#8a7864', roughness: 1, metalness: 0 });
   const rects = new Array(MAX_HUECOS).fill(0).map(() => new THREE.Vector4(1e5, 1e5, 1e5, 1e5));
   huecos.slice(0, MAX_HUECOS).forEach((b, i) => rects[i].set(b.min.x, b.min.y, b.max.x, b.max.y));
   mat.onBeforeCompile = sh => {

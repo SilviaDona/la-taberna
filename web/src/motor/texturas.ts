@@ -650,3 +650,63 @@ export class TableroKanban {
     g.fillStyle = resto > ideal ? '#ffb000' : '#5dff8a'; g.font = `700 26px ${FUENTES.mono}`; g.fillText(resto > ideal ? `${resto - ideal}${ud} TARDE` : 'EN PLAZO', kx, by + 118);
   }
 }
+
+// ---------------------------------------------------------------- La Taberna: madera y piedra (procedurales)
+// Tablones de roble con vetas y nudos (repetible en los dos ejes)
+let _madera: THREE.CanvasTexture | null = null;
+export function texturaMadera() {
+  if (_madera) return _madera;
+  const W = 512, H = 512; const { c, g } = lienzo(W, H);
+  let s = 977; const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+  const tablas = 4, alto = H / tablas;
+  const img = g.createImageData(W, H);
+  for (let t = 0; t < tablas; t++) {
+    const tono = 0.85 + r() * 0.3;
+    for (let y = 0; y < alto; y++) for (let x = 0; x < W; x++) {
+      const veta = Math.sin((x / W) * Math.PI * 2 * (3 + t) + Math.sin(y * 0.09 + t * 3) * 2.2 + y * 0.35) * 0.5 + 0.5;
+      const v = (88 + veta * 26 + (r() - 0.5) * 8) * tono, i = ((t * alto + y) * W + x) * 4;
+      img.data[i] = v; img.data[i + 1] = v * 0.68; img.data[i + 2] = v * 0.44; img.data[i + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  for (let t = 0; t < tablas; t++) {
+    // junta entre tablones y algún nudo
+    g.fillStyle = 'rgba(20,12,6,0.85)'; g.fillRect(0, t * alto, W, 3);
+    for (let k = 0; k < 2; k++) { const nx = r() * W, ny = t * alto + 10 + r() * (alto - 20); const gr = g.createRadialGradient(nx, ny, 0, nx, ny, 9); gr.addColorStop(0, 'rgba(30,16,8,0.9)'); gr.addColorStop(1, 'rgba(30,16,8,0)'); g.fillStyle = gr; g.fillRect(nx - 10, ny - 10, 20, 20); }
+  }
+  _madera = texturaDe(c); _madera.wrapS = _madera.wrapT = THREE.RepeatWrapping;
+  return _madera;
+}
+
+// Sillares de piedra con mortero (muros de la taberna y cara de corte): hiladas de alto desigual y juntas claras
+let _sillares: THREE.CanvasTexture | null = null;
+export function texturaSillares() {
+  if (_sillares) return _sillares;
+  const W = 1024, H = 1024; const { c, g } = lienzo(W, H);
+  let s = 4242; const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+  g.fillStyle = '#4a3f35'; g.fillRect(0, 0, W, H);   // mortero
+  let y = 0;
+  const hiladas: number[] = [];
+  while (y < H) { const h = 70 + Math.floor(r() * 4) * 16; hiladas.push(Math.min(h, H - y)); y += h; }
+  y = 0;
+  for (const h of hiladas) {
+    let x = -Math.floor(r() * 120);
+    while (x < W) {
+      const w = 110 + Math.floor(r() * 5) * 30;
+      const tono = 92 + r() * 34;
+      const x0 = x + 4, y0 = y + 4, ww = w - 8, hh = h - 8;
+      const gr = g.createLinearGradient(0, y0, 0, y0 + hh);
+      gr.addColorStop(0, `rgb(${(tono + 18) | 0},${(tono + 10) | 0},${(tono - 2) | 0})`);
+      gr.addColorStop(1, `rgb(${(tono - 20) | 0},${(tono - 26) | 0},${(tono - 34) | 0})`);
+      g.fillStyle = gr; g.beginPath(); g.roundRect(x0, y0, ww, hh, 7); g.fill();
+      // grano de la piedra
+      for (let k = 0; k < ww * hh / 90; k++) { g.fillStyle = `rgba(${r() < 0.5 ? '255,240,220' : '20,14,10'},${0.05 + r() * 0.08})`; g.fillRect(x0 + r() * ww, y0 + r() * hh, 2, 2); }
+      // repetible en horizontal: lo que se sale por la derecha se repite por la izquierda
+      if (x + w > W) { const img = g.getImageData(W - 1 - (x + w - W), y, x + w - W, h); g.putImageData(img, 0, y); }
+      x += w;
+    }
+    y += h;
+  }
+  _sillares = texturaDe(c); _sillares.wrapS = _sillares.wrapT = THREE.RepeatWrapping;
+  return _sillares;
+}

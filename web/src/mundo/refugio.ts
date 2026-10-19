@@ -132,15 +132,16 @@ export class Refugio {
 
   luzGlobal() {
     const s = this.motor.scene;
-    s.add(new THREE.HemisphereLight('#b9c6d8', '#3a2c20', 0.3));
-    const sol = new THREE.DirectionalLight('#ffe2bf', 0.42);
+    // La Taberna: luz de interior cálida (fuego y velas); la de fuera entra por las ventanas y la pone el cielo
+    s.add(new THREE.HemisphereLight('#e0b98a', '#3a2214', 0.34));
+    const sol = new THREE.DirectionalLight('#ffd2a0', 0.42);
     sol.castShadow = true;
     sol.shadow.mapSize.set(1536, 1536);
     const sc = sol.shadow.camera; sc.left = -15; sc.right = 15; sc.top = 9; sc.bottom = -6; sc.near = 2; sc.far = 60;
     sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.035; sol.shadow.radius = 3;
     s.add(sol, sol.target);
     this.sol = sol;
-    const contra = new THREE.DirectionalLight('#a9c2ff', 1.1); contra.position.set(-3, 6, -14); s.add(contra, contra.target);
+    const contra = new THREE.DirectionalLight('#b8a6ff', 0.7); contra.position.set(-3, 6, -14); s.add(contra, contra.target);
     s.fog = new THREE.Fog('#0a0908', 90, 260);
   }
 
@@ -239,7 +240,7 @@ export class Refugio {
     // losa se pelearían por los mismos píxeles en la banda marrón de encima de la -1
     this.roca = caraDeRoca(this.limites[0], this.limites[1], ySala(this.plantas - 1) - 24, CALLE - 0.6, FONDO / 2 + 0.25, huecos);
     this.motor.scene.add(this.roca);
-    this.incrustarPiedras(huecos);
+    void this.incrustarPiedras;   // La Taberna: muro de sillería, sin bolos de roca incrustados
     this.cerrarHueco();
     const puerta = this.salas.find(x => x.tipo === 'puerta' && x.planta === 0);
     const enCalle = puerta ? { x0: puerta.grupo.position.x - puerta.ancho / 2 - MARCO, x1: puerta.grupo.position.x + puerta.ancho / 2 + MARCO, techo: ALTO + LOSA * 0.62 } : undefined;

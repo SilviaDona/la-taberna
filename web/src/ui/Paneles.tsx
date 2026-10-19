@@ -19,6 +19,7 @@ import { IDIOMAS_DICTADO, idiomaDictado, ponerIdiomaDictado } from './entrada';
 import { sacarASuperficie } from './superficie';
 import { abrirBuscador } from './Buscador';
 import { terminales as terminalesAbiertas } from './Terminales';
+import { graficos } from '../motor/ajustesGraficos';
 
 export const abrirPanel = (panel: Panel, panelDatos: any = null) => { juego.set({ panel, panelDatos }); };
 // lo que se abre desde el menú de Esc vuelve a él al salir (Esc o ×); abierto con su tecla, se cierra sin más
@@ -347,6 +348,7 @@ function OpcionesJuego() {
   const filas: Fila[] = [
     vol('maestro'), vol('ambiente'), vol('musica'), vol('sfx'), vol('ui'), vol('voces'), vol('teclado'),
     { etq: 'Silencio', valores: ['no', 'sí'], actual: au.silencio ? 1 : 0, poner: k => { sonido.guardar({ silencio: k === 1 }); refrescar(x => x + 1); } },
+    { etq: 'Taberna tranquila (equipos modestos)', valores: ['no', 'sí'], actual: graficos.tranquila ? 1 : 0, poner: k => { graficos.ponerTranquila(k === 1); refrescar(x => x + 1); SFX.tick(); } },
     { etq: 'Idioma del dictado', valores: IDIOMAS_DICTADO.map(x => x.texto), actual: Math.max(0, IDIOMAS_DICTADO.findIndex(x => x.valor === idiomaDictado())), poner: k => { ponerIdiomaDictado(IDIOMAS_DICTADO[k].valor); refrescar(x => x + 1); SFX.tick(); } },
   ];
   const [i, setI] = useMenu(filas.length, k => { const f = filas[k]; f.poner((f.actual + 1) % f.valores.length); }, e => {

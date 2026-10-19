@@ -1,4 +1,4 @@
-// Ascensor del refugio: hueco con raíles, cables y contrapeso; una cabina que sube y baja de verdad entre plantas,
+// Montacargas de la taberna (el «ascensor» del refugio): hueco de piedra con postes de madera, cuerdas y polea; una cabina que sube y baja de verdad entre plantas,
 // con indicador de planta en cada rellano, campanilla y motor. Los personajes viajan dentro.
 import * as THREE from 'three';
 import { colocar, R } from '../motor/assets';
@@ -46,34 +46,39 @@ export class Ascensor {
       m.position.set(0, y + ALTO + LOSA * 0.31, FONDO / 2 + 0.26); g.add(m);
       this.indicadores.push(ind);
       // suelo del rellano (a cada lado de la cabina se pisa la losa de la planta)
-      ps.push(colocar(g, R.sf('FloorTile_Basic'), { pos: [0, y - 0.05, 0.6], escala: 0.85, sombra: false, variante: v }).then(o => { o.scale.z *= 2.1; }));
+      ps.push(colocar(g, R.dun('floor_wood_small'), { pos: [0, y, 0.6], ancho: ANCHO_ASCENSOR, sombra: false, ancla: 'techo' }).then(o => { o.scale.z *= (FONDO + 0.4) / ANCHO_ASCENSOR; }));
     }
     // cables de tracción y contrapeso
-    for (const x of [-0.25, 0.25]) g.add(caja(0.03, h, 0.03, acero, x, yBot + h / 2, -0.4));
+    // cuerdas de cáñamo
+    const cuerda = new THREE.MeshStandardMaterial({ color: '#a8875a', roughness: 0.95 });
+    for (const x of [-0.25, 0.25]) g.add(caja(0.045, h, 0.045, cuerda, x, yBot + h / 2, -0.4));
     // maquinaria arriba (en lo alto de la torre, a pie de calle)
-    ps.push(colocar(g, R.cy('AC_Stacked'), { pos: [-0.9, yTop + 0.05, -1.2], alto: 1.3, variante: v }));
-    ps.push(colocar(g, R.sf('Details_Cylinder_Long'), { pos: [0.4, yTop + 0.3, -1.0], ancho: 1.4, variante: v }));
+    // polea y torno arriba (en lo alto del hueco, a pie de calle)
+    const polea = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.2, 20), acero); polea.rotation.z = Math.PI / 2; polea.position.set(0, yTop + 0.6, -0.4); g.add(polea);
+    g.add(caja(1.6, 0.18, 0.18, acero, 0, yTop + 0.6, -0.4));
+    ps.push(colocar(g, R.dun('barrel_small_stack'), { pos: [-0.9, yTop + 0.05, -1.2], alto: 1.0 }));
     await Promise.all(ps);
     fusionarEstaticos(g);
     // cabina
     const c = this.cabina; c.name = 'cabina';
     const vc = VARIANTES.landing;
     const cps: Promise<unknown>[] = [];
-    cps.push(colocar(c, R.sf('Props_Base'), { pos: [0, 0, 0.3], ancho: 2.5, variante: vc }));
+    // plataforma de tablones con barandilla de madera
+    cps.push(colocar(c, R.dun('floor_wood_small'), { pos: [0, 0.1, 0.3], ancho: 2.5, ancla: 'techo' }).then(o => { o.scale.z *= 3.0 / 2.5; }));
     for (const [x, z] of [[-1.15, -1.1], [1.15, -1.1], [-1.15, 1.6], [1.15, 1.6]] as const) cps.push(colocar(c, R.sf('Column_Slim'), { pos: [x, 0, z], alto: 3.1, variante: vc }));
     c.add(caja(2.6, 0.18, 3.0, materialAcero('#3b3732'), 0, 3.15, 0.25));
-    cps.push(colocar(c, R.cy('Rail_Long'), { pos: [0, 1.0, 1.65], ancho: 2.3, variante: vc }));
-    cps.push(colocar(c, R.casa('Light_Ceiling1'), { pos: [0, 3.06, 0.3], alto: 0.5, ancla: 'techo', sombra: false }));
+    c.add(caja(2.3, 0.08, 0.08, materialAcero('#3a2414'), 0, 1.0, 1.65));
+    cps.push(colocar(c, R.dun('torch_mounted'), { pos: [1.05, 2.1, -1.0], alto: 0.6, sombra: false }));
     await Promise.all(cps);
     // luz interior visible desde lejos: plafón emisivo y resplandor cálido en el fondo de la cabina
-    const plafon = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.5), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd7a0').multiplyScalar(1.6) }));
+    const plafon = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.5), new THREE.MeshBasicMaterial({ color: new THREE.Color('#3a2414') }));
     plafon.rotation.x = Math.PI / 2; plafon.position.set(0, 3.04, 0.3); c.add(plafon);
     const fondo = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.9), new THREE.MeshBasicMaterial({ color: '#6a4a2a', transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
     fondo.position.set(0, 1.5, -1.25); c.add(fondo);
     c.userData.estatico = false;
     g.add(c);
     this.y = this.yDe(0); c.position.y = this.y;
-    this.anclas.push({ tipo: 'foco', pos: new THREE.Vector3(0, 2.9, 0.3), objetivo: new THREE.Vector3(0, -3, 0.5), intensidad: 70, color: new THREE.Color('#ffd7a0'), angulo: 0.9, penumbra: 0.6, distancia: 7 });
+    this.anclas.push({ tipo: 'foco', pos: new THREE.Vector3(0, 2.9, 0.3), objetivo: new THREE.Vector3(0, -3, 0.5), intensidad: 70, color: new THREE.Color('#ffa850'), angulo: 0.9, penumbra: 0.6, distancia: 7 });
     this.pintarIndicadores();
   }
 
@@ -85,7 +90,7 @@ export class Ascensor {
   // dice hacia dónde va
   private pintarIndicadores() {
     for (const ind of this.indicadores) {
-      const g = ind.g; g.fillStyle = '#16140f'; g.fillRect(0, 0, 256, 96);
+      const g = ind.g; g.fillStyle = '#2a1a10'; g.fillRect(0, 0, 256, 96);
       g.strokeStyle = '#4a443b'; g.lineWidth = 6; g.strokeRect(3, 3, 250, 90);
       // a la izquierda, la letra del sector de la planta sobre su color (shared/sectores.ts)
       const sec = sectorDePlanta(ind.planta, this.plantas);

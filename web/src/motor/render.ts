@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, ToneMappingEffect, ToneMappingMode, VignetteEffect, SMAAEffect, NoiseEffect, BlendFunction, HueSaturationEffect, BrightnessContrastEffect } from 'postprocessing';
+import { graficos } from './ajustesGraficos';
 
 const FPS = 60;
 // escala de render: en retina no se pinta a 2× (la interfaz HTML sigue nítida); SMAA suaviza los bordes. Con 1,1 la
@@ -49,6 +50,9 @@ export class Motor {
 
     this.montarPostproceso();
     window.addEventListener('resize', () => this.redimensionar());
+    // taberna tranquila: sin resplandor y a la resolución de la pantalla (ajustesGraficos.ts)
+    const aplicar = () => { this.bloom.intensity = graficos.tranquila ? 0 : 0.7; this.redimensionar(); };
+    graficos.alCambiar(aplicar); aplicar();
     this.redimensionar();
   }
 
@@ -72,7 +76,7 @@ export class Motor {
 
   redimensionar() {
     const w = this.contenedor.clientWidth || window.innerWidth, h = this.contenedor.clientHeight || window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, TOPE_RESOLUCION) * ESCALA_DEPURAR;
+    const dpr = Math.min(window.devicePixelRatio || 1, graficos.tranquila ? 1 : TOPE_RESOLUCION) * ESCALA_DEPURAR;
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
     this.renderer.domElement.style.width = w + 'px'; this.renderer.domElement.style.height = h + 'px';
@@ -110,7 +114,7 @@ export class Motor {
     this.cuadro++;
     const r = this.renderer;
     if (this.sombrasCongeladas) r.shadowMap.needsUpdate = this.cuadro % 6 === 0;
-    else r.shadowMap.needsUpdate = this.cuadro % 3 === 0;
+    else r.shadowMap.needsUpdate = this.cuadro % (graficos.tranquila ? 6 : 3) === 0;
     this.composer.render(dt);
   }
 

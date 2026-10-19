@@ -3,6 +3,7 @@
 // muestran su poza falsa (decal aditivo) para que de lejos el refugio siga pareciendo encendido.
 import * as THREE from 'three';
 import type { AnclaLuz, Sala } from './salas/comun';
+import { graficos } from '../motor/ajustesGraficos';
 
 interface Ranura<L extends THREE.Light> { luz: L; ancla: AnclaLuz | null; sala: Sala | null; actual: number }
 
@@ -10,6 +11,7 @@ export class RepartoLuces {
   private focos: Ranura<THREE.SpotLight>[] = [];
   private puntos: Ranura<THREE.PointLight>[] = [];
   private reloj = 0;
+  private t = 0;
   private v = new THREE.Vector3();
   // sin sombra propia: los focos no proyectan (la del sol basta y es lo más caro)
   constructor(escena: THREE.Scene, nFocos = 6, nPuntos = 3) {
@@ -23,12 +25,19 @@ export class RepartoLuces {
   actualizar(salas: Sala[], centro: THREE.Vector3, dt: number) {
     this.reloj -= dt;
     if (this.reloj <= 0) { this.reloj = 0.3; this.asignar(salas, centro); }
-    for (const r of [...this.focos, ...this.puntos] as Ranura<any>[]) {
-      const objetivo = r.ancla ? r.ancla.intensidad : 0;
+    // La Taberna: las llamas tiemblan (dos senos desfasados por ranura, sin ruido de un fotograma a otro); en la
+    // taberna tranquila solo se usan las dos primeras ranuras de foco y una puntual, y nada parpadea
+    this.t += dt;
+    const quieto = graficos.quieto, tranquila = graficos.tranquila;
+    const todas = [...this.focos, ...this.puntos] as Ranura<any>[];
+    todas.forEach((r, k) => {
+      const usable = !tranquila || (k < 2 || k === this.focos.length);
+      const objetivo = r.ancla && usable ? r.ancla.intensidad : 0;
       r.actual = THREE.MathUtils.damp(r.actual, objetivo, 6, dt);
-      r.luz.intensity = r.actual;
+      const llama = quieto ? 1 : 1 + 0.07 * Math.sin(this.t * 7.3 + k * 1.7) + 0.05 * Math.sin(this.t * 13.1 + k * 2.9);
+      r.luz.intensity = r.actual * llama;
       if (r.ancla) { r.luz.color.copy(r.ancla.color); }
-    }
+    });
   }
 
   private mundo(s: Sala, p: THREE.Vector3) { return this.v.copy(p).add(s.grupo.position); }

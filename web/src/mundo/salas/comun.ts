@@ -6,9 +6,11 @@ import { vivo } from '../../red/cliente';
 import { colocar, R, type Colocacion } from '../../motor/assets';
 import { VARIANTES, type Variante } from '../../motor/paleta';
 import { sectorDe } from '@shared/sectores';
-import { franjaPeligro, rotuloSala, cartel, PantallaFosforo, lienzo, texturaDe, ensuciar, Reloj, Manometro, corcho, PanelSala, texturaEstratos, FUENTES, rotuloNitido } from '../../motor/texturas';
+import { franjaPeligro, rotuloSala, cartel, PantallaFosforo, lienzo, texturaDe, ensuciar, Reloj, Manometro, corcho, PanelSala, texturaEstratos, FUENTES, rotuloNitido, texturaMadera, texturaSillares } from '../../motor/texturas';
 import { superponerPantalla, pantallaFrontal, fusionarEstaticos, aleatorio } from '../util3d';
+import { vidriera } from '../vidrieras';
 import { Polvo, Vapor, Chispas, Burbujas } from '../efectos';
+import { graficos } from '../../motor/ajustesGraficos';
 export { Burbujas };
 
 export const MODULO = 4;          // ancho de un panel de pared Quaternius
@@ -100,8 +102,9 @@ export function materialRoca(tono = 0) {
 export function materialTierra() {
   return mat('tierra', () => { const t = texturaEstratos(); t.wrapT = THREE.ClampToEdgeWrapping; return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', roughness: 1, metalness: 0 }); });
 }
-export function materialAcero(tono = '#3b3936') { return mat('acero' + tono, () => new THREE.MeshStandardMaterial({ color: tono, roughness: 0.55, metalness: 0.35 })); }
-export function materialHormigon() { return mat('hormigon', () => new THREE.MeshStandardMaterial({ color: '#4a4641', roughness: 0.92, metalness: 0.02 })); }
+// La Taberna: lo que era acero estructural es roble oscuro (vigas, pies derechos, losas) y el hormigón, sillería
+export function materialAcero(tono = '#3b3936') { return mat('acero' + tono, () => { const t = texturaMadera().clone(); t.needsUpdate = true; t.repeat.set(2, 1); return new THREE.MeshStandardMaterial({ map: t, color: new THREE.Color(tono).lerp(new THREE.Color('#8a5a34'), 0.7).multiplyScalar(1.6), roughness: 0.82, metalness: 0 }); }); }
+export function materialHormigon() { return mat('hormigon', () => { const t = texturaSillares().clone(); t.needsUpdate = true; t.repeat.set(2, 2); return new THREE.MeshStandardMaterial({ map: t, color: '#c9b49a', roughness: 0.95, metalness: 0 }); }); }
 
 export function caja(w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number, sombra = false) {
   const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
@@ -112,7 +115,7 @@ export function marco(g: THREE.Group, ancho: number) {
   const zF = FONDO / 2;
   const acero = materialAcero('#2b2a27');
   g.add(caja(ancho + MARCO * 2, LOSA * 0.62, 0.7, acero, 0, ALTO + LOSA * 0.31, zF - 0.1));
-  const franja = mat('franja', () => { const t = franjaPeligro(); t.repeat.set(10, 1); return new THREE.MeshStandardMaterial({ map: t, roughness: 0.7, metalness: 0.1 }); });
+  const franja = mat('franja', () => { const t = texturaMadera().clone(); t.needsUpdate = true; t.repeat.set(6, 0.25); return new THREE.MeshStandardMaterial({ map: t, color: '#d8a868', roughness: 0.7, metalness: 0 }); });
   const borde = caja(ancho + MARCO * 2, 0.16, 0.42, franja, 0, -0.08, zF + 0.05);
   borde.material = [acero, acero, franja, acero, franja, acero] as any;
   g.add(borde);
@@ -195,51 +198,43 @@ export function matHalo(w: number, h: number, m: number) {
 export async function paredes(g: THREE.Group, ancho: number, v: Variante, paneles: string[], pasos: { izq: boolean; der: boolean } = { izq: false, der: false }) {
   const n = Math.round(ancho / MODULO);
   const ps: Promise<unknown>[] = [];
-  for (let i = 0; i < n; i++) ps.push(colocar(g, R.sf(paneles[i % paneles.length]), { pos: [-ancho / 2 + MODULO * (i + 0.5), 0, -FONDO / 2], ancla: 'atras', variante: v, sombra: false, alto: ALTO }).then(o => { o.userData.pared = true; }));
+  // La Taberna: muros de piedra de KayKit Dungeon Remastered (4 × 4 m, el mismo módulo): el del centro con ventana (se ve
+  // el cielo de fuera a la hora real, mundo/cielo.ts), los de los lados según el panel que pedía la sala
+  const MUROS: Record<string, string> = { Wall_1: 'wall_inset_candles', Wall_2: 'wall', Wall_3: 'wall_inset_shelves_decoratedA', Wall_4: 'wall_arched', Wall_5: 'wall_inset_shelves_decoratedB', Wall_Empty: 'wall' };
+  for (let i = 0; i < n; i++) {
+    const muro = i === Math.floor(n / 2) ? 'wall_window_open' : MUROS[paneles[i % paneles.length]] ?? 'wall';
+    ps.push(colocar(g, R.dun(muro), { pos: [-ancho / 2 + MODULO * (i + 0.5), 0, -FONDO / 2], ancla: 'atras', sombra: false, ancho: MODULO }).then(o => { o.scale.y *= ALTO / 4 / o.scale.x; o.scale.z = o.scale.x * 0.6; o.userData.pared = true; }));
+  }
+  // el cielo de fuera, detrás del hueco de la ventana del muro central (el hueco: ~1,4 × 1,9 m a media altura)
+  vidriera(g, 0, ALTO * 0.55, -FONDO / 2 - 0.02, 2.2, 2.6);
   // laterales lisos; si hay paso hacia la sala vecina o el ascensor, el tramo delantero queda abierto (se cruza por delante)
   const vl: Variante = { ...v, id: v.id + '-lat' };
   for (const s of [-1, 1]) {
     const abierto = s < 0 ? pasos.izq : pasos.der;
     const largo = abierto ? FONDO / 2 + 0.3 : FONDO + 0.2;
-    ps.push(colocar(g, R.sf('Wall_Empty'), { pos: [s * (ancho / 2 + 0.02), 0, -FONDO / 2 + 0.25], rot: -s * Math.PI / 2, ancla: 'atras', variante: vl, sombra: false, alto: ALTO }).then(o => { o.scale.x = largo / MODULO; o.position.z += (largo - MODULO) / 2 * 0 + (largo - MODULO) / 2; o.scale.z = 0.35; }));
-    ps.push(colocar(g, R.sf('Column_Slim'), { pos: [s * (ancho / 2 - 0.3), 0, -FONDO / 2 + 0.32], alto: ALTO, variante: v, sombra: false }));
-    if (abierto) ps.push(colocar(g, R.sf('Column_1'), { pos: [s * (ancho / 2 - 0.05), 0, -FONDO / 2 + largo + 0.05], alto: ALTO, variante: v, sombra: false }));
+    ps.push(colocar(g, R.dun('wall'), { pos: [s * (ancho / 2 + 0.02), 0, -FONDO / 2 + 0.25], rot: -s * Math.PI / 2, ancla: 'atras', sombra: false, ancho: MODULO }).then(o => { o.scale.y *= ALTO / 4 / o.scale.x; o.scale.x *= largo / MODULO; o.position.z += (largo - MODULO) / 2; o.scale.z *= 0.3; }));
+    void vl;
+    ps.push(colocar(g, R.dun('post'), { pos: [s * (ancho / 2 - 0.3), 0, -FONDO / 2 + 0.32], alto: ALTO, sombra: false }));
+    if (abierto) ps.push(colocar(g, R.dun('post'), { pos: [s * (ancho / 2 - 0.05), 0, -FONDO / 2 + largo + 0.05], alto: ALTO, sombra: false }));
+    // La Taberna: antorcha en el pie derecho del paso (se ve desde el pasillo)
+    if (abierto) ps.push(colocar(g, R.dun('torch_mounted'), { pos: [s * (ancho / 2 - 0.05), 2.3, -FONDO / 2 + largo + 0.3], alto: 0.75, sombra: false }));
   }
   return Promise.all(ps);
 }
 
 export async function suelo(g: THREE.Group, ancho: number, v: Variante, semilla: number) {
-  const r = aleatorio(semilla);
-  // chapas de ~1,15 m con juntas oscuras bien marcadas; franja de paso delantera de rejilla; línea pintada mate entre ambas
-  const vs: Variante = { ...v, id: v.id + '-suelo', pared: '#3e4043', paredOscura: '#121314', acento: '#7d6a3e', acentoOscuro: '#1a1814', mugre: 0.16 };
-  const vr: Variante = { ...v, id: v.id + '-rejilla', pared: '#3a3936', paredOscura: '#0f0f0e', acento: '#5b5246', acentoOscuro: '#151412', mugre: 0.15 };
-  const L = 1.15, E = L / 2; // escala de la loseta de 2 m
-  const nx = Math.ceil(ancho / L), filasChapa = 3;
+  // La Taberna: tarima de tablones (KayKit Dungeon Remastered, losas de 4 × 4 m) de pared a pared y hasta el borde del
+  // corte; giradas al azar de media vuelta para que no se repita la veta
+  const r = aleatorio(semilla); void v;
+  const nx = Math.round(ancho / MODULO);
   const ps: Promise<unknown>[] = [];
-  const z0 = -FONDO / 2;
   for (let i = 0; i < nx; i++) {
-    const x = -ancho / 2 + L * (i + 0.5);
-    for (let j = 0; j < filasChapa; j++) {
-      const t = r() < 0.4 ? 'FloorTile_Basic2' : 'FloorTile_Basic';
-      ps.push(colocar(g, R.sf(t), { pos: [x, -0.05, z0 + L * (j + 0.5)], escala: E, variante: vs, sombra: false, rot: Math.floor(r() * 4) * Math.PI / 2 }));
-    }
-    // franja de paso: rejilla (losetas de rejilla del kit puestas en el suelo)
-    // (las losetas de techo tienen el detalle hacia abajo: se voltean para que la rejilla mire arriba)
-    ps.push(colocar(g, R.sf('RoofTile_Vents'), { pos: [x, 0.0, z0 + L * filasChapa + (FONDO - L * filasChapa) / 2], escala: E, variante: vr, sombra: false, propios: true, rotX: Math.PI, ancla: 'techo' }).then(o => {
-      o.scale.z *= (FONDO - L * filasChapa) / L;
-      o.traverse((m: any) => { if (m.isMesh) { m.material.color.multiplyScalar(0.42); m.material.roughness = 0.75; m.material.metalness = 0.35; } });
-    }));
+    const oscura = r() < 0.3;
+    ps.push(colocar(g, R.dun(oscura ? 'floor_wood_large_dark' : 'floor_wood_large'), { pos: [-ancho / 2 + MODULO * (i + 0.5), 0, 0], ancho: MODULO, sombra: false, rot: r() < 0.5 ? 0 : Math.PI, ancla: 'techo' }).then(o => { o.scale.z *= FONDO / MODULO; }));
   }
-  // juntas entre chapas: tiras oscuras finas (la loseta del kit no marca la junta a esta distancia)
-  const junta = mat('junta', () => new THREE.MeshStandardMaterial({ color: '#0b0b0b', roughness: 0.9, metalness: 0.2 }));
-  for (let i = 1; i < nx; i++) g.add(caja(0.035, 0.012, L * filasChapa, junta, -ancho / 2 + L * i, 0.006, z0 + L * filasChapa / 2));
-  for (let j = 1; j <= filasChapa; j++) g.add(caja(ancho, 0.012, 0.035, junta, 0, 0.006, z0 + L * j));
-  // línea pintada (amarillo gastado, mate) entre la chapa y la rejilla
-  const linea = new THREE.Mesh(new THREE.PlaneGeometry(ancho - 0.5, 0.13), mat('linea', () => { const { c, g: gg } = lienzo(1024, 32); gg.fillStyle = '#9c7b2c'; gg.fillRect(0, 0, 1024, 32); ensuciar(gg, 1024, 32, 0.7, 2); for (let k = 0; k < 40; k++) { gg.clearRect(Math.random() * 1024, Math.random() * 32, 4 + Math.random() * 30, 2 + Math.random() * 6); } return new THREE.MeshStandardMaterial({ map: texturaDe(c), roughness: 1, metalness: 0, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 }); }));
-  linea.rotation.x = -Math.PI / 2; linea.position.set(0, 0.014, z0 + L * filasChapa + 0.1); linea.receiveShadow = true; g.add(linea);
   // desgaste: la zona de paso, más clara y pulida
-  const desgaste = new THREE.Mesh(new THREE.PlaneGeometry(ancho - 1.2, 0.9), mat('desgaste', () => { const { c, g: gg } = lienzo(512, 64); const gr = gg.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, 'rgba(255,240,220,0)'); gr.addColorStop(0.5, 'rgba(255,240,220,0.10)'); gr.addColorStop(1, 'rgba(255,240,220,0)'); gg.fillStyle = gr; gg.fillRect(0, 0, 512, 64); ensuciar(gg, 512, 64, 0.2, 5); return new THREE.MeshStandardMaterial({ map: texturaDe(c), transparent: true, depthWrite: false, roughness: 0.4, metalness: 0.3, polygonOffset: true, polygonOffsetFactor: -1 }); }));
-  desgaste.rotation.x = -Math.PI / 2; desgaste.position.set(0, 0.01, z0 + L * 2.3); g.add(desgaste);
+  const desgaste = new THREE.Mesh(new THREE.PlaneGeometry(ancho - 1.2, 0.9), mat('desgaste', () => { const { c, g: gg } = lienzo(512, 64); const gr = gg.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, 'rgba(255,230,190,0)'); gr.addColorStop(0.5, 'rgba(255,230,190,0.08)'); gr.addColorStop(1, 'rgba(255,230,190,0)'); gg.fillStyle = gr; gg.fillRect(0, 0, 512, 64); ensuciar(gg, 512, 64, 0.2, 5); return new THREE.MeshStandardMaterial({ map: texturaDe(c), transparent: true, depthWrite: false, roughness: 0.5, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1 }); }));
+  desgaste.rotation.x = -Math.PI / 2; desgaste.position.set(0, 0.01, -FONDO / 2 + 1.15 * 2.3); g.add(desgaste);
   return Promise.all(ps);
 }
 
@@ -256,13 +251,19 @@ export function mancha(g: THREE.Group, x: number, z: number, tam: number, semill
 export function lampara(g: THREE.Group, sala: Sala, x: number, z: number, opts: { intensidad?: number; sombra?: boolean; objetivo?: [number, number]; color?: string; corta?: boolean } = {}) {
   // la luz real la pone el reparto global (mundo/luces.ts) a las lámparas cercanas a la cámara; aquí queda el ancla,
   // la lámpara, la bombilla emisiva y una poza falsa en el suelo para cuando no tiene luz asignada
-  const color = opts.color ?? '#ffbe73';
+  const color = opts.color ?? '#ffa850';   // luz de vela (~1900 K)
   // «corta»: cuelga pegada al techo para no cruzarse por delante de la pantalla o el cartel protagonista
   const baja = opts.corta ? 0.42 : 0.95;
   sala.anclas.push({ tipo: 'foco', pos: new THREE.Vector3(x, ALTO - baja, z), objetivo: new THREE.Vector3(opts.objetivo?.[0] ?? x, 0, opts.objetivo?.[1] ?? z - 0.25), intensidad: opts.intensidad ?? 100, color: new THREE.Color(color), sombra: !!opts.sombra, angulo: 0.72, penumbra: 0.65, distancia: 10 });
-  const pr = colocar(g, R.casa('Light_Ceiling1'), { pos: [x, ALTO, z], alto: opts.corta ? 0.45 : 1.0, ancla: 'techo', sombra: false });
-  const bombilla = new THREE.Mesh(new THREE.SphereGeometry(opts.corta ? 0.07 : 0.1, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(5) }));
-  bombilla.position.set(x, ALTO - baja, z); g.add(bombilla);
+  // La Taberna: araña de madera colgada de una cadena, con tres velas encendidas
+  const pr = (async () => {
+    const madera = materialAcero('#3a2414');
+    const aro = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.035, 6, 18), madera); aro.rotation.x = Math.PI / 2; aro.position.set(x, ALTO - baja, z); g.add(aro);
+    g.add(caja(0.025, baja, 0.025, mat('cadena', () => new THREE.MeshStandardMaterial({ color: '#2a2622', roughness: 0.5, metalness: 0.6 })), x, ALTO - baja / 2, z));
+    await Promise.all([0, 1, 2].map(k => colocar(g, R.dun('candle_lit'), { pos: [x + Math.cos(k * 2.094) * 0.34, ALTO - baja + 0.02, z + Math.sin(k * 2.094) * 0.34], alto: 0.26, sombra: false })));
+  })();
+  const bombilla = new THREE.Mesh(new THREE.SphereGeometry(opts.corta ? 0.07 : 0.1, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(3), transparent: true, opacity: 0.6 }));
+  bombilla.position.set(x, ALTO - baja + 0.28, z); g.add(bombilla);
   const poza = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.8), matPozaFalsa(color)); poza.rotation.x = -Math.PI / 2; poza.position.set(opts.objetivo?.[0] ?? x, 0.02, opts.objetivo?.[1] ?? z - 0.25); poza.renderOrder = 2; poza.userData.estatico = false;
   g.add(poza); sala.anclas[sala.anclas.length - 1].poza = poza;
   return pr;
@@ -297,13 +298,15 @@ export function placaYBaliza(g: THREE.Group, sala: Sala, nombre: string, sub: st
   const W = 1024, H = 240; const { c, g: x } = lienzo(W, H);
   const pintar = (brillo: number) => {
     x.clearRect(0, 0, W, H);
-    x.fillStyle = '#1b1916'; x.fillRect(0, 0, W, H);
-    x.strokeStyle = '#4a443b'; x.lineWidth = 8; x.strokeRect(6, 6, W - 12, H - 12);
+    // La Taberna: tabla de roble con marco oscuro (la veta, de la textura de madera)
+    x.fillStyle = '#4a2e1a'; x.fillRect(0, 0, W, H);
+    const veta = texturaMadera().image as HTMLCanvasElement; x.globalAlpha = 0.55; x.drawImage(veta, 0, 0, W, H); x.globalAlpha = 1;
+    x.strokeStyle = '#1e120a'; x.lineWidth = 12; x.strokeRect(6, 6, W - 12, H - 12);
     // bloque del sector (shared/sectores.ts): arriba su nombre en plantilla sobre chapa oscura, debajo el número de la
     // sala sobre el tono de la sala; el acceso lleva además franjas de peligro
     const sec = sectorDe(sala.tipo);
     x.fillStyle = v.acento; x.fillRect(16, 16, 150, H - 32);
-    x.fillStyle = '#16140f'; x.fillRect(16, 16, 150, 56);
+    x.fillStyle = '#1e120a'; x.fillRect(16, 16, 150, 56);
     let tl = 44; x.font = `800 ${tl}px ${FUENTES.titulo}`; while (x.measureText(sec.nombre).width > 140 && tl > 18) { tl -= 2; x.font = `800 ${tl}px ${FUENTES.titulo}`; }
     x.fillStyle = sec.color; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(sec.nombre, 91, 46);
     if (sec.id === 'acceso') {
@@ -318,21 +321,21 @@ export function placaYBaliza(g: THREE.Group, sala: Sala, nombre: string, sub: st
     let tam = 124; x.font = `800 ${tam}px ${FUENTES.titulo}`;
     while (x.measureText(nombre).width > W - 225 && tam > 40) { tam -= 4; x.font = `800 ${tam}px ${FUENTES.titulo}`; }
     // retroiluminación corta: un halo ancho emborronaba los trazos al reducir la textura
-    x.shadowColor = '#ffd9a0'; x.shadowBlur = 4 * brillo; x.fillStyle = `rgba(255,240,212,${0.85 + 0.15 * brillo})`;
+    x.shadowColor = '#1a0e06'; x.shadowBlur = 3; x.shadowOffsetY = 3; x.fillStyle = `rgba(250,232,196,${0.88 + 0.12 * brillo})`;
     x.fillText(nombre, 192, H * 0.4);
-    x.shadowBlur = 0; let ts = 50; x.font = `700 ${ts}px ${FUENTES.rotulo}`;
+    x.shadowBlur = 0; x.shadowOffsetY = 0; let ts = 50; x.font = `700 ${ts}px ${FUENTES.rotulo}`;
     const sep = sub && rama ? ' · ' : '';
     let r = rama ?? '';
     const largo = () => x.measureText(sub + sep).width + (rama ? ts * 1.2 + x.measureText(r).width : 0);
     while (largo() > W - 225 && ts > 30) { ts -= 2; x.font = `700 ${ts}px ${FUENTES.rotulo}`; }
     while (rama && largo() > W - 225 && r.length > 4) r = r.slice(0, -2) + '…';
-    x.fillStyle = '#d2c3a0'; x.fillText(sub + sep, 194, H * 0.8);
+    x.fillStyle = '#e8cf9a'; x.fillText(sub + sep, 194, H * 0.8);
     if (rama) {
       const xi = 194 + x.measureText(sub + sep).width;
       const ai = iconoRama(x, xi, H * 0.8 - ts * 0.04, ts * 0.92);
       x.fillText(r, xi + ai + ts * 0.25, H * 0.8);
     }
-    x.fillStyle = '#5d574d'; for (const [a, b] of [[184, 22], [W - 22, 22], [184, H - 22], [W - 22, H - 22]]) { x.beginPath(); x.arc(a, b, 7, 0, 7); x.fill(); }
+    x.fillStyle = '#b8893a'; for (const [a, b] of [[184, 22], [W - 22, 22], [184, H - 22], [W - 22, H - 22]]) { x.beginPath(); x.arc(a, b, 7, 0, 7); x.fill(); }   // clavos de latón
   };
   pintar(1);
   const tex = texturaDe(c); tex.anisotropy = 16;
@@ -656,9 +659,11 @@ export async function crearSala(o: OpcionesSala, amueblar: Amueblar): Promise<Sa
     alActualizar: f => actualizadores.push(f), alEstado: f => alEstados.push(f),
   };
   // techo común: bandeja de tuberías y cables que caen
-  for (let x = -ancho / 2 + 1.8; x < ancho / 2 - 1; x += 3.5) ctx.P(R.sf('Pipes'), { pos: [x, ALTO - 0.3, zB + 0.62], ancho: 3.5, sombra: false });
+  // La Taberna: techo de vigas de roble de fondo a frente y una carrera a lo largo de la pared del fondo
   const rr = aleatorio(o.semilla + 5);
-  for (const x of [-5.2, -2.6, 1.2, 3.4, 5.4]) ctx.P(R.cy(rr() > 0.5 ? 'Cable_Long' : 'Cable_Small'), { pos: [x + (rr() - 0.5) * 0.4, ALTO, zB + 0.7 + rr() * 0.3], alto: 0.4 + rr() * 0.35, ancla: 'techo', sombra: false });   // cortos: nunca cuelgan por delante de una pantalla o un cartel
+  const viga = materialAcero('#3a2414');
+  for (let x = -ancho / 2 + 2; x < ancho / 2 - 0.5; x += 2.67) g.add(caja(0.26, 0.3, FONDO, viga, x, ALTO - 0.15, 0));
+  g.add(caja(ancho, 0.32, 0.3, viga, 0, ALTO - 0.45, zB + 0.75));
   await amueblar(ctx);
   await Promise.all(ps);
   const placa = placaYBaliza(g, sala, o.nombre, o.subtitulo, o.numero, v, o.rama);
@@ -696,19 +701,47 @@ export async function crearSala(o: OpcionesSala, amueblar: Amueblar): Promise<Sa
     for (const p of sala.pantallas) p.actualizar(dt, t);
     if (panel) { panel.progreso = sala.estado === 'trabajando' ? (sala.progreso || (t * 0.04) % 1) : sala.estado === 'terminada' ? 1 : sala.progreso; panel.actualizar(t); }
     for (const f of actualizadores) f(dt, t, a);
-    polvo.actualizar(dt, t); vapor.actualizar(dt); chispas.actualizar(dt);
+    // (taberna tranquila o movimiento reducido: sin motas flotando ni chispas)
+    polvo.puntos.visible = chispas.grupo.visible = !graficos.quieto;
+    if (!graficos.quieto) { polvo.actualizar(dt, t); chispas.actualizar(dt); }
+    vapor.actualizar(dt);
     const lb = sala.userData.luzBaliza; const mb = sala.userData.matBaliza as THREE.MeshStandardMaterial | undefined;
     const pulso = sala.estado === 'esperando' ? (Math.sin(t * Math.PI * 2) > 0 ? 1 : 0.15) : sala.estado === 'error' ? 0.5 + 0.5 * Math.sin(t * Math.PI) : sala.estado === 'sin-sesion' ? 0 : 0.6;
     if (lb) lb.intensity = pulso * 2.5; if (mb) mb.emissiveIntensity = 0.3 + pulso * 3;
     const hz = sala.userData.haz; const gira = sala.estado === 'esperando' || sala.estado === 'error';
     if (hz) { hz.intensity = gira ? 60 : 0; if (gira) { const an = t * Math.PI * 2 * 0.8; hz.target.position.set(Math.cos(an) * 6, -1.5, -FONDO + Math.sin(an) * 2); } }
     const ic = sala.userData.icono as THREE.Sprite; if (ic?.visible) ic.position.y = ALTO + LOSA * 0.31 + Math.sin(t * 2.4) * 0.06;
-    siguienteVapor -= dt; vapor.activo = siguienteVapor < 0; if (siguienteVapor < -1.6) siguienteVapor = 8 + Math.random() * 7;
+    vapor.activo = false; void siguienteVapor;   // La Taberna: sin tuberías de vapor
     siguienteChispa -= dt * (0.4 + a * 2);
     if (siguienteChispa < 0) { siguienteChispa = 6 + Math.random() * 9; if (ctx.chispas) { chispas.rafaga(ctx.chispas, 16); sala.userData.alChispa?.(); } }
     if (placa.placa.material) (placa.placa.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.5 + 0.05 * Math.sin(t * 2.3);
   };
   return sala;
+}
+
+// La Taberna: chimenea de sillería contra la pared del fondo, con campana hasta las vigas y fuego vivo (las llamas
+// crecen y menguan, el resplandor tiembla con ellas; en la taberna tranquila o con movimiento reducido, quietas)
+export async function chimenea(ctx: Contexto, x: number, ancho = 1.8) {
+  const { g, zB } = ctx;
+  const piedra = materialHormigon(), madera = materialAcero('#3a2414');
+  const z = zB + 0.45, alto = 1.25;
+  g.add(caja(ancho + 0.5, 0.18, 1.0, piedra, x, 0.09, z + 0.2, true));                       // solera
+  for (const s of [-1, 1]) g.add(caja(0.32, alto, 0.8, piedra, x + s * (ancho / 2 + 0.06), alto / 2, z, true));   // jambas
+  g.add(caja(ancho + 0.6, 0.22, 0.95, madera, x, alto + 0.11, z + 0.05, true));                // dintel de roble
+  const campana = new THREE.Mesh(new THREE.CylinderGeometry(0.42, (ancho + 0.4) / 2, ALTO - alto - 0.22, 4, 1), piedra);
+  campana.rotation.y = Math.PI / 4; campana.scale.z = 0.55; campana.position.set(x, alto + 0.22 + (ALTO - alto - 0.22) / 2, z - 0.05); campana.castShadow = true; g.add(campana);
+  const hogar = new THREE.Mesh(new THREE.PlaneGeometry(ancho, alto), new THREE.MeshBasicMaterial({ color: '#120804' })); hogar.position.set(x, alto / 2, z - 0.35); g.add(hogar);
+  const fuego = await colocar(g, R.sv('Bonfire_Fire'), { pos: [x, 0.18, z + 0.05], ancho: ancho * 0.6, propios: true, estatico: false, sombra: false });
+  const llamas: { m: THREE.MeshStandardMaterial; o: THREE.Object3D }[] = [];
+  fuego.traverse((n: any) => { if (n.isMesh && n.material.name === 'Fire') { n.material.emissive = new THREE.Color('#ff7a1a'); n.material.emissiveIntensity = 2.4; llamas.push({ m: n.material, o: n }); } });
+  ctx.sala.anclas.push({ tipo: 'punto', pos: new THREE.Vector3(x, 0.8, z + 0.6), intensidad: 14, color: new THREE.Color('#ff8a3a'), distancia: 6, prioridad: 1 });
+  ctx.sala.obstaculos.push(new THREE.Box2(new THREE.Vector2(x - ancho / 2 - 0.3, zB), new THREE.Vector2(x + ancho / 2 + 0.3, z + 0.75)));
+  ctx.chispas = new THREE.Vector3(x, 0.7, z + 0.1);   // las chispas de la sala salen del fuego
+  ctx.alActualizar((dt, t) => {
+    if (graficos.quieto) { for (const l of llamas) { l.m.emissiveIntensity = 2.4; l.o.scale.y = 1; } return; }
+    const k = 0.5 + 0.3 * Math.sin(t * 9.1) + 0.2 * Math.sin(t * 15.7 + 1.3);
+    for (const [i, l] of llamas.entries()) { l.m.emissiveIntensity = 2.0 + k * 1.1; l.o.scale.y = 0.85 + 0.25 * (0.5 + 0.5 * Math.sin(t * (7 + i) + i)); }
+  });
 }
 
 // Banda alta de la pared: tendido de cobre con válvulas, manómetro y reloj (común a varias salas)

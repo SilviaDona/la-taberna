@@ -1,6 +1,12 @@
-/* Tipografías propias (OFL, autoalojadas en /fuentes): rótulos industriales y datos legibles */
-@font-face { font-family: "Refugio Titulo"; src: url(/fuentes/big-shoulders-stencil-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; font-display: block; }
-@font-face { font-family: "Refugio Rotulo"; src: url(/fuentes/big-shoulders-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; font-display: block; }
+/* Tipografías propias (OFL, autoalojadas en /fuentes) */
+/* La Taberna: títulos y rótulos en Cinzel (capitulares romanas, legibles); texto en Atkinson Hyperlegible */
+@font-face { font-family: "Refugio Titulo"; src: url(/fuentes/cinzel-latin-500-normal.woff2) format("woff2"); font-weight: 100 599; font-display: block; }
+@font-face { font-family: "Refugio Titulo"; src: url(/fuentes/cinzel-latin-700-normal.woff2) format("woff2"); font-weight: 600 900; font-display: block; }
+@font-face { font-family: "Refugio Rotulo"; src: url(/fuentes/cinzel-latin-500-normal.woff2) format("woff2"); font-weight: 100 599; font-display: block; }
+@font-face { font-family: "Refugio Rotulo"; src: url(/fuentes/cinzel-latin-700-normal.woff2) format("woff2"); font-weight: 600 900; font-display: block; }
+@font-face { font-family: "Taberna Texto"; src: url(/fuentes/atkinson-hyperlegible-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: block; }
+@font-face { font-family: "Taberna Texto"; src: url(/fuentes/atkinson-hyperlegible-latin-400-italic.woff2) format("woff2"); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: "Taberna Texto"; src: url(/fuentes/atkinson-hyperlegible-latin-700-normal.woff2) format("woff2"); font-weight: 500 900; font-display: block; }
 @font-face { font-family: "Refugio Mono"; src: url(/fuentes/ibm-plex-mono-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: block; }
 @font-face { font-family: "Refugio Mono"; src: url(/fuentes/ibm-plex-mono-latin-400-italic.woff2) format("woff2"); font-weight: 400; font-style: italic; font-display: block; }
 @font-face { font-family: "Refugio Mono"; src: url(/fuentes/ibm-plex-mono-latin-500-normal.woff2) format("woff2"); font-weight: 500; font-display: block; }

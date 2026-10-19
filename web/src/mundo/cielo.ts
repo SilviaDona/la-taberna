@@ -13,6 +13,7 @@
 // `__cielo.fijar(null)` (vuelve al reloj real), `__cielo.avanzar(30)` (minutos) y `__cielo.info()` (altura del sol,
 // salida y puesta de hoy, fase de la luna).
 import * as THREE from 'three';
+import { ponerCieloVentanas } from './vidrieras';
 
 // ---- astronomía: versión mínima de SunCalc, Copyright (c) 2014 Vladimir Agafonkin, BSD-2-Clause
 // (LICENSES/suncalc-BSD-2-Clause.txt)
@@ -304,6 +305,7 @@ export class Cielo {
     this.niebla.copy(this.nieblaBase).lerp(mz.cielo[0], 0.08 + 0.1 * (1 - this.noche));
     if (this.escena.fog) (this.escena.fog as THREE.Fog).color.copy(this.niebla);
     for (const m of registro.keys()) this.retocar(m);
+    ponerCieloVentanas(mz.cielo[1], this.noche);
   }
 
   private c = new THREE.Color();
