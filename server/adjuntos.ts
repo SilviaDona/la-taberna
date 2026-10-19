@@ -1,6 +1,6 @@
 // Adjuntos del intercomunicador: archivos que el Supervisor pega, arrastra o elige (capturas, imágenes de referencia,
 // PDF, lo que sea). Se guardan en DATOS/uploads/<día> (se limpian a la semana) y van al habitante así:
-// - las imágenes, dentro del mensaje (bloques de imagen: Claude las ve directamente), reducidas con `sips` si son
+// - las imágenes, dentro del mensaje (bloques de imagen: Claude las ve directamente), reducidas (server/plataforma.ts: `sips` en macOS, System.Drawing en Windows) si son
 //   demasiado grandes para la API o están en un formato que no admite (HEIC, TIFF…);
 // - todos, con su ruta en una lista al final del texto, para que pueda abrirlos o usarlos (copiar una imagen a un repo).
 // La lista se reconoce al leer la conversación del archivo: el cuaderno los vuelve a enseñar como adjuntos.
@@ -9,6 +9,7 @@ import os from 'node:os';
 import { mkdirSync, writeFileSync, readFileSync, statSync, rmSync, existsSync, readdirSync, mkdtempSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import type { Adjunto } from '../shared/protocolo.ts';
+import { convertirImagen, medidasImagen } from './plataforma.ts';
 
 const MAX_ARCHIVO = 20 * 1024 * 1024;
 const MAX_LADO = 2000;                    // lado mayor de una imagen que va a Claude
@@ -59,7 +60,7 @@ export class Adjuntos {
     const tmp = mkdtempSync(path.join(os.tmpdir(), 'shelter-mini-'));
     try {
       const out = path.join(tmp, 'm.jpg');
-      await sips(['-Z', String(lado), '-s', 'format', 'jpeg', '-s', 'formatOptions', '75', ruta, '--out', out]);
+      await convertirImagen(ruta, out, { lado, formato: 'jpeg', calidad: 75 });
       return 'data:image/jpeg;base64,' + readFileSync(out).toString('base64');
     } finally { rmSync(tmp, { recursive: true, force: true }); }
   }
@@ -87,14 +88,10 @@ export function separarAdjuntos(t: string): { texto: string; adjuntos: Adjunto[]
   return { texto: t.slice(0, i).trim(), adjuntos };
 }
 
-function sips(args: string[]) {
-  return new Promise<string>((ok, ko) => execFile('/usr/bin/sips', args, { timeout: 30_000 }, (e, o) => (e ? ko(e) : ok(String(o)))));
-}
 
 async function imagenParaClaude(ruta: string): Promise<{ media_type: string; data: string } | null> {
   const ext = path.extname(ruta).toLowerCase();
-  const info = await sips(['-g', 'pixelWidth', '-g', 'pixelHeight', ruta]);
-  const ancho = Number(/pixelWidth: (\d+)/.exec(info)?.[1] ?? 0), alto = Number(/pixelHeight: (\d+)/.exec(info)?.[1] ?? 0);
+  const { ancho, alto } = await medidasImagen(ruta);
   if (!ancho || !alto) return null;
   const directa = DIRECTAS[ext];
   if (directa && Math.max(ancho, alto) <= MAX_LADO && statSync(ruta).size <= MAX_IMAGEN) return { media_type: directa, data: readFileSync(ruta).toString('base64') };
@@ -104,7 +101,7 @@ async function imagenParaClaude(ruta: string): Promise<{ media_type: string; dat
     for (const [formato, calidad] of [['png', ''], ['jpeg', '88'], ['jpeg', '72']] as const) {
       if (formato === 'png' && ext !== '.png') continue;
       const out = path.join(tmp, 'i.' + (formato === 'png' ? 'png' : 'jpg'));
-      await sips([...(Math.max(ancho, alto) > MAX_LADO ? ['-Z', String(MAX_LADO)] : []), '-s', 'format', formato, ...(calidad ? ['-s', 'formatOptions', calidad] : []), ruta, '--out', out]);
+      await convertirImagen(ruta, out, { lado: Math.max(ancho, alto) > MAX_LADO ? MAX_LADO : 0, formato, calidad: calidad ? Number(calidad) : undefined });
       if (statSync(out).size <= MAX_IMAGEN) return { media_type: formato === 'png' ? 'image/png' : 'image/jpeg', data: readFileSync(out).toString('base64') };
     }
     return null;

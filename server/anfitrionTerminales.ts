@@ -32,12 +32,13 @@ function vigilar() {
 }
 // las que tienen a alguien enganchado fuera se quedan (si se pide), y con ellas el anfitrión
 function cerrarTodas(salvoFuera = false) { for (const [id, x] of [...t]) { if (salvoFuera && x.fuera.size) continue; t.delete(id); try { x.p.kill(); } catch {} } }
-function salir() { try { unlinkSync(SOCK); } catch {} process.exit(0); }
+const TUBERIA = SOCK.startsWith('\\\\.\\pipe\\');   // Windows: tubería con nombre, no hay archivo que borrar
+function salir() { if (!TUBERIA) try { unlinkSync(SOCK); } catch {} process.exit(0); }
 
 function abrir(m: any) {
   if (t.has(m.id)) return;
   let p: IPty;
-  try { p = pty.spawn(m.shell, ['-l'], { name: 'xterm-256color', cols: m.cols, rows: m.filas, cwd: m.cwd, env: m.env }); }
+  try { p = pty.spawn(m.shell, Array.isArray(m.args) ? m.args : ['-l'], { name: 'xterm-256color', cols: m.cols, rows: m.filas, cwd: m.cwd, env: m.env }); }
   catch (e) { enviar({ ev: 'error', id: m.id, texto: (e as Error).message }); return; }
   const term: Term = { p, shell: path.basename(m.shell), cwd: m.cwd, bufer: '', modos: new Map(), kitty: [], cola: '', sufijo: '', fuera: new Set(), tamano: [m.cols, m.filas] };
   t.set(m.id, term);
@@ -138,7 +139,7 @@ function enganchar(s: net.Socket, m: any) {
 const lista = () => [...t].map(([id, x]) => ({ id, cwd: x.cwd, shell: x.shell, programa: primerPlano(id), fuera: x.fuera.size }));
 
 asegurarAyudante();
-if (existsSync(SOCK)) try { unlinkSync(SOCK); } catch {}
+if (!TUBERIA && existsSync(SOCK)) try { unlinkSync(SOCK); } catch {}
 const srv = net.createServer(s => {
   s.setEncoding('utf8');
   // la primera línea dice quién es
@@ -164,7 +165,7 @@ const srv = net.createServer(s => {
 });
 // el socket nace ya con permisos 0600 (umask antes de listen): sin ventana en la que otro usuario pueda conectarse
 const umaskAntes = process.umask(0o077);
-srv.listen(SOCK, () => { process.umask(umaskAntes); try { chmodSync(SOCK, 0o600); } catch {} vigilar(); });
+srv.listen(SOCK, () => { process.umask(umaskAntes); if (!TUBERIA) try { chmodSync(SOCK, 0o600); } catch {} vigilar(); });
 srv.on('error', e => { console.error('Anfitrión de terminales:', e.message); process.exit(1); });
 process.on('SIGTERM', () => { cerrarTodas(); salir(); });
 process.on('SIGHUP', () => {});

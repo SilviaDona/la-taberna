@@ -12,12 +12,33 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const CHROME = ['/Applications/Google Chrome.app', path.join(os.homedir(), 'Applications/Google Chrome.app')]
-  .map(a => path.join(a, 'Contents/MacOS/Google Chrome')).find(f => fs.existsSync(f)) ?? null;
+const WINDOWS = process.platform === 'win32';
+const CHROME = (WINDOWS
+  ? [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA].filter(Boolean).map(d => path.join(d, 'Google', 'Chrome', 'Application', 'chrome.exe'))
+  : ['/Applications/Google Chrome.app', path.join(os.homedir(), 'Applications/Google Chrome.app')].map(a => path.join(a, 'Contents/MacOS/Google Chrome'))
+).find(f => fs.existsSync(f)) ?? null;
+// PowerShell con un guion fijo (los datos, por el entorno): en Windows no hay /bin/sh, pgrep ni pkill
+const POWERSHELL = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+function powershell(guion, env = {}, sincrono = false) {
+  const args = ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(guion, 'utf16le').toString('base64')];
+  const o = { env: { ...process.env, ...env }, windowsHide: true };
+  if (sincrono) return require('node:child_process').execFileSync(POWERSHELL, args, { ...o, encoding: 'utf8', timeout: 10_000 });
+  spawn(POWERSHELL, args, { ...o, detached: true, stdio: 'ignore' }).unref();
+}
+// Chrome con ese perfil en marcha (Windows: por su línea de órdenes)
+function chromesDePerfil(perfil) {
+  if (!WINDOWS) return null;
+  const out = powershell("Get-CimInstance Win32_Process -Filter \"Name = 'chrome.exe'\" | Where-Object { $_.CommandLine -like ('*user-data-dir=' + $env:SHELTER_PERFIL + '*') } | ForEach-Object { $_.ProcessId }", { SHELTER_PERFIL: perfil }, true);
+  return String(out).split(/\r?\n/).map(Number).filter(Boolean);
+}
 const espera = ms => new Promise(r => setTimeout(r, ms));
 // si el juego desaparece (aunque sea de golpe), el Chrome que ha abierto se cierra a los 2 s: nunca queda uno suelto
 // (el de Spotify seguiría sonando)
 function vigilar(hijo) {
+  if (WINDOWS) {
+    powershell('while ((Get-Process -Id $env:SHELTER_PADRE -ErrorAction SilentlyContinue) -and (Get-Process -Id $env:SHELTER_HIJO -ErrorAction SilentlyContinue)) { Start-Sleep 2 }; Stop-Process -Id $env:SHELTER_HIJO -ErrorAction SilentlyContinue; Start-Sleep 3; Stop-Process -Id $env:SHELTER_HIJO -Force -ErrorAction SilentlyContinue', { SHELTER_PADRE: String(process.pid), SHELTER_HIJO: String(hijo.pid) });
+    return;
+  }
   spawn('/bin/sh', ['-c', `while kill -0 ${process.pid} 2>/dev/null && kill -0 ${hijo.pid} 2>/dev/null; do sleep 2; done; kill ${hijo.pid} 2>/dev/null; sleep 3; kill -9 ${hijo.pid} 2>/dev/null`], { detached: true, stdio: 'ignore' }).unref();
 }
 // los perfiles temporales de inicio de sesión que queden al salir del juego, fuera
@@ -100,4 +121,4 @@ const deSesion = async (ses, dominio) => (await ses.cookies.get({ domain: domini
   ...({ strict: { sameSite: 'Strict' }, lax: { sameSite: 'Lax' }, no_restriction: { sameSite: 'None' } }[c.sameSite] ?? {}),
 }));
 
-module.exports = { CHROME, iniciarSesionEnChrome, aSesion, deSesion, vigilar };
+module.exports = { CHROME, chromesDePerfil, iniciarSesionEnChrome, aSesion, deSesion, vigilar };

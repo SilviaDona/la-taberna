@@ -6,7 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, type ChildProcess } from 'node:child_process';
 
-const SOCK = path.join(os.tmpdir(), `ws-prueba-${process.pid}.sock`);
+import { canalLocal } from './plataforma.ts';
+
+const SOCK = canalLocal('ws-prueba', String(process.pid));   // socket Unix, o tubería con nombre en Windows
 let anfitrion: ChildProcess | null = null;
 afterAll(() => { anfitrion?.kill('SIGTERM'); });
 
@@ -35,10 +37,29 @@ function conexion(primera: Record<string, unknown>) {
   };
 }
 
-describe('anfitrión de terminales con clientes de fuera', () => {
+async function lanzarAnfitrion() {
+  anfitrion = spawn(process.execPath, ['--import', 'tsx', path.join(import.meta.dirname, 'anfitrionTerminales.ts'), SOCK], { stdio: 'ignore' });
+  for (let i = 0; i < 60; i++) { if (await new Promise(ok => { const s = net.connect(SOCK); s.on('connect', () => { s.destroy(); ok(true); }); s.on('error', () => ok(false)); })) break; await new Promise(r => setTimeout(r, 100)); }
+}
+
+// Windows: ConPTY con PowerShell por una tubería con nombre
+describe.runIf(process.platform === 'win32')('anfitrión de terminales en Windows', () => {
+  it('abre PowerShell en un PTY y un cliente de fuera ve lo mismo', async () => {
+    await lanzarAnfitrion();
+    const srv = conexion({ op: 'servidor' });
+    await srv.hasta(() => srv.recibidos.some(m => m.ev === 'hola'));
+    srv.enviar({ op: 'abrir', id: 'w1', cwd: os.tmpdir(), cols: 80, filas: 24, shell: 'powershell.exe', args: ['-NoLogo', '-NoProfile'], env: process.env });
+    srv.enviar({ op: 'entrada', id: 'w1', datos: 'echo "dentro-$(1+1)"\r' });
+    await srv.hasta(() => srv.texto().includes('dentro-2'), 20_000);
+    const fuera = conexion({ op: 'enganchar', id: 'w1', cols: 100, filas: 30 });
+    await fuera.hasta(() => fuera.texto().includes('dentro-2'), 20_000);
+    fuera.s.destroy(); srv.s.destroy();
+  }, 60_000);
+});
+
+describe.runIf(process.platform !== 'win32')('anfitrión de terminales con clientes de fuera', () => {
   it('engancha, comparte el PTY, manda el tamaño de fuera y sobrevive al apagado', async () => {
-    anfitrion = spawn(process.execPath, ['--import', 'tsx', path.join(import.meta.dirname, 'anfitrionTerminales.ts'), SOCK], { stdio: 'ignore' });
-    for (let i = 0; i < 60; i++) { if (await new Promise(ok => { const s = net.connect(SOCK); s.on('connect', () => { s.destroy(); ok(true); }); s.on('error', () => ok(false)); })) break; await new Promise(r => setTimeout(r, 100)); }
+    await lanzarAnfitrion();
 
     const srv = conexion({ op: 'servidor' });
     await srv.hasta(() => srv.recibidos.some(m => m.ev === 'hola'));

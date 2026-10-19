@@ -33,7 +33,8 @@ describe('adjuntos del intercomunicador', () => {
     expect(separarAdjuntos(`habla de ${CABECERA} sin lista`).adjuntos).toEqual([]);
   });
 
-  it('las imágenes van dentro del mensaje y el resto, por su ruta', async () => {
+  // medir y convertir imágenes: sips en macOS, System.Drawing en Windows (server/plataforma.ts)
+  it.runIf(process.platform === 'darwin' || process.platform === 'win32')('las imágenes van dentro del mensaje y el resto, por su ruta', async () => {
     const img = adj.guardar('a.png', PNG), doc = adj.guardar('b.txt', Buffer.from('hola').toString('base64'));
     const c = await adj.contenido('¿qué ves?', adj.describir([img, doc])) as any[];
     expect(c[0]).toEqual({ type: 'image', source: { type: 'base64', media_type: 'image/png', data: PNG } });

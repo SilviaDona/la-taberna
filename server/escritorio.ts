@@ -6,12 +6,15 @@
 import os from 'node:os';
 import path from 'node:path';
 import { existsSync, appendFileSync } from 'node:fs';
-import { execFile, execFileSync } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
+import { ES_WINDOWS, buscarPrograma, powershell, procesos } from './plataforma.ts';
 
 export interface ItemEscritorio { titulo: string; comando: string }
-export type AppTerminal = 'iTerm' | 'Terminal';
+export type AppTerminal = 'iTerm' | 'Terminal' | 'Windows Terminal' | 'PowerShell';
 
-export const comillas = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
+export const comillasSh = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
+// PowerShell (Windows): entre comillas simples, que se escapan doblándolas
+export const comillasPS = (s: string) => `'${s.replace(/'/g, "''")}'`;
 const cadena = (s: string) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -20,9 +23,10 @@ const MODOS_CLI = ['acceptEdits', 'auto', 'plan', 'dontAsk', 'manual'];
 export const PROMPT_CONTINUAR = 'Sigue con lo que estabas haciendo: te he sacado del refugio a esta terminal a mitad de trabajo.';
 
 export interface Reanudar { claudeId: string; cwd: string; continuar?: boolean; modelo?: string; esfuerzo?: string; permisos?: string }
-export function comandoReanudar(r: Reanudar) {
+export function comandoReanudar(r: Reanudar, windows = ES_WINDOWS) {
   if (!UUID.test(r.claudeId)) throw new Error('Identificador de conversación no válido.');
-  const a = ['cd', comillas(r.cwd), '&&', 'claude', '--resume', r.claudeId];
+  const comillas = windows ? comillasPS : comillasSh;
+  const a = windows ? ['Set-Location', '-LiteralPath', comillas(r.cwd), ';', 'claude', '--resume', r.claudeId] : ['cd', comillas(r.cwd), '&&', 'claude', '--resume', r.claudeId];
   if (r.modelo) a.push('--model', comillas(r.modelo));
   if (r.esfuerzo) a.push('--effort', comillas(r.esfuerzo));
   if (r.permisos === 'bypassPermissions') a.push('--dangerously-skip-permissions');
@@ -31,9 +35,13 @@ export function comandoReanudar(r: Reanudar) {
   return a.join(' ');
 }
 // `exec`: la pestaña es la terminal del juego; si esta termina (exit), la pestaña también
-export const comandoEnganchar = (shelter: string, socket: string, id: string) => `exec ${comillas(shelter)} enganchar ${comillas(id)} --socket ${comillas(socket)}`;
+export const comandoEnganchar = (shelter: string, socket: string, id: string, windows = ES_WINDOWS) => windows
+  ? `& ${comillasPS(shelter + '.cmd')} enganchar ${comillasPS(id)} --socket ${comillasPS(socket)}; exit`
+  : `exec ${comillasSh(shelter)} enganchar ${comillasSh(id)} --socket ${comillasSh(socket)}`;
+export const comillas = comillasSh;
 
 export function appTerminal(): AppTerminal {
+  if (ES_WINDOWS) return buscarPrograma('wt.exe') ? 'Windows Terminal' : 'PowerShell';
   const pref = (process.env.SHELTER_TERMINAL ?? '').toLowerCase();
   if (pref === 'terminal') return 'Terminal';
   if (pref === 'iterm') return 'iTerm';
@@ -66,6 +74,7 @@ export function abrirEnEscritorio(items: ItemEscritorio[], o: { ventanaNueva?: b
   if (!items.length) return Promise.resolve(app);
   // QA: en vez de abrir ventanas, se apunta lo que se abriría (una línea JSON por llamada)
   if (process.env.SHELTER_ESCRITORIO_PRUEBA) { appendFileSync(process.env.SHELTER_ESCRITORIO_PRUEBA, JSON.stringify({ app, ventanaNueva: !!o.ventanaNueva, items }) + '\n'); return Promise.resolve(app); }
+  if (ES_WINDOWS) return abrirEnWindows(items, app);
   return new Promise((ok, ko) => execFile('osascript', ['-e', guionEscritorio(items, app, !!o.ventanaNueva)], { timeout: 20_000 }, (err, _out, errOut) => {
     if (!err) { ok(app); return; }
     const texto = String(errOut || err.message);
@@ -75,15 +84,30 @@ export function abrirEnEscritorio(items: ItemEscritorio[], o: { ventanaNueva?: b
   }));
 }
 
+// Windows: una pestaña de Windows Terminal (o una ventana de PowerShell) por cosa. La orden va codificada
+// (-EncodedCommand), así no hay que escapar nada para wt.exe ni para cmd
+async function abrirEnWindows(items: ItemEscritorio[], app: AppTerminal): Promise<AppTerminal> {
+  const ps = powershell();
+  for (const it of items) {
+    const cod = Buffer.from(it.comando, 'utf16le').toString('base64');
+    const args = ['-NoExit', '-NoLogo', '-EncodedCommand', cod];
+    try {
+      if (app === 'Windows Terminal') spawn(buscarPrograma('wt.exe')!, ['-w', '0', 'new-tab', '--title', it.titulo.replace(/;/g, ','), ps, ...args], { detached: true, stdio: 'ignore' }).unref();
+      else spawn(ps, args, { detached: true, stdio: 'ignore' }).unref();
+    } catch (e) { throw new Error(`No he podido abrir ${app}: ${(e as Error).message}`); }
+    await new Promise(r => setTimeout(r, 300));
+  }
+  return app;
+}
+
 // Conversaciones abiertas ahora mismo en una terminal (un `claude --resume <id>` que no es del propio servidor):
 // retomarlas a la vez en el juego las corrompería, así que el refugio se espera a que salgas de ellas
 export function abiertasFuera(propio = process.pid): Set<string> {
   const r = new Set<string>();
   try {
-    const out = execFileSync('ps', ['-axo', 'ppid=,args='], { encoding: 'utf8', timeout: 3000, maxBuffer: 8 << 20 });
-    for (const linea of out.split('\n')) {
-      const m = /^\s*(\d+)\s+(.*)$/.exec(linea); if (!m || Number(m[1]) === propio) continue;
-      for (const x of m[2].matchAll(/(?:--resume|-r)[ =]([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi)) r.add(x[1].toLowerCase());
+    for (const { padre, args } of procesos()) {
+      if (padre === propio) continue;
+      for (const x of args.matchAll(/(?:--resume|-r)[ =]([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi)) r.add(x[1].toLowerCase());
     }
   } catch {}
   return r;

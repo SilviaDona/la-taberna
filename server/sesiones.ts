@@ -14,6 +14,7 @@ import type { ResumenSesion, EntradaCuaderno, PeticionPendiente, Ayudante, Opcio
 import { separarAdjuntos, type Adjuntos } from './adjuntos.ts';
 import { CARPETAS_SALAS } from './estado.ts';
 import { describirHerramienta, describirEntrada, tituloPermiso, modoHerramienta, rutaHerramienta, esAgente } from './herramientas.ts';
+import { ES_WINDOWS, buscarPrograma } from './plataforma.ts';
 
 const ANEXO = [
   'You are being driven from «work-shelter», a vault-management game UI where the user (the Overseer) talks to you through a dweller character.',
@@ -78,6 +79,11 @@ export interface ResolutorSalas {
 
 export function rutaClaude(): string | undefined {
   if (process.env.CLAUDE_BIN && existsSync(process.env.CLAUDE_BIN)) return process.env.CLAUDE_BIN;
+  if (ES_WINDOWS) {
+    // el instalador nativo de Claude Code lo deja en ~/.local/bin; el de npm, en %APPDATA%\npm (claude.cmd)
+    const npm = path.join(process.env.APPDATA || '', 'npm');
+    return [path.join(os.homedir(), '.local', 'bin', 'claude.exe'), buscarPrograma('claude.exe'), buscarPrograma('claude.cmd'), path.join(npm, 'claude.cmd')].find(r => !!r && existsSync(r)) ?? undefined;
+  }
   try { return execFileSync('/bin/zsh', ['-lc', 'command -v claude'], { encoding: 'utf8', timeout: 5000 }).trim() || undefined; } catch { return undefined; }
 }
 export function versionClaude(bin?: string) { try { return bin ? execFileSync(bin, ['--version'], { encoding: 'utf8', timeout: 8000 }).trim() : undefined; } catch { return undefined; } }

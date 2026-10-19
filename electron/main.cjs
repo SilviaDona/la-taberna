@@ -131,7 +131,8 @@ function configurarNavegador(v, wc, dominios) {
 // --- Salir a la superficie (tecla de pánico ⇧⌥⌘Esc, desde cualquier app) ---
 // El juego desaparece al momento (ventana, Dock y sonido) y lo que tenía abierto (conversaciones y terminales) sigue
 // en pestañas de iTerm (server/escritorio.ts). La misma tecla, o volver a abrir la app, lo trae tal como estaba.
-const PANICO = 'Shift+Alt+Command+Escape';
+// en Windows, Ctrl en vez de ⌘ (Ctrl+Mayús+Alt+Esc)
+const PANICO = 'Shift+Alt+CommandOrControl+Escape';
 let escondido = false, entornoServidor = null;
 function panico() {
   if (!ventana || ventana.isDestroyed()) return;
@@ -139,14 +140,15 @@ function panico() {
   escondido = true;
   silenciar(true);
   if (ventana.isFullScreen()) ventana.setFullScreen(false);
-  ventana.hide(); app.hide(); if (app.dock) app.dock.hide();
+  ventana.hide(); if (process.platform === 'darwin') app.hide(); if (app.dock) app.dock.hide();
   if (!origen) return;
   // se lo pide al juego; si la página no contesta (colgada), al servidor con ./shelter superficie
   const pagina = ventana.webContents.executeJavaScript('window.__superficie ? window.__superficie() : Promise.reject(new Error("sin juego"))');
   const plazo = new Promise((_, ko) => setTimeout(() => ko(new Error('el juego no contesta')), 2500));
   Promise.race([pagina, plazo]).catch(() => {
     const raiz = path.resolve(__dirname, '..');
-    spawn('/bin/bash', [path.join(raiz, 'shelter'), 'superficie'], { cwd: raiz, env: entornoServidor || process.env, stdio: 'ignore', detached: true }).unref();
+    if (process.platform === 'win32') spawn(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'cmd.exe'), ['/d', '/c', path.join(raiz, 'shelter.cmd'), 'superficie'], { cwd: raiz, env: entornoServidor || process.env, stdio: 'ignore', detached: true, windowsHide: true }).unref();
+    else spawn('/bin/bash', [path.join(raiz, 'shelter'), 'superficie'], { cwd: raiz, env: entornoServidor || process.env, stdio: 'ignore', detached: true }).unref();
   });
 }
 // el sonido del juego, el de los navegadores y la música de la discoteca (en su Chrome)
@@ -238,7 +240,7 @@ function entornoDeUsuario() {
 
 async function arrancar() {
   const raiz = process.env.SHELTER_RAIZ;
-  const carpetaLogs = path.join(os.homedir(), 'Library/Logs/work-shelter-public');
+  const carpetaLogs = process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA || os.homedir(), 'work-shelter-public', 'Logs') : path.join(os.homedir(), 'Library/Logs/work-shelter-public');
   fs.mkdirSync(carpetaLogs, { recursive: true });
   const log = fs.createWriteStream(path.join(carpetaLogs, 'shelter.log'), { flags: 'a', mode: 0o600 });
   log.write(`\n== ${new Date().toISOString()} ==\n`);
@@ -276,7 +278,7 @@ async function arrancar() {
     servidor = null;
     // «reiniciar» con cambios en la propia app: se vuelve a abrir entera (las terminales siguen en su anfitrión)
     if (codigo === CODIGO_RELEVO) { log.write('Reinicio con la app entera.\n'); if (ventana) ventana.__salir = true; app.relaunch(); app.exit(0); return; }
-    if (!origen) aviso(`work-shelter no ha podido arrancar${ultima ? ':\n' + ultima : ` (código ${codigo})`}.\nRegistro completo en ~/Library/Logs/work-shelter-public/shelter.log`, true);
+    if (!origen) aviso(`work-shelter no ha podido arrancar${ultima ? ':\n' + ultima : ` (código ${codigo})`}.\nRegistro completo en ${path.join(carpetaLogs, 'shelter.log')}`, true);
   });
 }
 

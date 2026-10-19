@@ -11,6 +11,7 @@ import { leerSecreto, guardarSecreto, borrarSecreto } from './llavero.ts';
 import { escucharRetorno, type Retorno } from './oauth.ts';
 import { correosANotificaciones, eventosDeOutlook, explicarErrorGraph, explicarErrorMicrosoft, inicioDia, ZONA, type YoMicrosoft } from './normalizar.ts';
 import type { Evento, Notificacion } from './adaptadores.ts';
+import { abrirUrl } from '../plataforma.ts';
 
 const autoridad = (inquilino?: string) => `https://login.microsoftonline.com/${encodeURIComponent(inquilino || 'common')}/oauth2/v2.0`;
 // Solo lectura: el refugio no envía, mueve ni borra correo, ni toca el calendario
@@ -132,7 +133,7 @@ class Outlook extends ConectorBase {
   protected async accionPropia(nombre: string, d: Record<string, any>) {
     if (nombre === 'conectar') {
       const url = await this.iniciarSesion();
-      if (d.abrir !== false) execFile('/usr/bin/open', [url], () => {});   // navegador del sistema (sesión de Microsoft ya abierta)
+      if (d.abrir !== false) try { abrirUrl(url); } catch {}   // navegador del sistema (sesión de Microsoft ya abierta)
       return { url };
     }
     if (nombre === 'desconectar') { await borrarSecreto(CUENTA_SESION); this.sesion = false; this.reiniciar(); this.avisar?.('estado'); return this.estado(); }

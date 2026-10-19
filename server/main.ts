@@ -30,6 +30,8 @@ import { generarRecluta } from '../shared/reclutas.ts';
 import { distribuir, esSalaDeRepo } from '../shared/disposicion.ts';
 import { PALETA_ESTILO } from '../shared/sectores.ts';
 import { sanearAspecto, TIPOS_DE_SERIE } from '../shared/aspecto.ts';
+import { abrirCarpeta, abrirEnEditor, abrirTerminalEn, revelar } from './plataforma.ts';
+import { mkdir } from 'node:fs';
 
 // reinicio desde el juego: antes de apagar el servidor viejo se carga el nuevo con esta variable para ver que arranca
 // (un error de sintaxis o una importación rota se detectan aquí y el juego sigue en marcha)
@@ -515,15 +517,16 @@ function comprobarServidor() {
 }
 
 function crearCarpeta(ruta: string, conGit: boolean) {
-  return new Promise<void>((res, rej) => execFile('/bin/mkdir', ['-p', ruta], err => err ? rej(err) : conGit ? execFile('git', ['init', ruta], e2 => e2 ? rej(e2) : res()) : res()));
+  return new Promise<void>((res, rej) => mkdir(ruta, { recursive: true }, err => err ? rej(err) : conGit ? execFile('git', ['init', ruta], e2 => e2 ? rej(e2) : res()) : res()));
 }
 
 function abrirEn(app: string, ruta: string) {
   const r = path.resolve(ruta);
   if (!salaDeRuta(r)) throw new Error('Esa carpeta no pertenece a ninguna sala.');
   if (!['finder', 'terminal', 'editor'].includes(app) || !existsSync(r) || !statSync(r).isDirectory()) throw new Error('Solo se abren carpetas de sala en Finder, Terminal o el editor.');
-  const args = app === 'finder' ? (esPaquete(r) ? ['-R', r] : [r]) : app === 'terminal' ? ['-a', 'Terminal', r] : (existsSync('/Applications/Cursor.app') ? ['-a', 'Cursor', r] : existsSync('/Applications/Visual Studio Code.app') ? ['-a', 'Visual Studio Code', r] : ['-a', 'TextEdit', r]);
-  spawn('open', args, { detached: true, stdio: 'ignore' }).unref();
+  if (app === 'finder') { if (esPaquete(r)) revelar(r); else abrirCarpeta(r); }
+  else if (app === 'terminal') abrirTerminalEn(r);
+  else abrirEnEditor(r, true);
   return true;
 }
 

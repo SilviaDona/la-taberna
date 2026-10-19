@@ -6,12 +6,13 @@ import os from 'node:os';
 import type { InfoRepo, InfoWorktree } from '../shared/protocolo.ts';
 import { esClonDeEjemplo } from './ejemplos.ts';
 import { entornoGit } from './entornoGit.ts';
+import { CARPETAS_DEL_SISTEMA } from './plataforma.ts';
 
 function git(cwd: string, args: string[], timeout = 6000): Promise<string> {
   return new Promise(res => execFile('git', ['-C', cwd, ...args], { timeout, maxBuffer: 4 * 1024 * 1024, env: entornoGit() }, (err, out) => res(err ? '' : String(out))));
 }
 
-export const expandir = (p: string) => path.resolve(p.replace(/^~(?=$|\/)/, os.homedir()));
+export const expandir = (p: string) => path.resolve(p.replace(/^~(?=$|[\\/])/, os.homedir()));
 
 export function tipoProyecto(ruta: string): string {
   try {
@@ -94,7 +95,7 @@ export async function infoRepo(rutaCruda: string): Promise<InfoRepo> {
 // Sugerencias para la Puerta Principal: carpetas de la raíz de repos que aún no tienen sala
 // Con la raíz en el hogar (sin ~/Sites ni parecidas) se saltan las carpetas de macOS: ni son proyectos ni conviene
 // asomarse a Escritorio, Documentos o Descargas (macOS pide permiso para cada una)
-const DEL_SISTEMA = new Set(['Applications', 'Desktop', 'Documents', 'Downloads', 'Library', 'Movies', 'Music', 'Pictures', 'Public']);
+const DEL_SISTEMA = new Set(CARPETAS_DEL_SISTEMA);
 export function sugerencias(raiz: string, ya: string[]): { ruta: string; nombre: string; esGit: boolean; tipo: string; modificada: number }[] {
   const r = expandir(raiz), hogar = r === os.homedir();
   try {

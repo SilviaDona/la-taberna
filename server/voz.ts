@@ -18,7 +18,7 @@ let compilando: Promise<string> | null = null;
 // el transcriptor compilado de este código (por su huella): si no está, se compila (una sola vez aunque lo pidan varios)
 export function transcriptor(dirDatos: string): Promise<string> {
   return compilando ??= (async () => {
-    if (process.platform !== 'darwin') throw new Error('El dictado usa el de macOS: solo funciona en un Mac.');
+    if (process.platform !== 'darwin') throw new Error(process.platform === 'win32' ? 'El dictado está desactivado en Windows por ahora (usa el de macOS, que transcribe en el propio equipo). Mientras, puedes dictar con Win+H, el dictado de Windows.' : 'El dictado usa el de macOS: solo funciona en un Mac.');
     const huella = createHash('sha256').update(readFileSync(FUENTE)).digest('hex').slice(0, 12);
     const dir = path.join(dirDatos, 'bin');
     const bin = path.join(dir, `transcriptor-${huella}`);

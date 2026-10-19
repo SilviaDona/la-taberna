@@ -8,9 +8,10 @@ import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs'
 import os from 'node:os';
 import path from 'node:path';
 import { entornoGit } from './entornoGit.ts';
+import { carpetaApp } from './plataforma.ts';
 
 // (sin importar estado.ts, que importa este módulo: con SHELTER_DATOS, dentro de esos datos, como CARPETAS_SALAS)
-export const CARPETA_EJEMPLOS = process.env.SHELTER_DATOS ? path.join(path.resolve(process.env.SHELTER_DATOS), 'ejemplos') : path.join(os.homedir(), 'Library', 'Application Support', 'work-shelter-public', 'ejemplos');
+export const CARPETA_EJEMPLOS = process.env.SHELTER_DATOS ? path.join(path.resolve(process.env.SHELTER_DATOS), 'ejemplos') : path.join(carpetaApp(), 'ejemplos');
 export const rutaEjemplo = (carpeta: string) => path.join(CARPETA_EJEMPLOS, carpeta);
 /** Una copia de un repo de ejemplo (de las que clona el juego, directamente dentro de su carpeta) */
 export const esClonDeEjemplo = (ruta: string) => path.dirname(path.resolve(ruta)) === CARPETA_EJEMPLOS;

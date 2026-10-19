@@ -11,7 +11,7 @@
 const { spawn, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const { CHROME, iniciarSesionEnChrome, aSesion, deSesion, vigilar } = require('./loginChrome.cjs');
+const { CHROME, chromesDePerfil, iniciarSesionEnChrome, aSesion, deSesion, vigilar } = require('./loginChrome.cjs');
 
 const espera = ms => new Promise(r => setTimeout(r, ms));
 const bajo = (host, dominio) => host === dominio || host.endsWith('.' + dominio);
@@ -55,8 +55,9 @@ function crearChromeRemoto({ sitio, perfil, ses, alFotograma, alEstado, abrirFue
     // el de antes tiene que haber salido del todo: si no, el nuevo le cede el perfil y se cierra
     if (saliendo) await saliendo;
     // un Chrome de antes con este perfil (la app se cerró de golpe) se queda con él: fuera
-    const quedan = () => { try { execFileSync('/usr/bin/pgrep', ['-f', `user-data-dir=${perfil}`]); return true; } catch { return false; } };
-    if (quedan()) { try { execFileSync('/usr/bin/pkill', ['-f', `user-data-dir=${perfil}`]); } catch {} for (let i = 0; i < 40 && quedan(); i++) await espera(150); }
+    const pids = () => { try { return chromesDePerfil(perfil) ?? (execFileSync('/usr/bin/pgrep', ['-f', `user-data-dir=${perfil}`], { encoding: 'utf8' }).split('\n').map(Number).filter(Boolean)); } catch { return []; } };
+    const quedan = () => pids().length > 0;
+    if (quedan()) { for (const p of pids()) try { process.kill(p); } catch {} for (let i = 0; i < 40 && quedan(); i++) await espera(150); }
     fs.rmSync(path.join(perfil, 'DevToolsActivePort'), { force: true });
     hijo = spawn(chrome, [
       ...(sinCabeza ? ['--headless=new'] : []), `--user-data-dir=${perfil}`, '--remote-debugging-port=0',

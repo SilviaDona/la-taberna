@@ -11,6 +11,7 @@ import { leerSecreto, guardarSecreto, borrarSecreto } from './llavero.ts';
 import { escucharRetorno, type Retorno } from './oauth.ts';
 import { eventosDeGoogle, explicarErrorGoogle, explicarErrorOAuthGoogle, inicioDia, notificacionDeGmail, ZONA } from './normalizar.ts';
 import type { Evento, Notificacion } from './adaptadores.ts';
+import { abrirUrl } from '../plataforma.ts';
 
 const AUTORIZAR = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN = 'https://oauth2.googleapis.com/token';
@@ -138,7 +139,7 @@ class Google extends ConectorBase {
   protected async accionPropia(nombre: string, d: Record<string, any>) {
     if (nombre === 'conectar') {
       const url = await this.iniciarSesion();
-      if (d.abrir !== false) execFile('/usr/bin/open', [url], () => {});   // navegador del sistema
+      if (d.abrir !== false) try { abrirUrl(url); } catch {}   // navegador del sistema
       return { url };
     }
     if (nombre === 'desconectar') { await borrarSecreto(CUENTA_SESION); this.sesion = false; this.reiniciar(); this.avisar?.('estado'); return this.estado(); }
