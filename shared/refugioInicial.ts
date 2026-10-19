@@ -5,38 +5,25 @@ import { tonosParaRepetidos } from './reclutas.ts';
 import type { Aspecto } from './aspecto.ts';
 import { distribuir } from './disposicion.ts';
 import type { Decorado } from './decorado.ts';
-import { TABERNA_ESTUDIO } from './tabernaEstudio.ts';
-export interface SalaInicial { origen?: string; id: string; tipo: 'repo' | 'coordinacion' | 'comunicaciones' | 'planificacion' | 'logistica' | 'git' | 'puente' | 'camara' | 'puerta' | 'hidroponia' | 'galeria' | 'discoteca' | 'chapa'; nombre: string; carpeta?: string; planta: number; lado: 'izq' | 'der'; orden: number; variante: string; estilo?: string; decorado?: Decorado }
+import { PASOS, PASOS_IDS, type PasoId } from './pasos.ts';
+export interface SalaInicial { origen?: string; id: string; tipo: 'repo' | 'coordinacion' | 'comunicaciones' | 'planificacion' | 'logistica' | 'git' | 'puente' | 'camara' | 'puerta' | 'hidroponia' | 'galeria' | 'discoteca' | 'chapa'; nombre: string; carpeta?: string; planta: number; lado: 'izq' | 'der'; orden: number; variante: string; estilo?: string; decorado?: Decorado; paso?: PasoId }
 export interface HabitanteInicial { id: string; nombre: string; mote: string; tipo: string; bio: string; salaId: string; voz: number; tinte?: string; tono?: number; aspecto?: Aspecto }
 
-// el sitio de cada sala (planta, lado, orden) lo decide `distribuir`: aquí solo qué salas hay
+// el sitio de cada sala (planta, lado, orden) lo decide `distribuir`: aquí solo qué salas hay.
+// La taberna es el proceso de UX de la Tabernera: una sala por paso (shared/pasos.ts), que trabaja en la carpeta del
+// proyecto en cuanto se elige; y alrededor, la puerta, el cofre (ajustes y llaves), el sótano del mago (el propio
+// juego) y el sastre (aspectos, que se pagan con el oro que dan los pasos)
 export const SALAS_INICIALES: SalaInicial[] = distribuir<Omit<SalaInicial, 'planta' | 'lado' | 'orden'>>([
   { id: 'puerta', tipo: 'puerta', nombre: 'Puerta de la Posada', variante: 'neutro' },
   { id: 'camara', tipo: 'camara', nombre: 'Cofre del Tesoro', variante: 'acorazada' },
   { id: 'puente', tipo: 'puente', nombre: 'Sótano del Mago', variante: 'puente' },
-  { id: 'comunicaciones', tipo: 'comunicaciones', nombre: 'Tablón de Anuncios', variante: 'comms' },
-  // el tipo 'planificacion' es la agenda (calendario) y 'logistica', la logística (tableros de Linear)
-  { id: 'planificacion', tipo: 'planificacion', nombre: 'Almanaque del Cronista', variante: 'plan' },
-  { id: 'logistica', tipo: 'logistica', nombre: 'Despensa del Intendente', variante: 'logistica' },
-  // git y GitHub: el cliente de git del refugio para todos los repos, la matriz de contribuciones y los pull requests
-  { id: 'git', tipo: 'git', nombre: 'Archivo del Escriba', variante: 'logistica' },
-  // cuatro repos públicos muy conocidos, uno de cada clase, cada uno en la plantilla de su tipo de proyecto (la misma que
-  // le toca a cualquier repo que recluta la Puerta). Se retiran o se vinculan a un repo tuyo desde el panel de la sala, y
-  // su habitante la decora a su gusto con «Adaptar la sala al repo»
-  { id: 'express', tipo: 'repo', nombre: 'express', carpeta: 'express', origen: 'expressjs/express', variante: 'web', estilo: 'estudio', decorado: TABERNA_ESTUDIO },
-  { id: 'requests', tipo: 'repo', nombre: 'requests', carpeta: 'requests', origen: 'psf/requests', variante: 'comms', estilo: 'laboratorio' },
-  { id: 'ripgrep', tipo: 'repo', nombre: 'ripgrep', carpeta: 'ripgrep', origen: 'BurntSushi/ripgrep', variante: 'logistica', estilo: 'fundicion' },
-  { id: 'awesome', tipo: 'repo', nombre: 'awesome', carpeta: 'awesome', origen: 'sindresorhus/awesome', variante: 'taller', estilo: 'archivo' },
-  { id: 'hidroponia', tipo: 'hidroponia', nombre: 'Huerto del Claustro', variante: 'comms' },
-  // la discoteca, en la planta de ocio entre los cultivos y el ascensor: la música del refugio (Spotify) para currar
-  { id: 'discoteca', tipo: 'discoteca', nombre: 'Escenario del Bardo', variante: 'neutro' },
-  { id: 'galeria', tipo: 'galeria', nombre: 'Diana de los Arqueros', variante: 'logistica' },
-  // barbería y ropería: aquí se cambia el aspecto del Supervisor y de cualquier habitante (humano o robot)
+  ...PASOS_IDS.map(p => ({ id: p, tipo: 'repo' as const, paso: p, nombre: PASOS[p].sala, variante: 'taller', estilo: 'archivo', decorado: PASOS[p].decorado })),
+  // barbería y ropería: aquí se cambia el aspecto del Supervisor y de cualquier habitante
   { id: 'chapa', tipo: 'chapa', nombre: 'Sastre y Barbero', variante: 'neutro' },
 ]);
 
-/** La sala donde empieza el Supervisor */
-export const SALA_SUPERVISOR = 'express';
+/** La sala donde empieza el Supervisor: la del primer paso */
+export const SALA_SUPERVISOR = 'mapas';
 
 /** Qué es cada sala especial (por tipo): se lee en el plano y, en mayúsculas, bajo el nombre del cartel */
 export const DESCRIPCION_SALA: Record<string, string> = {
@@ -61,18 +48,8 @@ export const ASPECTO_FITO: Aspecto = { especie: 'humano', piezas: { cara: 'cara.
 // Quien comparte modelo con otro habitante lleva otro tono de ropa y pelo: el reparto no tiene gemelos
 export const HABITANTES_INICIALES: HabitanteInicial[] = tonosParaRepetidos([
   H('nestor', 'Néstor', 'El Archimago', 'Mage', 'puente', 'Trazó los planos de la taberna con tiza de luna cuando aún era una cueva. Perdió un ojo leyendo un grimorio minificado; con el otro ve la taberna entera en sus conjuros.', 85),
-  H('hanzo', 'Hanzo', 'Guardasellos', 'Knight', 'camara', 'Caballero del Cofre del Tesoro. Parte en dos cualquier llave que asome en un commit y pide santo y seña hasta para darte los buenos días.', 95),
-  H('remi', 'Remi', 'Martillo de Runas', 'Engineer', 'express', 'Forja sus propias herramientas por si acaso. No se fía de ningún conjuro que no haya probado tres veces.', 110),
-  H('lola', 'Lola', 'Prueba y Error', 'Druid', 'requests', 'Prueba cada pócima dos veces antes de servirla. Habla con los oráculos como otros hablan con las plantas, y le contestan.', 220),
-  H('marga', 'Marga', 'Lista de Listas', 'Hoarder', 'awesome', 'Lo guarda todo: mapas, frascos, cuerdas y rumores. Si existe, lo tiene apuntado; si no existe, también.', 180),
-  H('vera', 'Vera', 'Aguja en el Pajar', 'Rogue_Hooded', 'ripgrep', 'Rastrea una línea en cien mil pergaminos antes de que acabes de pedírsela. Afila sus propias expresiones regulares.', 200),
-  H('ondina', 'Ondina', 'Bandeja de Entrada', 'Rogue', 'comunicaciones', 'Clava en el tablón las cartas, los pregones y los rumores. Sobre todo los rumores.', 190),
-  H('calixto', 'Calixto', 'Reunión Que Pudo Ser Una Carta', 'Engineer', 'planificacion', 'Lleva el almanaque más ordenado de la taberna y ningún hueco libre.', 120),
-  H('mona', 'Octocat', 'La Octogata', 'Octocat', 'git', 'Familiar del escriba: mitad gata, mitad pulpo, toda control de versiones. Con un tentáculo prepara, con otro hace commit y con un tercero ya está haciendo push.', 205),
-  H('cmd', 'Grisko', 'Goblin de los Encargos', 'Goblin', 'logistica', 'Goblin intendente que llegó escondido en un saco de nabos. Mueve encargos de un tablero a otro más rápido que nadie y cobra en queso.', 230),
-  H('fermin', 'Fermín', 'Refactor Eterno', 'Hiker', 'hidroponia', 'Fue el hortelano de la taberna antes de que llegara el Archimago. Riega las hierbas y sigue diciendo que la taberna se mantiene sola. Sigue mintiendo.', 115),
-  H('guardian', 'Guardián', 'Portero', 'Barbarian', 'puerta', 'Vigila la puerta de la posada. No deja pasar a nadie sin un package.json.', 80),
-  H('dj80', 'Trovador', 'Laúd Eterno', 'Rogue', 'discoteca', 'Bardo errante que se quedó por la comida. Asegura que no hay bug que aguante una balada a 120 BPM. Antes de las doce, nada con letra.', 70),
-  H('fito', 'Fito', 'Navaja Suave', 'Hiker', 'chapa', 'Corta el pelo, cose dobladillos y remienda capas. Dice que a todo el mundo le sienta bien el verde bosque. Miente con mucho cariño.', 130, ASPECTO_FITO),
-  H('dora', 'Dora', 'Pulso Firme', 'Ranger', 'galeria', 'Campeona de arquería de la taberna. Afina la puntería con los bugs de producción.', 190),
+  H('hanzo', 'Hanzo', 'Guardasellos', 'Knight', 'camara', 'Caballero del Cofre del Tesoro. Guarda el oro, las llaves y los sellos, y pide santo y seña hasta para darte los buenos días.', 95),
+  H('guardian', 'Guardián', 'Portero', 'Barbarian', 'puerta', 'Vigila la puerta de la posada. Apunta en el libro de huéspedes a quien entra.', 80),
+  H('fito', 'Fito', 'Navaja Suave', 'Hiker', 'chapa', 'Corta el pelo, cose dobladillos y remienda capas, a buen precio en oro. Dice que a todo el mundo le sienta bien el verde bosque. Miente con mucho cariño.', 130, ASPECTO_FITO),
+  ...PASOS_IDS.map(p => { const a = PASOS[p].aventurero; return H(a.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), a.nombre, a.mote, a.tipo, p, a.bio, a.voz, a.aspecto); }),
 ]);

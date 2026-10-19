@@ -15,24 +15,23 @@ import { abrirAdjunto, esPaquete } from './abrir.ts';
 import { clonarEjemplos, pararClones, rutaEjemplo, esClonDeEjemplo } from './ejemplos.ts';
 import { mcpDecorado, PROMPT_ADAPTAR, type CtxDecorado } from './decoradoSala.ts';
 import { capturarSala } from './capturaSala.ts';
-import { baseDeSerie, sanearDecorado } from '../shared/decorado.ts';
+import { baseDeSerie } from '../shared/decorado.ts';
 import { leerSecreto } from './integraciones/llavero.ts';
 import { SALAS_INICIALES } from '../shared/refugioInicial.ts';
 import { Dictados } from './voz.ts';
 import { Terminales, SOCKET_TERMINALES } from './terminales.ts';
 import { abrirEnEscritorio, abiertasFuera, comandoEnganchar, comandoReanudar, type ItemEscritorio } from './escritorio.ts';
 import { tonosParaRepetidos } from '../shared/reclutas.ts';
-import { Almacen, DATOS, carpetaDe, CARPETAS_SALAS } from './estado.ts';
+import { Almacen, DATOS, carpetaDe } from './estado.ts';
 import { infoRepo, sugerencias, expandir, transcripcionesRecientes, estiloSala, tipoProyecto } from './repos.ts';
 import { Integraciones } from './integraciones/index.ts';
 import { accionJuego, asegurarJugador, crecerCultivos, recompensaTarea } from './juego.ts';
 import { generarRecluta } from '../shared/reclutas.ts';
 import { distribuir, esSalaDeRepo } from '../shared/disposicion.ts';
 import { PALETA_ESTILO } from '../shared/sectores.ts';
-import { sanearAspecto, TIPOS_DE_SERIE } from '../shared/aspecto.ts';
+import { sanearAspecto, TIPOS_DE_SERIE, COSTE_ASPECTO } from '../shared/aspecto.ts';
 import { abrirCarpeta, abrirEnEditor, abrirTerminalEn, revelar } from './plataforma.ts';
-import { prepararCarpetaOficio, idDeNombre } from './oficios.ts';
-import { PLANTILLAS, esOficio, decoradoProyecto, AVENTURERO_PROYECTO, COLORES_ESTANDARTE } from '../shared/oficios.ts';
+import { accionHistoria } from '../shared/pasos.ts';
 import { mkdir } from 'node:fs';
 
 // reinicio desde el juego: antes de apagar el servidor viejo se carga el nuevo con esta variable para ver que arranca
@@ -301,40 +300,31 @@ async function accion(nombre: string, d: Record<string, any> = {}): Promise<unkn
       difundir({ t: 'estado', estado: almacen.estado as any }); difundir({ t: 'repos', repos });
       return { id };
     }
-    // sala de oficio de UX (o mesa de proyecto): carpeta propia en los datos de la app, con su CLAUDE.md, sus skills,
-    // su decorado y su aventurero (shared/oficios.ts)
-    case 'reclutarOficio': {
-      const oficio = d.oficio;
-      if (!esOficio(oficio)) throw new Error('Ese oficio no existe.');
-      if (oficio !== 'proyecto' && e.salas.some(s => s.oficio === oficio)) throw new Error(`La taberna ya tiene ${PLANTILLAS[oficio].sala}.`);
-      const nombreProyecto = oficio === 'proyecto' ? String(d.nombre ?? '').replace(/\s+/g, ' ').trim().slice(0, 32) : '';
-      if (oficio === 'proyecto' && !nombreProyecto) throw new Error('Ponle nombre a la mesa (el del cliente o el proyecto).');
-      const color = oficio === 'proyecto' ? ((COLORES_ESTANDARTE as readonly string[]).includes(String(d.color)) ? String(d.color) : COLORES_ESTANDARTE[0]) : undefined;
-      const nombre = oficio === 'proyecto' ? 'Mesa · ' + nombreProyecto : PLANTILLAS[oficio].sala;
-      const decorado = sanearDecorado(oficio === 'proyecto' ? decoradoProyecto(nombreProyecto, color!) : PLANTILLAS[oficio].decorado).decorado ?? undefined;
-      const aventurero = oficio === 'proyecto' ? AVENTURERO_PROYECTO : PLANTILLAS[oficio].aventurero;
-      let id = '';
-      almacen.cambiar(x => {
-        const base = oficio === 'proyecto' ? 'mesa-' + idDeNombre(nombreProyecto) : idDeNombre(PLANTILLAS[oficio].sala);
-        // si la carpeta ya existe (una sala retirada antes), se reutiliza: sus entregables siguen ahí
-        id = x.salas.some(s => s.id === base) ? base + '-' + Date.now().toString(36) : base;
-        const ruta = path.join(CARPETAS_SALAS, id);
-        x.salas = distribuir([...x.salas, { id, tipo: 'repo', nombre, ruta, planta: 0, lado: 'izq', orden: 0, variante: 'taller', estilo: 'archivo', oficio, ...(color ? { estandarte: color } : {}), ...(decorado ? { decorado } : {}) }]);
-        const ficha = d.habitante && typeof d.habitante === 'object' && d.habitante.nombre ? d.habitante : { ...aventurero, id: idDeNombre(aventurero.nombre) };
-        const h = limpiarHabitante({ ...ficha, salaId: id });
-        if (h) { if (x.habitantes.some(o => o.id === h.id)) h.id += '-' + Date.now().toString(36); x.habitantes.push(h); }
-        x.habitantes = tonosParaRepetidos(x.habitantes);
-      });
-      const ruta = path.join(CARPETAS_SALAS, id);
-      prepararCarpetaOficio(ruta, oficio, nombreProyecto || undefined);
-      repos[id] = await infoRepo(ruta);
+    // el proyecto en el que trabajan las salas de los pasos: una carpeta tuya (con sus reglas, componentes y personas)
+    case 'proyecto.elegir': {
+      const ruta = path.resolve(expandir(String(d.ruta || '').trim().replace(/^"(.*)"$/, '$1')));
+      if (ruta === path.parse(ruta).root || ruta === os.homedir()) throw new Error('Esa carpeta es demasiado amplia: elige la del proyecto.');
+      if (!existsSync(ruta) || !statSync(ruta).isDirectory()) throw new Error('Esa carpeta no existe: ' + ruta);
+      if (sesiones.lista().some(s => e.salas.find(x => x.id === s.salaId)?.paso && ['arrancando', 'trabajando', 'esperando'].includes(s.estado))) throw new Error('Hay alguien trabajando en un paso. Espera a que termine o páralo antes de cambiar de proyecto.');
+      almacen.cambiar(x => { x.proyecto = { ruta, nombre: String(d.nombre || '').trim().slice(0, 60) || path.basename(ruta) }; });
+      const info = await infoRepo(ruta);
+      for (const s of almacen.estado.salas) if (s.paso) repos[s.id] = info;
       difundir({ t: 'estado', estado: almacen.estado as any }); difundir({ t: 'repos', repos });
-      return { id };
+      return almacen.estado.proyecto;
+    }
+    // las historias de usuario que recorren los pasos (shared/pasos.ts); cumplir un paso da oro
+    case 'historia.crear': case 'historia.pasar': case 'historia.volver': case 'historia.mover': case 'historia.borrar':
+    case 'historia.supuesto.anadir': case 'historia.supuesto.estado': case 'historia.supuesto.quitar': {
+      let r: { oro: number; id?: string } = { oro: 0 };
+      almacen.cambiar(x => { r = accionHistoria(x.historias, nombre.slice(9), d); if (r.oro) x.jugador.chatarra += r.oro; });
+      difundir({ t: 'estado', estado: almacen.estado as any });
+      if (r.oro) difundir({ t: 'aviso', nivel: 'info', texto: `+${r.oro} de oro por cumplir el paso` });
+      return r;
     }
     case 'retirarSala': {
       const sr = e.salas.find(s => s.id === d.salaId);
       if (!sr) throw new Error('Esa sala no existe.');
-      if (sr.tipo !== 'repo' && sr.tipo !== 'coordinacion') throw new Error('Las salas de servicio de la taberna no se retiran.');
+      if ((sr.tipo !== 'repo' && sr.tipo !== 'coordinacion') || sr.paso) throw new Error('Las salas de servicio y las de los pasos no se retiran.');
       // primero se comprueba (nada se corta) y luego se cierran las conversaciones terminadas de la sala
       if (sesiones.lista().some(s => s.salaId === d.salaId && ['arrancando', 'trabajando', 'esperando'].includes(s.estado))) throw new Error('Hay alguien trabajando en esa sala. Párale antes de retirarla.');
       for (const ses of sesiones.lista()) if (ses.salaId === d.salaId) sesiones.cerrar(ses.id);
@@ -351,7 +341,7 @@ async function accion(nombre: string, d: Record<string, any> = {}): Promise<unkn
     case 'vincularSala': {
       const sr = e.salas.find(s => s.id === d.salaId);
       if (!sr || !esSalaDeRepo(sr.tipo)) throw new Error('Solo las salas de repo se vinculan a otra carpeta.');
-      if (sr.oficio) throw new Error('Las salas de oficio tienen su propia carpeta: no se vinculan a otra.');
+      if (sr.paso) throw new Error('Las salas de los pasos trabajan en la carpeta del proyecto: cámbiala con «Elegir el proyecto».');
       const ruta = path.resolve(expandir(String(d.ruta || '')));
       if (ruta === path.parse(ruta).root || ruta === os.homedir()) throw new Error('Esa carpeta es demasiado amplia para una sala: elige la de un proyecto.');
       if (!existsSync(ruta) || !statSync(ruta).isDirectory()) throw new Error('Esa carpeta no existe.');
@@ -386,12 +376,18 @@ async function accion(nombre: string, d: Record<string, any> = {}): Promise<unkn
       // el aspecto que se elige en Chapa y Pintura: del Supervisor o de un habitante (la Octocat no se cambia)
       const a = d.aspecto === null ? null : sanearAspecto(d.aspecto);
       if (d.aspecto !== null && !a) throw new Error('Ese aspecto no es válido.');
-      if (d.quien === 'supervisor') almacen.cambiar(x => { if (a) x.supervisor.aspecto = a; else delete x.supervisor.aspecto; });
-      else {
-        const h = e.habitantes.find(x => x.id === d.quien); if (!h) throw new Error('No hay nadie con ese nombre en la taberna.');
-        if (h.tipo === 'Octocat') throw new Error('La Octocat es como es: su aspecto no se toca.');
-        almacen.cambiar(() => { if (a) { h.aspecto = a; delete h.tono; } else delete h.aspecto; });
-      }
+      // un cambio de aspecto se paga en oro (el que dan los pasos del proceso); dejarlo como estaba no cuesta nada
+      const h = d.quien === 'supervisor' ? null : e.habitantes.find(x => x.id === d.quien);
+      if (d.quien !== 'supervisor' && !h) throw new Error('No hay nadie con ese nombre en la taberna.');
+      if (h?.tipo === 'Octocat') throw new Error('La Octocat es como es: su aspecto no se toca.');
+      const antes = JSON.stringify(h ? h.aspecto ?? null : e.supervisor.aspecto ?? null);
+      const coste = antes === JSON.stringify(a) ? 0 : COSTE_ASPECTO;
+      if (e.jugador.chatarra < coste) throw new Error(`Te faltan ${coste - e.jugador.chatarra} de oro: cumple algún paso del proceso y vuelve.`);
+      almacen.cambiar(x => {
+        x.jugador.chatarra -= coste;
+        if (!h) { if (a) x.supervisor.aspecto = a; else delete x.supervisor.aspecto; }
+        else if (a) { h.aspecto = a; delete h.tono; } else delete h.aspecto;
+      });
       difundir({ t: 'estado', estado: almacen.estado as any });
       return true;
     }

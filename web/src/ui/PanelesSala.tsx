@@ -16,8 +16,7 @@ import { irA } from './Paneles';
 import { idCopia } from './copias';
 import { abrirGit } from './git/ventana';
 import type { InfoRepo } from '@shared/protocolo';
-import { ContratarOficio, PedirDato, itemsDeOficio } from './Oficios';
-import { PLANTILLAS, type AccionOficio } from '@shared/oficios';
+import { PanelDePaso } from './Pasos';
 
 export function PanelesSala({ panel }: { panel: Panel }) {
   switch (panel) {
@@ -43,8 +42,7 @@ function hace(ms: number) { const d = (Date.now() - ms) / 86400_000; return d < 
 // (cada paso, su componente: la lista lleva su menú y sus teclas, y cambiar de paso no cambia los hooks de la Puerta)
 function Puerta() {
   const raiz = vivo.usar(e => e.estado?.raizRepos ?? '~');
-  const [paso, setPaso] = useState<{ tipo: 'lista' } | { tipo: 'oficios' } | { tipo: 'ruta'; crear: boolean } | { tipo: 'recluta'; ruta: string; nombre: string; crear?: boolean; git?: boolean }>({ tipo: 'lista' });
-  if (paso.tipo === 'oficios') return <ContratarOficio volver={() => setPaso({ tipo: 'lista' })} />;
+  const [paso, setPaso] = useState<{ tipo: 'lista' } | { tipo: 'ruta'; crear: boolean } | { tipo: 'recluta'; ruta: string; nombre: string; crear?: boolean; git?: boolean }>({ tipo: 'lista' });
   if (paso.tipo === 'recluta') return <FichaNuevoRecluta {...paso} volver={() => setPaso({ tipo: 'lista' })} />;
   if (paso.tipo === 'ruta') return <PedirRuta crear={paso.crear} raiz={raiz} volver={() => setPaso({ tipo: 'lista' })} seguir={(ruta, git) => setPaso({ tipo: 'recluta', ruta, nombre: ruta.split('/').filter(Boolean).pop() ?? ruta, crear: paso.crear, git })} />;
   return <ListaPuerta raiz={raiz} setPaso={setPaso} />;
@@ -53,7 +51,6 @@ function ListaPuerta({ raiz, setPaso }: { raiz: string; setPaso: (p: any) => voi
   const [sugs, setSugs] = useState<Sug[] | null>(null);
   useEffect(() => { cliente.accion<Sug[]>('sugerencias').then(setSugs).catch(() => setSugs([])); }, []);
   const items: (ItemMenu & { f: () => void })[] = [
-    { texto: <><b>Contratar un oficio</b> <span className="tenue">· Biblioteca, Taller, Torre del Vigía… o una mesa de proyecto</span></>, pista: 'salas de UX', f: () => setPaso({ tipo: 'oficios' }) },
     ...(sugs ?? []).slice(0, 40).map(s => ({ texto: <><b>{s.nombre}</b> <span className="tenue">{s.esGit ? 'repo' : 'carpeta'} · {TIPO[s.tipo] ?? s.tipo}</span></>, pista: hace(s.modificada), f: () => setPaso({ tipo: 'recluta', ruta: s.ruta, nombre: s.nombre }) })),
     { texto: 'Otra carpeta (escribir la ruta)…', pista: 'cualquier ruta de este Mac', f: () => setPaso({ tipo: 'ruta', crear: false }) },
     { texto: 'Crear una carpeta o repo nuevo…', pista: 'dentro de ' + raiz, f: () => setPaso({ tipo: 'ruta', crear: true }) },
@@ -194,13 +191,16 @@ function PanelDeSala() {
   const sala = vivo.usar(e => e.estado?.salas?.find((s: any) => s.id === salaId));
   const ejemplo = vivo.usar(e => !!e.repos[salaId]?.ejemplo);
   const [vincular, setVincular] = useState(false);
-  const [pedir, setPedir] = useState<AccionOficio | null>(null);
   if (!sala) return null;
+  // las salas de los pasos del proceso tienen su propio panel (Pasos.tsx), con la terminal y la carpeta al final
+  if (sala.paso) return <PanelDePaso salaId={salaId} sala={sala} generales={[
+    { texto: 'Abrir la terminal de la sala', pista: 'T', f: () => { cerrarPanel(); window.dispatchEvent(new CustomEvent('refugio:terminal', { detail: { salaId } })); } },
+    ...(sala.ruta ? [{ texto: 'Abrir la carpeta del proyecto', f: () => { cliente.accion('abrirEn', { app: 'finder', ruta: sala.ruta }).catch(() => {}); } }] : []),
+  ]} />;
   if (vincular) return <VincularSala sala={sala} ejemplo={ejemplo} volver={() => setVincular(false)} />;
-  if (pedir) return <PedirDato salaId={salaId} sala={sala} accion={pedir} volver={() => setPedir(null)} />;
-  return <MenuDeSala salaId={salaId} sala={sala} alVincular={() => setVincular(true)} alPedir={setPedir} />;
+  return <MenuDeSala salaId={salaId} sala={sala} alVincular={() => setVincular(true)} />;
 }
-function MenuDeSala({ salaId, sala, alVincular, alPedir }: { salaId: string; sala: any; alVincular: () => void; alPedir: (a: AccionOficio) => void }) {
+function MenuDeSala({ salaId, sala, alVincular }: { salaId: string; sala: any; alVincular: () => void }) {
   const repo = vivo.usar(e => e.repos[salaId]);
   const habs = juego.usar(e => e.habitantes.filter(h => h.sala === salaId && !h.copia));
   const [aviso, setAviso] = useState('');
@@ -209,8 +209,6 @@ function MenuDeSala({ salaId, sala, alVincular, alPedir }: { salaId: string; sal
   const abrir = (app: string) => cliente.accion('abrirEn', { app, ruta: sala.ruta }).then(() => setAviso('Abierto.')).catch(e => setAviso(e.message));
   const enDesarrollo = location.port === '5173';
   const items: (ItemMenu & { f: () => void })[] = [
-    // las acciones rápidas de una sala de oficio, lo primero
-    ...(sala.oficio ? itemsDeOficio(salaId, sala.oficio, alPedir) : []),
     ...(sala.tipo === 'puente' ? [{ texto: 'Aplicar los cambios del juego', pista: enDesarrollo ? 'en desarrollo se aplican solos' : 'recompila y recarga sin cortar sesiones', f: async () => {
       if (enDesarrollo) { setAviso('Con el servidor de desarrollo (Vite) los cambios del cliente ya se aplican solos al guardar.'); return; }
       try { await cliente.accion('aplicarCliente'); setAviso('Recompilando… la taberna se recargará sola al terminar.'); } catch (e) { setAviso((e as Error).message); }
@@ -225,8 +223,8 @@ function MenuDeSala({ salaId, sala, alVincular, alPedir }: { salaId: string; sal
     ...(deRepo && sala.decorado ? [{ texto: 'Volver a la escena de serie', pista: 'quita el decorado', f: async () => {
       try { await cliente.accion('sala.quitarDecorado', { salaId }); setAviso('La sala vuelve a su plantilla de serie.'); } catch (e) { setAviso((e as Error).message); }
     } }] : []),
-    ...(deRepo && !sala.oficio ? [{ texto: 'Vincular la sala a otra carpeta…', pista: 'un repo tuyo: la sala y su aventurero se quedan', f: alVincular }] : []),
-    ...(deRepo ? [{ texto: confirmar ? '¿Seguro? Enter otra vez para retirar la sala' : 'Retirar la sala de la taberna', pista: repo?.ejemplo ? 'la copia del repo de ejemplo va a la papelera' : sala.oficio ? 'su carpeta y sus entregables se quedan' : 'la carpeta no se toca', peligro: true, f: async () => {
+    ...(deRepo ? [{ texto: 'Vincular la sala a otra carpeta…', pista: 'un repo tuyo: la sala y su aventurero se quedan', f: alVincular }] : []),
+    ...(deRepo ? [{ texto: confirmar ? '¿Seguro? Enter otra vez para retirar la sala' : 'Retirar la sala de la taberna', pista: repo?.ejemplo ? 'la copia del repo de ejemplo va a la papelera' : 'la carpeta no se toca', peligro: true, f: async () => {
       if (!confirmar) { setConfirmar(true); return; }
       try { await cliente.accion('retirarSala', { salaId }); cerrarPanel(); } catch (e) { setAviso((e as Error).message); setConfirmar(false); }
     } }] : []),
@@ -240,10 +238,9 @@ function MenuDeSala({ salaId, sala, alVincular, alPedir }: { salaId: string; sal
           <dt>rama</dt><dd>{repo.rama}{repo.cambios ? <span className="aviso-consola"> · {repo.cambios} cambios sin commitear</span> : <span className="tenue"> · limpia</span>}</dd>
           <dt>último commit</dt><dd>{repo.ultimoCommit?.mensaje ?? '—'} <span className="tenue">{repo.ultimoCommit ? hace(repo.ultimoCommit.fecha) : ''}</span></dd>
         </> : <><dt>git</dt><dd className="tenue">{repo?.subrepos?.length ? `ala con ${repo.subrepos.length} repos` : 'no es un repo'}</dd></>}
-        {sala.oficio && <><dt>oficio</dt><dd>{sala.oficio === 'proyecto' ? 'mesa de proyecto' : PLANTILLAS[sala.oficio as keyof typeof PLANTILLAS]?.oficio ?? sala.oficio} <span className="tenue">· CLAUDE.md y skills en su carpeta</span></dd></>}
         <dt>tipo</dt><dd>{TIPO[repo?.tipo ?? ''] ?? repo?.tipo ?? '—'}{repo?.ejemplo && <span className="tenue"> · repo de ejemplo</span>}</dd>
         <dt>aventureros</dt><dd>{habs.map(h => h.nombre).join(', ') || '—'}</dd>
-        {deRepo && <><dt>escena</dt><dd>{sala.decorado ? <>{sala.decorado.resumen || 'decorado propio'} <span className="tenue">{sala.oficio ? '(la de su oficio)' : '(diseñada por su aventurero)'}</span></> : <span className="tenue">la de serie de su tipo de repo</span>}</dd></>}
+        {deRepo && <><dt>escena</dt><dd>{sala.decorado ? <>{sala.decorado.resumen || 'decorado propio'} <span className="tenue">(diseñada por su aventurero)</span></> : <span className="tenue">la de serie de su tipo de repo</span>}</dd></>}
       </dl></div>
       {aviso && <p className="aviso-consola">{aviso}</p>}
       <Opciones items={items} i={i} setI={k => { setI(k); if (k !== items.length - 1) setConfirmar(false); }} alElegir={k => items[k].f()} />

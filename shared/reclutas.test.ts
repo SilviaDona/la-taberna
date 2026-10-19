@@ -28,7 +28,8 @@ describe('reclutas', () => {
       const tipos = [...iniciales];
       for (let k = 0; k < huecos; k++) tipos.push(generarRecluta(base * 97 + k, [], false, tipos).tipo);
       const cuentas = new Map<string, number>(); for (const t of tipos) cuentas.set(t, (cuentas.get(t) ?? 0) + 1);
-      for (const t of ASPECTOS) expect(cuentas.get(t) ?? 0).toBeLessThanOrEqual(2);
+      // (los modelos que el reparto inicial ya repite, como el de los aventureros de los pasos, no cuentan)
+      for (const t of ASPECTOS) if (iniciales.filter(x => x === t).length < 2) expect(cuentas.get(t) ?? 0).toBeLessThanOrEqual(2);
     }
   });
   it('no repite un nombre ya usado si puede evitarlo', () => {

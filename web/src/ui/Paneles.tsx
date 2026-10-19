@@ -10,8 +10,9 @@ import { SFX, sonido } from '../audio/sonido';
 import { Aparato, Opciones, Teclas, cerrarPanel, useMenu, useTeclas, type ItemMenu } from './aparato';
 import { PanelesSala } from './PanelesSala';
 import { Bienvenida } from './Puente';
-import { rotuloPlanta } from '@shared/disposicion';
+import { rotuloPlanta, plantaDeRepos } from '@shared/disposicion';
 import { encargos } from '@shared/encargos';
+import { PASOS, type Historia, type PasoId } from '@shared/pasos';
 import type { ResumenSesion } from '@shared/protocolo';
 import { tonoSala, sectorDe, sectorDePlanta, SECTORES, ORDEN_SECTORES } from '@shared/sectores';
 import { DESCRIPCION_SALA } from '@shared/refugioInicial';
@@ -53,7 +54,8 @@ export function Paneles() {
       KeyM: () => abrirPanel('plano'), Tab: () => abrirPanel('ocupados'), F1: () => abrirPanel('ayuda'),
       KeyI: () => abrirPanel('inventario'), Escape: () => abrirPanel('menu'), KeyR: () => abrirPanel('cuaderno'),
       KeyQ: () => { const h = ocupados([...j.habitantes, ...j.copias]).find(x => x.estado === 'esperando' || x.estado === 'error'); if (h) irA(h.sala, h.id, true); else SFX.noPermitido(); },
-      KeyN: () => irA('comunicaciones'), KeyC: () => irA('planificacion'), KeyL: () => irA('logistica'),
+      // (solo si la taberna tiene esas salas)
+      ...(['comunicaciones', 'planificacion', 'logistica'].reduce((o, t, k) => { if ((vivo.get().estado?.salas ?? []).some((s: any) => s.tipo === t)) o[['KeyN', 'KeyC', 'KeyL'][k]] = () => irA(t); return o; }, {} as Record<string, () => void>)),
       KeyG: () => abrirGitDeSala(j.salaActual),
       KeyP: () => abrirPanel('chapa'),
     };
@@ -89,6 +91,7 @@ function Plano() {
   const habitantes = juego.usar(e => e.habitantes);
   const actual = juego.usar(e => e.salaActual);
   const plantas = Math.max(0, ...salas.map(s => s.planta)) + 1;
+  const pr = plantaDeRepos(salas);
   const ordenes = Math.max(1, ...salas.map(s => s.orden)) + 1;
   const columnas: { lado: 'izq' | 'der'; orden: number }[] = [...Array.from({ length: ordenes }, (_, k) => ({ lado: 'izq' as const, orden: ordenes - 1 - k })), ...Array.from({ length: ordenes }, (_, k) => ({ lado: 'der' as const, orden: k }))];
   const salaEn = (p: number, c: { lado: 'izq' | 'der'; orden: number }) => salas.find(s => s.planta === p && s.lado === c.lado && s.orden === c.orden);
@@ -147,7 +150,7 @@ function Plano() {
         {foto ? <div className="plano-caja" ref={caja}>
           <div className="plano-foto" style={{ width: fw, height: fh }}>
             <img src={foto.url} alt="" draggable={false} />
-            {Array.from({ length: plantas }, (_, p) => { const h = foto.huecos.find((x: any) => x.planta === p); return h ? <div key={p} className="plano-planta-rotulo" title={sectorDePlanta(p, plantas).nombre} style={{ top: `${h.r[1] * 100}%`, height: `${(h.r[3] - h.r[1]) * 100}%`, ['--sector' as any]: sectorDePlanta(p, plantas).color }}>{rotuloPlanta(p)}<b>{sectorDePlanta(p, plantas).codigo}</b></div> : null; })}
+            {Array.from({ length: plantas }, (_, p) => { const h = foto.huecos.find((x: any) => x.planta === p); return h ? <div key={p} className="plano-planta-rotulo" title={sectorDePlanta(p, plantas, pr).nombre} style={{ top: `${h.r[1] * 100}%`, height: `${(h.r[3] - h.r[1]) * 100}%`, ['--sector' as any]: sectorDePlanta(p, plantas, pr).color }}>{rotuloPlanta(p)}<b>{sectorDePlanta(p, plantas, pr).codigo}</b></div> : null; })}
             {foto.huecos.map((h: any) => {
               const s = salas.find(x => x.id === h.id); if (!s) return null;
               return (
@@ -163,7 +166,7 @@ function Plano() {
           <div className="plano-superficie" style={{ gridColumn: `1 / span ${ordenes * 2 + 2}` }} />
           {Array.from({ length: plantas }, (_, p) => (
             <React.Fragment key={p}>
-              <div className="plano-planta" title={sectorDePlanta(p, plantas).nombre} style={{ ['--sector' as any]: sectorDePlanta(p, plantas).color }}>{rotuloPlanta(p)}<b>{sectorDePlanta(p, plantas).codigo}</b></div>
+              <div className="plano-planta" title={sectorDePlanta(p, plantas, pr).nombre} style={{ ['--sector' as any]: sectorDePlanta(p, plantas, pr).color }}>{rotuloPlanta(p)}<b>{sectorDePlanta(p, plantas, pr).codigo}</b></div>
               {columnas.map((c, k) => {
                 const s = salaEn(p, c);
                 const celda = (
@@ -255,17 +258,20 @@ function Ocupados() {
   const teEsperan = lista.filter(x => x.espera).length;
   const notifs = vivo.usar(e => e.notificaciones).filter((n: any) => !n.vista);
   const eventos = vivo.usar(e => e.eventos).filter((ev: any) => ev.fin > Date.now()).slice(0, 3);
+  // las historias de usuario, con el paso en el que están: ir a su sala la abre en su panel
+  const historias = (vivo.usar(e => e.estado?.historias ?? []) as Historia[]).filter(h => h.paso !== 'hecha');
   const items: (ItemMenu & { f: () => void })[] = [
+    ...historias.map(h => { const p = PASOS[h.paso as PasoId]; return { texto: <>📜 <b>{h.titulo}</b> <span className="tenue">· paso {p.numero}, {p.sala}</span>{h.vuelta && <span className="aviso-consola"> · corrección</span>}</>, pista: p.id === 'mostrador' && h.supuestos.some(s => s.estado === 'sin revisar') ? <b>supuestos sin revisar</b> : p.etapa, clase: p.id === 'mostrador' ? 'esperando' : '', f: () => { cerrarPanel(); irA(p.id); juego.set({ panel: 'sala', panelDatos: { salaId: p.id } }); } }; }),
     ...lista.map(x => ({ texto: <><span className={'glifo-estado ' + (x.espera ? 'esperando' : 'trabajando')} /> <b>{x.s.titulo || 'Encargo sin título'}</b> <span className="tenue">· {x.quien}, {x.sala}</span></>,
       pista: x.espera ? <b>{x.espera}</b> : (x.s.actividad?.texto ?? x.s.estado), clase: x.espera ? 'esperando' : 'trabajando',
       f: () => { cerrarPanel(); irA(x.s.salaId, x.s.habitanteId, !!x.espera); } })),
-    { texto: <>Tablón de Anuncios <span className="tenue">· {notifs.length} cartas sin leer</span></>, pista: notifs[0] ? `${notifs[0].autor}: ${notifs[0].titulo}` : 'nada nuevo', f: () => { cerrarPanel(); irA('comunicaciones'); } },
-    { texto: <>Almanaque <span className="tenue">· {eventos.length ? 'próximo evento' : 'sin eventos'}</span></>, pista: eventos[0] ? `${new Date(eventos[0].inicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ${eventos[0].titulo}` : '', f: () => { cerrarPanel(); irA('planificacion'); } },
+    ...(salas.some(s => s.id === 'comunicaciones') ? [{ texto: <>Tablón de Anuncios <span className="tenue">· {notifs.length} cartas sin leer</span></>, pista: notifs[0] ? `${notifs[0].autor}: ${notifs[0].titulo}` : 'nada nuevo', f: () => { cerrarPanel(); irA('comunicaciones'); } }] : []),
+    ...(salas.some(s => s.id === 'planificacion') ? [{ texto: <>Almanaque <span className="tenue">· {eventos.length ? 'próximo evento' : 'sin eventos'}</span></>, pista: eventos[0] ? `${new Date(eventos[0].inicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ${eventos[0].titulo}` : '', f: () => { cerrarPanel(); irA('planificacion'); } }] : []),
   ];
   const [i, setI] = useMenu(items.length, k => items[k].f(), e => (e.code === 'Tab' ? (cerrarPanel(), true) : undefined));
   return (
     <Aparato rotulo="TABLÓN DE ENCARGOS" ancho={60} piloto={teEsperan ? 'esperando' : lista.length ? 'trabajando' : 'ociosa'}>
-      <p className="voz">{lista.length ? <>{lista.length} {lista.length === 1 ? 'encargo' : 'encargos'} en curso{teEsperan ? <> · <b>{teEsperan} te {teEsperan === 1 ? 'espera' : 'esperan'}</b></> : ''}.</> : 'Ningún encargo en curso. La taberna descansa.'}</p>
+      <p className="voz">{historias.length ? <>{historias.length} {historias.length === 1 ? 'historia' : 'historias'} en el proceso · </> : ''}{lista.length ? <>{lista.length} {lista.length === 1 ? 'conversación' : 'conversaciones'} en curso{teEsperan ? <> · <b>{teEsperan} te {teEsperan === 1 ? 'espera' : 'esperan'}</b></> : ''}.</> : historias.length ? 'ninguna conversación abierta.' : 'Ningún encargo en curso. La taberna descansa: abre una historia en la Sala de Mapas.'}</p>
       <div className="lista-desplazable"><Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} /></div>
       <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>ir (y hablar si te espera) <kbd>Q</kbd>en la taberna: ir al primero que te espera <kbd>Tab</kbd><kbd>Esc</kbd>cerrar</Teclas>
     </Aparato>

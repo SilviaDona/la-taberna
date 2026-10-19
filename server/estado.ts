@@ -12,7 +12,8 @@ import { FUENTES } from './integraciones/adaptadores.ts';
 import { sanearDecorado, type Decorado } from '../shared/decorado.ts';
 import { rutaEjemplo } from './ejemplos.ts';
 import { carpetaApp } from './plataforma.ts';
-import { esOficio, type Oficio } from '../shared/oficios.ts';
+import { esPaso, sanearHistorias, sanearProyecto, PASOS_IDS, type PasoId, type Historia, type Proyecto } from '../shared/pasos.ts';
+import { esClonDeEjemplo } from './ejemplos.ts';
 
 export const DATOS = path.resolve(process.env.SHELTER_DATOS || path.join(import.meta.dirname, '..', '.data'));
 
@@ -28,8 +29,7 @@ export interface SalaGuardada {
   variante: string;             // paleta
   estilo?: string;
   decorado?: Decorado;          // la escena que le ha diseñado su habitante («Adaptar la sala al repo»); sin él, su plantilla
-  oficio?: Oficio;              // sala de oficio de UX (shared/oficios.ts): su carpeta es propia, en CARPETAS_SALAS
-  estandarte?: string;          // color del estandarte de una mesa de proyecto (#rrggbb)
+  paso?: PasoId;                // sala de un paso del proceso de UX (shared/pasos.ts): trabaja en la carpeta del proyecto
 }
 export interface HabitanteGuardado { id: string; nombre: string; mote: string; tipo: string; bio: string; salaId: string; tinte?: string; tono?: number; voz: number; ultimaSesion?: string; accesorios?: string[]; aspecto?: Aspecto }
 export interface Jugador {
@@ -52,6 +52,8 @@ export interface EstadoRefugio {
   integraciones: Record<string, { modo: 'demo' | 'real'; opciones?: Record<string, unknown>; campos?: Record<string, string>; secretos?: string[] }>;
   notificacionesVistas: string[];
   ajustes: Record<string, unknown>;
+  proyecto?: Proyecto;          // la carpeta del proyecto en la que trabajan las salas de los pasos
+  historias: Historia[];        // las historias de usuario que recorren los pasos
 }
 
 
@@ -73,7 +75,7 @@ export function estadoInicial(): EstadoRefugio {
     raizRepos: raizReposPorDefecto(), limiteSesiones: 6, salas, habitantes,
     jugador: { chatarra: 40, inventario: {}, atuendo: [], tienda: [], records: {}, logros: [], tareasTerminadas: 0, llamadasHerramientas: 0, cultivos: [{ especie: 'Lettuce', fase: 3, progreso: 0 }, { especie: 'Carrot', fase: 4, progreso: 0 }, { especie: 'Corn', fase: 2, progreso: 0 }] },
     integraciones: Object.fromEntries(FUENTES.map(f => [f, { modo: 'demo' as const }])),
-    notificacionesVistas: [], ajustes: {},
+    notificacionesVistas: [], ajustes: { tabernaUX: 1 }, historias: [],
   };
 }
 
@@ -83,6 +85,22 @@ export function estadoInicial(): EstadoRefugio {
 // de esos datos.
 export const CARPETAS_SALAS = process.env.SHELTER_DATOS ? path.join(DATOS, 'salas') : path.join(carpetaApp(), 'salas');
 export function carpetaDe(s: SalaGuardada) { return s.ruta ?? path.join(CARPETAS_SALAS, s.id); }
+/** Las salas de los pasos trabajan en la carpeta del proyecto (sin proyecto, en una suya) */
+export function ponerProyecto(e: EstadoRefugio) { for (const s of e.salas) if (s.paso) { if (e.proyecto) s.ruta = e.proyecto.ruta; else delete s.ruta; } }
+// Salas del refugio de antes que la taberna del proceso de UX ya no tiene: las de enlace (comunicaciones, agenda,
+// Linear, git), las de ocio salvo el sastre, los repos de ejemplo y las salas de oficio de la primera versión
+const TIPOS_RETIRADOS = ['comunicaciones', 'planificacion', 'logistica', 'git', 'hidroponia', 'galeria', 'discoteca'];
+/** Una taberna guardada antes del proceso de UX pasa a él (una vez): fuera lo que ya no está, dentro los pasos */
+export function migrarATabernaUX(e: EstadoRefugio) {
+  if (e.ajustes.tabernaUX) return false;
+  const fuera = new Set(e.salas.filter(s => TIPOS_RETIRADOS.includes(s.tipo) || (s as { oficio?: string }).oficio || (s.tipo === 'repo' && !s.paso && s.ruta && esClonDeEjemplo(s.ruta))).map(s => s.id));
+  e.salas = e.salas.filter(s => !fuera.has(s.id)).map(s => { const { oficio: _, ...x } = s as SalaGuardada & { oficio?: string }; return x; });
+  e.habitantes = e.habitantes.filter(h => !fuera.has(h.salaId));
+  for (const ini of SALAS_INICIALES) if (ini.paso && !e.salas.some(s => s.paso === ini.paso || s.id === ini.id)) { const { carpeta: _, origen: __, ...x } = ini; e.salas.push({ ...x } as SalaGuardada); }
+  e.salas = distribuir(e.salas);
+  e.ajustes.tabernaUX = 1;
+  return true;
+}
 /** Salas de servicio de serie que le faltan a un refugio guardado: entran en su sitio (el resto se recoloca). */
 export function anadirSalasDeServicio(e: EstadoRefugio) {
   const faltan = SALAS_INICIALES.filter(s => !esSalaDeRepo(s.tipo) && !e.salas.some(x => x.tipo === s.tipo || x.id === s.id));
@@ -111,15 +129,16 @@ export class Almacen {
     else this.guardar();   // un refugio de antes queda guardado ya con la disposición nueva
     // salas de servicio de serie que falten en un refugio guardado: entran en su sitio y el resto se recoloca. No se
     // retiran, así que si falta una es que no la tenía
+    if (e && migrarATabernaUX(this.estado)) this.guardar();
     if (e && anadirSalasDeServicio(this.estado)) this.guardar();
     // habitantes de serie que falten en un refugio guardado, solo si su sala está vacía: una sala, un habitante
     if (e) for (const h of HABITANTES_INICIALES) if (!this.estado.habitantes.some(x => x.id === h.id || x.salaId === h.salaId) && this.estado.salas.some(sl => sl.id === h.salaId)) this.estado.habitantes.push({ ...h });
-    asegurarCarpetas(this.estado);
+    ponerProyecto(this.estado); asegurarCarpetas(this.estado);
   }
-  cambiar(f: (e: EstadoRefugio) => void) { f(this.estado); asegurarCarpetas(this.estado); this.guardar(); }
+  cambiar(f: (e: EstadoRefugio) => void) { f(this.estado); ponerProyecto(this.estado); asegurarCarpetas(this.estado); this.guardar(); }
   guardar() { if (this.pendiente) return; this.pendiente = setTimeout(() => { this.pendiente = null; this.guardarYa(); }, 400); }
   guardarYa() { const tmp = this.archivo + '.tmp'; writeFileSync(tmp, JSON.stringify(this.estado, null, 1), { mode: 0o600 }); chmodSync(tmp, 0o600); renameSync(tmp, this.archivo); }
-  reiniciar() { this.estado = estadoInicial(); asegurarCarpetas(this.estado); this.guardarYa(); }
+  reiniciar() { const proyecto = this.estado.proyecto; this.estado = estadoInicial(); this.estado.proyecto = proyecto; ponerProyecto(this.estado); asegurarCarpetas(this.estado); this.guardarYa(); }
 }
 
 // El estado guardado se valida campo a campo: lo que no cuadra se descarta o vuelve a su valor inicial.
@@ -134,8 +153,7 @@ export function sanear(e: any): EstadoRefugio {
     // La Taberna: las salas especiales con su nombre de refugio pasan a su nombre de taberna (las que renombraste, no)
     .map((x: any) => ({ id: x.id, tipo: x.tipo, nombre: !esSalaDeRepo(x.tipo) && NOMBRES_ANTIGUOS[x.nombre] ? NOMBRES_ANTIGUOS[x.nombre] : str(x.nombre, x.id), ruta: typeof x.ruta === 'string' ? x.ruta : undefined, planta: x.planta, lado: x.lado, orden: x.orden, variante: str(x.variante, 'neutro'), estilo: typeof x.estilo === 'string' ? x.estilo : undefined,
       ...(esSalaDeRepo(x.tipo) && x.decorado ? { decorado: sanearDecorado(x.decorado).decorado ?? undefined } : {}),
-      ...(esSalaDeRepo(x.tipo) && esOficio(x.oficio) ? { oficio: x.oficio } : {}),
-      ...(typeof x.estandarte === 'string' && /^#[0-9a-f]{6}$/i.test(x.estandarte) ? { estandarte: x.estandarte.toLowerCase() } : {}) }) as SalaGuardada);
+      ...(esSalaDeRepo(x.tipo) && esPaso(x.paso) ? { paso: x.paso } : {}), ...(x.oficio ? { oficio: x.oficio } : {}) }) as SalaGuardada);
   if (!leidas.length) throw new Error('sin salas');
   const salas = distribuir(leidas);
   const ids = new Set(salas.map((x: any) => x.id));
@@ -164,5 +182,6 @@ export function sanear(e: any): EstadoRefugio {
     salas, habitantes, jugador, integraciones,
     notificacionesVistas: (arr(e.notificacionesVistas) ?? []).filter((x: unknown) => typeof x === 'string').slice(-3000),
     ajustes: e.ajustes && typeof e.ajustes === 'object' ? e.ajustes : {},
+    proyecto: sanearProyecto(e.proyecto), historias: sanearHistorias(e.historias),
   };
 }

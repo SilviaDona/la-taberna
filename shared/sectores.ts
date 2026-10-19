@@ -28,11 +28,11 @@ const SECTOR_TIPO: Record<string, IdSector> = {
 export const sectorDe = (tipo: string): Sector => SECTORES[esSalaDeRepo(tipo) ? 'talleres' : SECTOR_TIPO[tipo] ?? 'ocio'];
 
 /** Sector de una planta según el orden de disposicion.ts: PB acceso, -1 mando, -2 enlace, repos y la última, ocio */
-export function sectorDePlanta(planta: number, plantas: number): Sector {
+export function sectorDePlanta(planta: number, plantas: number, plantaRepos = PLANTA_REPOS): Sector {
   if (planta === 0) return SECTORES.acceso;
   if (planta === 1) return SECTORES.mando;
-  if (planta === 2) return SECTORES.enlace;
-  return SECTORES[planta >= PLANTA_REPOS && planta < plantas - 1 ? 'talleres' : 'ocio'];
+  if (planta === 2 && plantaRepos > 2) return SECTORES.enlace;
+  return SECTORES[planta >= plantaRepos && planta < plantas - 1 ? 'talleres' : 'ocio'];
 }
 
 // tono de cada sala dentro de su familia: [acento, acentoOscuro]. Las especiales, por tipo; los repos, por lo que

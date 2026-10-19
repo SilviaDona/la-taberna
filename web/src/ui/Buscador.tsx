@@ -53,8 +53,11 @@ function acciones(): Accion[] {
   const j = juego.get();
   const sala = (vivo.get().estado?.salas ?? []).find((s: any) => s.id === j.salaActual);
   const conCarpeta = !!sala && (sala.ruta || sala.carpeta || ['puente', 'git', 'comunicaciones', 'planificacion', 'logistica'].includes(sala.tipo));
-  return [
-    { id: 'oficio', texto: 'Contratar un oficio de UX', pista: 'Biblioteca, Taller, Torre del Vigía, Puerta del Mensajero, Armería, Escenario o mesa de proyecto', claves: 'oficio ux sala plantilla erudita artesana vigia mensajero armero bardo proyecto mesa', f: () => { alRefugio(); abrirPanel('puerta'); } },
+  // lo de las salas que esta taberna no tiene (la del proceso de UX no trae cartas, agenda, Linear ni música) no sale
+  const hay = (tipo: string) => (vivo.get().estado?.salas ?? []).some((s: any) => s.tipo === tipo);
+  const SALA_DE: Record<string, string> = { comunicaciones: 'comunicaciones', planificacion: 'planificacion', logistica: 'logistica', musica: 'discoteca', 'web-linear': 'logistica', 'web-outlook': 'comunicaciones', 'web-discord': 'comunicaciones', 'web-slack': 'comunicaciones', 'web-github': 'comunicaciones' };
+  return ([
+    { id: 'historia', texto: 'Nueva historia de usuario', pista: 'en la Sala de Mapas: pegar la historia y sus ACs', claves: 'historia nueva user story acs analisis paso 1 mapas', f: () => { alRefugio(); irA('mapas'); juego.set({ panel: 'sala', panelDatos: { salaId: 'mapas' } }); } },
     { id: 'esperan', texto: 'Ir al que te espera', tecla: 'Q', claves: 'pendiente permiso pregunta urgente', f: () => { const h = ocupados([...j.habitantes, ...j.copias]).find(x => x.estado === 'esperando' || x.estado === 'error'); if (h) irA(h.sala, h.id, true); else SFX.noPermitido(); } },
     { id: 'ocupados', texto: 'Tablón de encargos', pista: 'lo que está en curso y quién te espera', tecla: 'Tab', claves: 'tablon encargos tareas ocupados trabajos estado esperan', f: () => { alRefugio(); abrirPanel('ocupados'); } },
     { id: 'plano', texto: 'Plano de la taberna', pista: 'viaje rápido a cualquier sala', tecla: 'M', claves: 'mapa viajar salas', f: () => { alRefugio(); abrirPanel('plano'); } },
@@ -67,7 +70,7 @@ function acciones(): Accion[] {
     { id: 'logistica', texto: 'Logística', pista: 'tablero de Linear', tecla: 'L', claves: 'linear tareas issues tablero', f: () => { alRefugio(); irA('logistica'); } },
     { id: 'musica', texto: 'Música', pista: 'Spotify y la pletina', tecla: `${K}J`, claves: 'spotify musica discoteca pletina', f: () => atajoMusica() },
     { id: 'barra', texto: 'Ventanas abiertas', pista: 'la barra de abajo, con el teclado', tecla: `${K}B`, claves: 'barra ventanas minimizadas', f: () => entrarBarra() },
-    { id: 'chapa', texto: 'Chapa y Pintura', pista: 'cambiar tu aspecto o el de un aventurero', tecla: 'P', claves: 'aspecto ropa pelo probador personaje', f: () => { alRefugio(); abrirPanel('chapa'); } },
+    { id: 'chapa', texto: 'Sastre y Barbero', pista: 'cambiar tu aspecto o el de un aventurero', tecla: 'P', claves: 'aspecto ropa pelo probador personaje', f: () => { alRefugio(); abrirPanel('chapa'); } },
     { id: 'inventario', texto: 'Inventario y tienda', tecla: 'I', claves: 'tienda oro accesorios guia', f: () => { alRefugio(); abrirPanel('inventario'); } },
     { id: 'camara', texto: 'Cámara acorazada', pista: 'credenciales, integraciones y ajustes de la taberna', claves: 'credenciales claves integraciones ajustes llavero limite sesiones raiz repos atuendo', f: () => { alRefugio(); irA('camara'); abrirPanel('camara'); } },
     { id: 'web-linear', texto: 'Abrir Linear', pista: 'web', claves: 'navegador web', f: () => abrirNavegador('linear') },
@@ -75,7 +78,7 @@ function acciones(): Accion[] {
     { id: 'web-discord', texto: 'Abrir Discord', pista: 'web', claves: 'navegador web chat', f: () => abrirNavegador('discord') },
     { id: 'web-slack', texto: 'Abrir Slack', pista: 'web', claves: 'navegador web chat', f: () => abrirNavegador('slack') },
     { id: 'web-github', texto: 'Abrir GitHub', pista: 'web', claves: 'navegador web notificaciones pull requests', f: () => abrirNavegador('github') },
-  ];
+  ] as Accion[]).filter(a => !SALA_DE[a.id] || hay(SALA_DE[a.id]));
 }
 
 // ---------------------------------------------------------------- búsqueda

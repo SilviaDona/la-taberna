@@ -3,13 +3,16 @@
 //   PB (0)  a pie de calle: la puerta, a la izquierda del ascensor
 //   -1      cámara acorazada | Puente de Mando
 //   -2      comunicaciones, planificación | logística, control de versiones (tipos 'planificacion', 'logistica' y 'git')
-//   -3…     los repos, en orden alfabético de izquierda a derecha y repartidos a los dos lados del ascensor
+//   -3…     (o -2, si no hay salas de enlace) las salas de los pasos del proceso, en su orden, y luego los repos, en orden alfabético de izquierda a derecha y repartidos a los dos lados del ascensor
 //           (como mucho REPOS_POR_PLANTA por planta: si hay más, siguen en la planta de debajo)
 //   última  ocio: hidroponía, discoteca | galería de tiro, Chapa y Pintura (de izquierda a derecha: cultivos, discoteca,
 //           ascensor, tiro, barbería y ropería)
 export interface Hueco { planta: number; lado: 'izq' | 'der'; orden: number }
 
+/** Planta de los repos en un refugio con todas las salas fijas (las de enlace en la -2) */
 export const PLANTA_REPOS = 3;
+/** Orden de las salas de los pasos del proceso de UX (shared/pasos.ts) */
+export const ORDEN_PASOS = ['mapas', 'mostrador', 'forja', 'torre', 'salon', 'mensajero', 'libro'];
 export const REPOS_POR_PLANTA = 8;
 
 const FIJAS: Record<string, Hueco> = {
@@ -28,6 +31,10 @@ const OCIO: Record<string, Pick<Hueco, 'lado' | 'orden'>> = {
   chapa: { lado: 'der', orden: 1 },
 };
 
+/** Planta de los repos: la de debajo de las salas fijas que haya (sin las de enlace, sube a la -2) */
+export function plantaDeRepos(salas: { tipo: string }[]) {
+  return Math.max(0, ...salas.map(s => FIJAS[s.tipo]?.planta ?? 0)) + 1;
+}
 export const esSalaDeRepo = (tipo: string) => tipo === 'repo' || tipo === 'coordinacion';
 /** Orden alfabético de los repos: el de su sitio en la planta y el de su número en la placa */
 export const ordenAlfabetico = (a: { id: string; nombre: string }, b: { id: string; nombre: string }) =>
@@ -41,7 +48,10 @@ export function distribuir<T extends { id: string; tipo: string; nombre: string 
   const poner = (s: T, h: Hueco) => { sitio.set(s, h); ocupado.add(`${h.planta}|${h.lado}|${h.orden}`); };
   const libre = (h: Hueco) => !ocupado.has(`${h.planta}|${h.lado}|${h.orden}`);
   // repos: de izquierda a derecha en orden alfabético; a la izquierda la mitad (redondeando hacia arriba)
-  const repos = salas.filter(s => esSalaDeRepo(s.tipo)).sort(ordenAlfabetico);
+  // las de los pasos del proceso (con `paso`), primero y en su orden; luego los repos, por orden alfabético
+  const ordenPaso = (s: T) => { const p = (s as { paso?: string }).paso; const i = p ? ORDEN_PASOS.indexOf(p) : -1; return i < 0 ? ORDEN_PASOS.length : i; };
+  const repos = salas.filter(s => esSalaDeRepo(s.tipo)).sort((a, b) => ordenPaso(a) - ordenPaso(b) || ordenAlfabetico(a, b));
+  const PLANTA_REPOS = plantaDeRepos(salas);
   const plantasRepos = Math.ceil(repos.length / REPOS_POR_PLANTA);
   for (let k = 0; k < plantasRepos; k++) {
     const tanda = repos.slice(k * REPOS_POR_PLANTA, (k + 1) * REPOS_POR_PLANTA);

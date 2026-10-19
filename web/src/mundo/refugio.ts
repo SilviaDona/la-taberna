@@ -33,7 +33,7 @@ import { vivo } from '../red/cliente';
 import type { ResumenSesion } from '@shared/protocolo';
 import { SALAS_INICIALES, HABITANTES_INICIALES, SALA_SUPERVISOR } from '@shared/refugioInicial';
 import { firmaDecorado } from '@shared/decorado';
-import { ordenAlfabetico } from '@shared/disposicion';
+import { ordenAlfabetico, plantaDeRepos } from '@shared/disposicion';
 
 const ANCHO_SALA = 12;
 const cargandoAcc = new WeakMap<Personaje, Set<string>>();
@@ -171,7 +171,7 @@ export class Refugio {
       window.dispatchEvent(new CustomEvent('refugio:carga', { detail: { progreso: this.progresoCarga, sala: sg.nombre } }));
       if (sg.id === SALA_SUPERVISOR || (!this.supervisor && n === 1)) await this.prepararSupervisor(sala);
     }
-    this.ascensor = new Ascensor(this.plantas);
+    this.ascensor = new Ascensor(this.plantas, plantaDeRepos(guardadas));
     await this.ascensor.construir();
     this.motor.scene.add(this.ascensor.grupo);
     this.ascensor.llamar(this.salaActual?.planta ?? 1);
@@ -353,7 +353,7 @@ export class Refugio {
     const plantas = Math.max(...guardadas.map(s => s.planta)) + 1;
     if (plantas !== this.plantas) {
       this.plantas = plantas;
-      const viejo = this.ascensor; const asc = new Ascensor(plantas); await asc.construir();
+      const viejo = this.ascensor; const asc = new Ascensor(plantas, plantaDeRepos(guardadas)); await asc.construir();
       this.motor.scene.remove(viejo.grupo); this.motor.scene.add(asc.grupo); this.ascensor = asc;
       asc.llamar(this.plantaDe(this.supervisor.raiz.position.y));
     }

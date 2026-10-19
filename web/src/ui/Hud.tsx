@@ -55,6 +55,9 @@ export function Hud() {
   const esperando = todos.filter(h => h.estado === 'esperando').length;
   const errores = todos.filter(h => h.estado === 'error').length;
   const conectado = vivo.usar(x => x.conectado);
+  // las cartas y la agenda solo salen si la taberna tiene su sala (la del proceso de UX no las trae)
+  const conCartas = vivo.usar(x => !!x.estado?.salas?.some((s: any) => s.tipo === 'comunicaciones'));
+  const conAgenda = vivo.usar(x => !!x.estado?.salas?.some((s: any) => s.tipo === 'planificacion'));
   const reiniciando = vivo.usar(x => x.reiniciando);
   return (
     <>
@@ -72,8 +75,8 @@ export function Hud() {
         <Contador icono={Icono.engranaje} n={trabajando} texto="trabajando" tecla="Tab" nivel={trabajando ? '' : 'apagado'} />
         <Contador icono={Icono.aviso} n={esperando} texto="te esperan" tecla="Q" nivel={esperando ? 'urgente' : 'apagado'} />
         {errores > 0 && <Contador icono={Icono.error} n={errores} texto="con avería" tecla="Q" nivel="error" />}
-        <Contador icono={Icono.sobre} n={e.notificacionesSinVer} texto="sin ver" tecla="N" nivel={e.notificacionesSinVer ? '' : 'apagado'} />
-        <Contador icono={Icono.reloj} n={e.proximoEvento ? minutosHasta(e.proximoEvento.inicio, ahora) : '—'} texto={e.proximoEvento ? e.proximoEvento.titulo : 'sin eventos'} tecla="C" nivel={e.proximoEvento ? '' : 'apagado'} />
+        {conCartas && <Contador icono={Icono.sobre} n={e.notificacionesSinVer} texto="sin ver" tecla="N" nivel={e.notificacionesSinVer ? '' : 'apagado'} />}
+        {conAgenda && <Contador icono={Icono.reloj} n={e.proximoEvento ? minutosHasta(e.proximoEvento.inicio, ahora) : '—'} texto={e.proximoEvento ? e.proximoEvento.titulo : 'sin eventos'} tecla="C" nivel={e.proximoEvento ? '' : 'apagado'} />}
       </div>
       <div className="seg fosforo chatarra" title="Oro: se gana con cada tarea terminada">
         <span className="icono">{Icono.moneda}</span><span className="n">{e.chatarra.toLocaleString('es-ES')}</span>

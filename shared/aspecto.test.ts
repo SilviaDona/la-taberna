@@ -75,9 +75,8 @@ describe('aspectos de los habitantes', () => {
     expect(g.tipo).toBe('Barbarian');
     expect(sanearAspecto(ASPECTO_GUARDIAN)).toBeTruthy();
   });
-  it('la Octocat no tiene aspecto por piezas', () => {
-    const m = HABITANTES_INICIALES.find(h => h.id === 'mona')!;
-    expect(m.tipo).toBe('Octocat'); expect(m.aspecto).toBeUndefined();
+  it('los aventureros de los pasos llevan un aspecto por piezas válido', () => {
+    for (const h of HABITANTES_INICIALES.filter(x => x.aspecto)) expect(sanearAspecto(h.aspecto), h.id).toBeTruthy();
   });
 });
 

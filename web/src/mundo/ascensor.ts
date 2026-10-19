@@ -21,7 +21,7 @@ export class Ascensor {
   moviendose = false;
   private indicadores: { g: CanvasRenderingContext2D; tex: THREE.CanvasTexture; planta: number }[] = [];
   anclas: Sala['anclas'] = [];
-  constructor(public plantas: number) {}
+  constructor(public plantas: number, public plantaRepos?: number) {}
 
   yDe(planta: number) { return -planta * PLANTA; }
 
@@ -93,7 +93,7 @@ export class Ascensor {
       const g = ind.g; g.fillStyle = '#2a1a10'; g.fillRect(0, 0, 256, 96);
       g.strokeStyle = '#4a443b'; g.lineWidth = 6; g.strokeRect(3, 3, 250, 90);
       // a la izquierda, la letra del sector de la planta sobre su color (shared/sectores.ts)
-      const sec = sectorDePlanta(ind.planta, this.plantas);
+      const sec = sectorDePlanta(ind.planta, this.plantas, this.plantaRepos);
       g.fillStyle = sec.color; g.fillRect(9, 9, 64, 78);
       g.fillStyle = sec.tinta; g.font = `900 58px ${FUENTES.titulo}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(sec.codigo, 41, 52);
       const aqui = this.plantaActual === ind.planta && !this.moviendose;

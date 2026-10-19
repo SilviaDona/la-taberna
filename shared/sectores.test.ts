@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SALAS_INICIALES } from './refugioInicial.ts';
-import { distribuir } from './disposicion.ts';
+import { distribuir, plantaDeRepos } from './disposicion.ts';
 import { sectorDe, sectorDePlanta, tonoSala } from './sectores.ts';
 
 describe('sectores', () => {
@@ -8,7 +8,7 @@ describe('sectores', () => {
     const muchos = Array.from({ length: 11 }, (_, i) => ({ id: 'r' + i, tipo: 'repo', nombre: 'repo-' + i }));
     for (const salas of [SALAS_INICIALES, distribuir([...SALAS_INICIALES, ...muchos])]) {
       const plantas = Math.max(...salas.map(s => s.planta)) + 1;
-      for (const s of salas) expect(sectorDePlanta(s.planta, plantas).id, s.id).toBe(sectorDe(s.tipo).id);
+      for (const s of salas) expect(sectorDePlanta(s.planta, plantas, plantaDeRepos(salas)).id, s.id).toBe(sectorDe(s.tipo).id);
     }
   });
   it('los repos van por estilo, no por turno', () => {

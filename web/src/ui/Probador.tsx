@@ -10,7 +10,7 @@ import { Aparato, Opciones, Teclas, cerrarPanel, useMenu, useTeclas } from './ap
 import {
   aspectoDe, aspectoAlAzar, ponerPieza, piezasDe, encaja, firmaAspecto, paletaDe, nombreRegion,
   RANURAS_HUMANO, RANURAS_ROBOT, OBLIGATORIAS, COLORES_DE, NOMBRE_RANURA, REGIONES, PIEZA, DE_SERIE,
-  type Aspecto, type Ranura, type Region, type Pieza,
+  COSTE_ASPECTO, type Aspecto, type Ranura, type Region, type Pieza,
 } from '@shared/aspecto';
 import { Estudio, ENFOQUE, miniatura, type Enfoque } from '../mundo/figura/estudio';
 
@@ -197,7 +197,7 @@ function Probador({ quien, volver }: { quien: string; volver: () => void }) {
         </div>
       </div>
       <Teclas>
-        <kbd>Tab</kbd><kbd>Q</kbd><kbd>E</kbd>pieza <kbd>←→↑↓</kbd>probar <kbd>R</kbd>al azar <kbd>⇧R</kbd>solo esto <kbd>Z</kbd>deshacer <kbd>H</kbd>humano/robot <kbd>,</kbd><kbd>.</kbd>girar <kbd>Enter</kbd>{guardando ? 'guardando…' : 'guardar'} <kbd>Esc</kbd>dejarlo como estaba
+        <kbd>Tab</kbd><kbd>Q</kbd><kbd>E</kbd>pieza <kbd>←→↑↓</kbd>probar <kbd>R</kbd>al azar <kbd>⇧R</kbd>solo esto <kbd>Z</kbd>deshacer <kbd>H</kbd>humano/robot <kbd>,</kbd><kbd>.</kbd>girar <kbd>Enter</kbd>{guardando ? 'guardando…' : `guardar (${COSTE_ASPECTO} de oro)`} <kbd>Esc</kbd>dejarlo como estaba
       </Teclas>
     </Aparato>
   );

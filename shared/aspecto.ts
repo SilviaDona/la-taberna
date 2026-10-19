@@ -336,6 +336,8 @@ export function goblin(piel: string, torso: string, piernas: string, extra: Part
   return { especie: 'humano', piezas: { cara: 'cara.Caveman', cejas: 'cejas.Caveman', pelo: '', barba: '', torso: 'torso.Rogue', brazos: 'brazos.Rogue', piernas: 'piernas.Rogue', ...extra }, colores: { piel, torso1: torso, piernas1: piernas } };
 }
 export const GOBLINS = ['Goblin', 'Goblin_B'];
+/** Lo que cuesta en oro guardar un aspecto nuevo en Sastre y Barbero */
+export const COSTE_ASPECTO = 15;
 export const TIPOS_DE_SERIE = Object.keys(DE_SERIE);
 
 // ---------------------------------------------------------------- validación
