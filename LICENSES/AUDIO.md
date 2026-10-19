@@ -125,3 +125,7 @@ Todos los sonidos de `web/public/audio/` son **CC0 1.0 (dominio público)**. Se 
 Freesound: licencia comprobada en la ficha de cada sonido (Creative Commons 0); se han usado las previsualizaciones de alta calidad, recortadas, normalizadas y, los `amb_*`, convertidas en bucles con fundido cruzado en el propio archivo (sin clic en la junta). `amb_generador`, `amb_ventilacion`, `amb_roca` y `radio_estatica` se han rehecho igual a partir de los originales de arriba.
 
 Sintetizados en tiempo real con WebAudio (sin archivo, `web/src/audio/sintesis.ts` y `voces.ts`): zumbido de red a 50 Hz y rumor de roca, gotas, eco del refugio (respuesta sintética), ronquidos, pitidos de consola, morse, squelch de radio, lector de códigos, avisador de marcha atrás, relés, mecanismo de la cámara acorazada, tintineo de metal, rachas de viento, fluorescentes, bordón grave y bomba de agua; sintonía de radio.
+
+## La Taberna
+
+El ambiente de la taberna (`web/src/audio/ambiente.ts`: salón, mesa de la taberna y hueco del montacargas) no añade archivos: reutiliza los CC0 de esta tabla. El fuego es `amb_fuego`; el murmullo, `amb_oficina` muy filtrado (solo el rumor de voces); además `copas`, las risas `voz_*_e_risa*`, `rpg_handleCoins*` y `crujido_*`.

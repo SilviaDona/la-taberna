@@ -25,6 +25,16 @@ export interface Perfil { capas: CapaDef[]; detalles: DetalleDef[]; reloj?: numb
 const PAPEL = ['papel_1', 'papel_2', 'papel_3'];
 const RATON = ['raton_1', 'raton_2'];
 const tecleo = (cada: [number, number], vol: number): DetalleDef => ({ teclas: true, cada, vol, pasoBajo: 5000 });
+// La Taberna: el ambiente del salón, hecho con los CC0 de LICENSES/AUDIO.md: el fuego de la chimenea (amb_fuego), el
+// murmullo de la gente (la oficina, muy filtrada: solo queda el rumor de voces), copas, risas sueltas, monedas y la
+// madera que cruje
+const MURMULLO: CapaDef = { archivo: 'amb_oficina', vol: 0.16, pasoBajo: 700, pasoAlto: 120 };
+const FUEGO: CapaDef = { archivo: 'amb_fuego', vol: 0.22, pasoBajo: 4000 };
+const RISAS = ['voz_a_e_risa1', 'voz_b_e_risa1', 'voz_b_e_risa2', 'voz_b_e_risa3', 'voz_c_e_risa1'];
+const VIDA_TABERNA: DetalleDef[] = [
+  { sonidos: ['copas'], cada: [9, 22], vol: 0.14, pasoBajo: 6000 }, { sonidos: RISAS, cada: [14, 34], vol: 0.07, pasoBajo: 2400, eco: 0.25 },
+  { sonidos: ['rpg_handleCoins', 'rpg_handleCoins2'], cada: [30, 70], vol: 0.09 }, { sonidos: ['crujido_1', 'crujido_2'], cada: [18, 40], vol: 0.12 },
+];
 
 // ------------------------------------------------------------------------------------------------ perfiles
 export const PERFILES: Record<string, Perfil> = {
@@ -95,14 +105,10 @@ export const PERFILES: Record<string, Perfil> = {
     ],
   },
   // la puerta del refugio: el viento de la superficie entrando, la compuerta enorme que gime, hidráulica y vapor
+  // La Taberna: el salón de la posada, con su chimenea, el murmullo y el viento que entra por la puerta
   puerta: {
-    eco: 0.2, capas: [{ archivo: 'amb_viento', vol: 0.3, pasoBajo: 2200 }, { archivo: 'amb_generador', vol: 0.09 }, { archivo: 'amb_hueco', vol: 0.1 }],
-    detalles: [
-      { sonidos: ['puerta_enorme'], cada: [25, 55], vol: 0.22, eco: 0.4 }, { sonidos: ['hidraulica_1', 'hidraulica_2'], cada: [14, 32], vol: 0.24 },
-      { sonidos: ['vapor_1', 'vapor_2'], cada: [12, 28], vol: 0.16 }, { sonidos: ['clank'], cada: [20, 45], vol: 0.12 },
-      { sint: 'racha', cada: [6, 14], vol: 0.06, abre: 0.9 }, { sonidos: ['crujido_1', 'crujido_2'], cada: [25, 50], vol: 0.14 },
-      { sonidos: ['megafonia_1', 'megafonia_2', 'megafonia_3'], cada: [70, 140], vol: 0.1, pasoAlto: 550, pasoBajo: 2200, eco: 0.6 },
-    ],
+    eco: 0.15, capas: [FUEGO, MURMULLO, { archivo: 'amb_viento', vol: 0.12, pasoBajo: 1500 }],
+    detalles: [...VIDA_TABERNA, { sonidos: ['puerta_enorme'], cada: [40, 90], vol: 0.12, eco: 0.3, pasoBajo: 1800 }],
   },
   // a pie de calle: viento del páramo, rachas y algún cuervo
   calle: {
@@ -111,7 +117,7 @@ export const PERFILES: Record<string, Perfil> = {
   },
   // el hueco del ascensor: corriente de aire, cables que crujen, goteras con eco
   hueco: {
-    eco: 0.35, capas: [{ archivo: 'amb_hueco', vol: 0.35 }],
+    eco: 0.35, capas: [{ archivo: 'amb_hueco', vol: 0.25 }, { ...MURMULLO, vol: 0.06, pasoBajo: 450 }],   // la taberna se oye por el hueco
     detalles: [
       { sonidos: ['crujido_1', 'crujido_2'], cada: [10, 25], vol: 0.18, eco: 0.4 }, { gota: true, cada: [6, 15], vol: 0.07 },
       { sint: 'tintineoMetal', cada: [12, 30], vol: 0.02 }, { sonidos: ['clank'], cada: [30, 60], vol: 0.07, eco: 0.5, pasoBajo: 2500 },
@@ -181,9 +187,10 @@ export const PERFILES: Record<string, Perfil> = {
     capas: [{ archivo: 'amb_burbujas', vol: 0.22 }, { sint: 'fluorescente', vol: 0.006 }],
     detalles: [{ sint: 'pitidosMando', cada: [10, 25], vol: 0.02 }, { sonidos: ['copas'], cada: [20, 40], vol: 0.08, rate: 1.3 }, { sonidos: ['vapor_1', 'vapor_2'], cada: [30, 60], vol: 0.08 }, tecleo([10, 20], 0.08)],
   },
+  // La Taberna: la plantilla «estudio» es la taberna de la mesa (hogar, murmullo y copas, y el que trabaja escribe)
   estudio: {
-    capas: [{ sint: 'fluorescente', vol: 0.006 }, { archivo: 'bucle_ordenador', vol: 0.07, pasoBajo: 2500 }],
-    detalles: [tecleo([5, 12], 0.12), { sonidos: RATON, cada: [5, 12], vol: 0.14, rafaga: [1, 3, 0.15, 0.4] }, { sonidos: ['cafetera'], cada: [60, 120], vol: 0.15 }, { sonidos: PAPEL, cada: [40, 80], vol: 0.1 }],
+    capas: [FUEGO, { ...MURMULLO, vol: 0.12 }],
+    detalles: [tecleo([5, 12], 0.1), ...VIDA_TABERNA, { sonidos: PAPEL, cada: [40, 80], vol: 0.1 }],
   },
   archivo: {
     reloj: 0.07, capas: [{ archivo: 'amb_ventilacion', vol: 0.05, pasoBajo: 1500 }],
