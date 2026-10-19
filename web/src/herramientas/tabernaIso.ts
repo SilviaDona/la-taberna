@@ -22,7 +22,7 @@ const sala = new THREE.Group(); scene.add(sala);
 scene.add(new THREE.HemisphereLight('#ffd9a8', '#3a2414', 0.55));
 const luna = new THREE.DirectionalLight('#9fb4ff', 0.35); luna.position.set(-8, 14, -4); scene.add(luna);
 const sol = new THREE.DirectionalLight('#ffd7a0', 0.9); sol.position.set(10, 18, 8); sol.castShadow = true;
-sol.shadow.mapSize.set(2048, 2048); Object.assign(sol.shadow.camera, { left: -26, right: 14, top: 14, bottom: -14, near: 1, far: 60 }); sol.shadow.mapSize.set(4096, 4096); sol.shadow.bias = -0.0008; scene.add(sol);
+sol.shadow.mapSize.set(2048, 2048); Object.assign(sol.shadow.camera, { left: -28, right: 16, top: 24, bottom: -20, near: 1, far: 70 }); sol.shadow.mapSize.set(4096, 4096); sol.shadow.bias = -0.0008; scene.add(sol);
 const puntos: { luz: THREE.PointLight; base: number; vel: number }[] = [];
 function luz(x: number, y: number, z: number, color: string, intensidad: number, distancia: number, parpadeo = 0) {
   const l = new THREE.PointLight(color, intensidad, distancia, 1.6); l.position.set(x, y, z); scene.add(l);
@@ -46,6 +46,9 @@ const { S, sobre } = en(sala);
 // la sala de la izquierda (paso 2), pegada a la Sala de Mapas por su pared con chimenea
 const OX = -L;
 const mostrador = new THREE.Group(); mostrador.position.x = OX; scene.add(mostrador);
+// la Forja (pasos 3 y 4), delante del Mostrador: la L de la taberna
+const OZ = L;
+const forja = new THREE.Group(); forja.position.set(OX, 0, OZ); scene.add(forja);
 
 async function suelo(g: THREE.Group) {
   const { S } = en(g);
@@ -54,28 +57,39 @@ async function suelo(g: THREE.Group) {
     ps.push(S(R.dun('floor_wood_large'), { pos: [-L / 2 + 2 + i * 4, 0, -L / 2 + 2 + j * 4], ancho: 4, ancla: 'techo', rot: ((i * 3 + j) % 2) * Math.PI, sombra: false }));
   await Promise.all(ps);
 }
-/** Fondo (z = -6) e izquierda (x = -6) de entramado entero; delante (y a la derecha, si no hay sala vecina) un murete.
- *  `ventana`: x de la ventana del fondo; `puerta`: z de la puerta de la pared izquierda, hacia la sala de al lado */
-function paredes(g: THREE.Group, o: { ventana: number; paso?: number; derecha?: boolean }) {
-  muroEntramado(g, -L / 2, L / 2, -L / 2, 0, { x: o.ventana, y: H * 0.55, w: 1.8, h: 1.6 });
+/** Las paredes de una sala. Fondo (z = -6) e izquierda (x = -6) son de entramado entero si dan afuera; las que dan a
+ *  una sala vecina, y siempre la de delante y la de la derecha, son muretes (una pared alta taparía lo que hay detrás
+ *  desde esta cámara). `paso`: dónde se abre el hueco para pasar en ese murete (en x para fondo y delante, en z para los
+ *  lados); `false`: sin pared ahí (la pone la sala vecina). */
+type Lado = 'entero' | false | { paso?: number };
+function paredes(g: THREE.Group, o: { ventana?: number; fondo?: Lado; izquierda?: Lado; derecha?: Lado; frente?: Lado }) {
   const madera = materialAcero('#3a2414');
-  const muretes: [number, number, number, number][] = [[L, 0.25, 0, L / 2], ...(o.derecha !== false ? [[0.25, L, L / 2, 0] as [number, number, number, number]] : [])];
-  // a la izquierda: entramado entero si es pared de fuera; con `paso`, la sala de al lado está ahí y solo hay un murete
-  // con un hueco para pasar en z = paso (una pared alta taparía la sala vecina desde esta cámara)
-  if (o.paso === undefined) { const izq = muroEntramado(g, 0, L, 0, 0); izq.rotation.y = Math.PI / 2; izq.position.set(-L / 2, 0, L / 2); }
-  else {
-    const a = o.paso - 0.9, b = o.paso + 0.9;
-    muretes.push([0.25, a + L / 2, -L / 2, (a - L / 2) / 2], [0.25, L / 2 - b, -L / 2, (b + L / 2) / 2]);
-    for (const z of [a, b]) g.add(caja(0.3, BAJO + 0.6, 0.3, madera, -L / 2, (BAJO + 0.6) / 2, z, true));
+  const fondo = o.fondo ?? 'entero', izquierda = o.izquierda ?? 'entero', derecha = o.derecha ?? {}, frente = o.frente ?? {};
+  if (fondo === 'entero') muroEntramado(g, -L / 2, L / 2, -L / 2, 0, o.ventana !== undefined ? { x: o.ventana, y: H * 0.55, w: 1.8, h: 1.6 } : undefined);
+  if (izquierda === 'entero') { const izq = muroEntramado(g, 0, L, 0, 0); izq.rotation.y = Math.PI / 2; izq.position.set(-L / 2, 0, L / 2); }
+  // un murete a lo largo de x (en z) o de z (en x), partido por el hueco del paso, con pies derechos a los lados
+  const murete = (enX: boolean, fijo: number, paso?: number) => {
+    const tramos: [number, number][] = paso === undefined ? [[-L / 2, L / 2]] : [[-L / 2, paso - 0.9], [paso + 0.9, L / 2]];
+    for (const [a, b] of tramos) {
+      const largo = b - a, c = (a + b) / 2;
+      const [w, d, x, z] = enX ? [largo, 0.25, c, fijo] : [0.25, largo, fijo, c];
+      g.add(caja(w, BAJO, d, materialYeso(), x, BAJO / 2, z, true), caja(w + 0.1, 0.16, d + 0.1, madera, x, BAJO + 0.08, z, true));
+    }
+    if (paso !== undefined) for (const t of [paso - 0.9, paso + 0.9]) g.add(caja(0.3, BAJO + 0.6, 0.3, madera, enX ? t : fijo, (BAJO + 0.6) / 2, enX ? fijo : t, true));
+  };
+  if (fondo && fondo !== 'entero') murete(true, -L / 2, fondo.paso);
+  if (izquierda && izquierda !== 'entero') murete(false, -L / 2, izquierda.paso);
+  if (derecha && derecha !== 'entero') murete(false, L / 2, derecha.paso);
+  if (frente && frente !== 'entero') murete(true, L / 2, frente.paso);
+  // pies derechos en las esquinas: altos donde se juntan dos paredes enteras o una entera con la esquina de fuera
+  for (const [x, z] of [[L / 2, L / 2], [-L / 2, L / 2], [L / 2, -L / 2], [-L / 2, -L / 2]]) {
+    const alto = (x < 0 && izquierda === 'entero') || (z < 0 && fondo === 'entero') ? H : BAJO + 0.25;
+    g.add(caja(0.34, alto, 0.34, madera, x, alto / 2, z, true));
   }
-  for (const [w, d, x, z] of muretes) {
-    g.add(caja(w, BAJO, d, materialYeso(), x, BAJO / 2, z, true));
-    g.add(caja(w + 0.1, 0.16, d + 0.1, madera, x, BAJO + 0.08, z, true));
+  if (o.ventana !== undefined && fondo === 'entero') {   // el cielo detrás de la ventana
+    const cielo = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2), new THREE.MeshBasicMaterial({ color: '#2b3a66' }));
+    cielo.position.set(o.ventana, H * 0.55, -L / 2 - 0.05); g.add(cielo);
   }
-  for (const [x, z] of [[L / 2, L / 2], [-L / 2, L / 2], [L / 2, -L / 2]]) g.add(caja(0.34, x === -L / 2 || z === -L / 2 ? H : BAJO + 0.25, 0.34, madera, x, (x === -L / 2 || z === -L / 2 ? H : BAJO + 0.25) / 2, z, true));
-  // el cielo detrás de la ventana
-  const cielo = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2), new THREE.MeshBasicMaterial({ color: '#2b3a66' }));
-  cielo.position.set(o.ventana, H * 0.55, -L / 2 - 0.05); g.add(cielo);
 }
 
 // ---------------------------------------------------------------- muebles de la Sala de Mapas
@@ -172,6 +186,43 @@ async function mueblesMostrador() {
   luz(OX + 1, 2.4, 3, '#ffb35c', 6, 9, 3);
   luz(OX - 2, 2.8, -4, '#ffb35c', 6, 9, 2);
 }
+// ---------------------------------------------------------------- muebles de la Forja (pasos 3 y 4)
+// Eulogio forja los prototipos: fragua con fuego en la pared de fuera, yunque con martillo y tenazas delante, banco de
+// trabajo con los planos del prototipo (lo que se construye) y la piedra de afilar, tinas de temple, lingotes y armas
+async function mueblesForja() {
+  const { S, sobre } = en(forja);
+  const W = (x: number, z: number) => [OX + x, OZ + z] as const;
+  // la fragua: una chimenea oscura en la pared de la izquierda, con fuego vivo y su resplandor
+  await tinte(S(R.casa('Fireplace'), { pos: [-L / 2 + 0.55, 0, -1.5], rot: Math.PI / 2, alto: 2.4, propios: true }), '#4a3a32');
+  await S(R.sv('Bonfire_Fire'), { pos: [-L / 2 + 0.9, 0.05, -1.5], alto: 0.6 });
+  { const [x, z] = W(-L / 2 + 1.3, -1.5); luz(x, 0.9, z, '#ff6a1a', 16, 11, 9); }
+  await S(R.recurso('Wood_Log_Stack'), { pos: [-L / 2 + 0.8, 0, -3.6], ancho: 1.3, rot: Math.PI / 2 });
+  // el yunque, con tenazas y martillo, y la tina de temple
+  const yunque = await S(R.herr('anvil'), { pos: [-2.6, 0, -1.4], ancho: 1.1, rot: Math.PI / 2 });
+  await sobre(yunque, R.herr('hammer'), -2.6, -1.2, { alto: 0.12, rotZ: Math.PI / 2 });
+  await S(R.herr('tongs'), { pos: [-2, 0, -2.4], alto: 0.6, rot: 0.4 });
+  await S(R.herr('bucket_metal'), { pos: [-3.6, 0, -0.1], alto: 0.6 });
+  await S(R.dun('barrel_large'), { pos: [-4.8, 0, 1.2], alto: 1 });
+  // el banco de trabajo con los planos del prototipo
+  const banco = await S(R.dun('table_long'), { pos: [1.8, 0, -3.4], alto: 0.85, rot: Math.PI / 2 });
+  await sobre(banco, R.herr('blueprint'), 1.3, -3.4, { ancho: 0.8 });
+  await sobre(banco, R.herr('blueprint_stacked'), 2.5, -3.5, { ancho: 0.6 });
+  await sobre(banco, R.herr('saw'), 2.9, -3.2, { ancho: 0.6, rotZ: Math.PI / 2 });
+  await sobre(banco, R.dun('candle_lit'), 0.7, -3.6, { alto: 0.3 });
+  { const [x, z] = W(1.8, -3.4); luz(x, 1.8, z, '#ffb347', 5, 7, 6); }
+  await S(R.dun('stool_round'), { pos: [1.8, 0, -2.4], alto: 0.5 });
+  await S(R.herr('grindstone'), { pos: [4.7, 0, -4.3], alto: 1 });
+  // materiales y armas: lingotes, cajas de piezas, armero y escudos
+  await S(R.recurso('Iron_Bars_Stack_Large'), { pos: [4.6, 0, -1.6], ancho: 1 });
+  await S(R.recurso('Gold_Bars_Stack_Small'), { pos: [4.9, 0, -0.4], ancho: 0.6 });
+  await S(R.recurso('Containers_Crate_Small_Grey'), { pos: [4.6, 0, 2.4], ancho: 0.7 });
+  await S(R.dun('crates_stacked'), { pos: [4.5, 0, 4.4], alto: 1.1 });
+  await S(R.dun('sword_shield'), { pos: [-L / 2 + 0.15, 1.7, 2.2], alto: 1.1, rot: Math.PI / 2 });
+  await S(R.dun('sword_shield_gold'), { pos: [-L / 2 + 0.15, 1.7, 3.8], alto: 1.1, rot: Math.PI / 2 });
+  await S(R.dun('pickaxe'), { pos: [-L / 2 + 0.5, 0, 5], alto: 1, rot: 0.3 });
+  await tinte(S(R.mueble('rug_rectangle_stripes_A'), { pos: [-0.6, 0.01, 2.2], ancho: 3.2, propios: true }), '#6b4a2b');
+  { const [x, z] = W(0, 1.5); luz(x, 2.8, z, '#ffb35c', 6, 10, 2); }
+}
 async function tinte(o: Promise<THREE.Object3D>, color: string) { const x = await o; x.traverse((m: any) => { if (m.isMesh) for (const mm of [].concat(m.material) as THREE.MeshStandardMaterial[]) mm.color?.set(color); }); return x; }
 // fuera: un prado con árboles y matas alrededor de la taberna (sin él, la sala flotaría en negro)
 async function exterior() {
@@ -181,7 +232,7 @@ async function exterior() {
   camino.rotation.x = -Math.PI / 2; camino.position.set(2.5, -0.01, L / 2 + 15); scene.add(camino);
   const N = (n: string) => `kaykit-extra/forest-nature-pack-1.0/Assets/gltf/Color1/${n}.gltf`;
   // (la taberna ocupa de x = -18 a 6 y de z = -6 a 6: todo lo de fuera queda lejos de ese rectángulo)
-  const cosas: [string, number, number, number][] = [['Tree_1_A_Color1', -14, -10, 5], ['Tree_2_B_Color1', -9, -13, 6], ['Tree_5_A_Color1', 9, -11, 5.5], ['Tree_6_A_Color1', -22, 1, 5], ['Tree_7_A_Color1', 12, -4, 4.5], ['Bush_1_A_Color1', -12, 8.5, 1.2], ['Bush_2_A_Color1', 8.5, 7.5, 1.1], ['Bush_4_C_Color1', -20.5, -6.5, 1], ['Rock_3_A_Color1', 9, 3, 0.8], ['Grass_1_A_Color1', -6, 8.5, 0.5], ['Grass_2_B_Color1', 7.6, -2, 0.5], ['Tree_4_B_Color1', 0, -15, 6], ['Tree_2_C_Color1', -20, -11, 5.5]];
+  const cosas: [string, number, number, number][] = [['Tree_1_A_Color1', -14, -10, 5], ['Tree_2_B_Color1', -9, -13, 6], ['Tree_5_A_Color1', 9, -11, 5.5], ['Tree_6_A_Color1', -22, 1, 5], ['Tree_7_A_Color1', 12, -4, 4.5], ['Bush_1_A_Color1', -21, 8.5, 1.2], ['Bush_2_A_Color1', 8.5, 7.5, 1.1], ['Bush_4_C_Color1', -20.5, -6.5, 1], ['Rock_3_A_Color1', 9, 3, 0.8], ['Grass_1_A_Color1', -3, 8.5, 0.5], ['Grass_2_B_Color1', 7.6, -2, 0.5], ['Tree_4_B_Color1', 0, -15, 6], ['Tree_2_C_Color1', -20, -11, 5.5]];
   await Promise.all(cosas.map(([n, x, z, a]) => colocar(scene, N(n), { pos: [x, 0, z], alto: a, rot: x * 0.7, sombra: true }).catch(() => null)));
   scene.fog = new THREE.Fog('#1a120c', 55, 95);
 }
@@ -199,6 +250,9 @@ async function personas() {
   await damaso.cargar(); damaso.raiz.position.set(OX + 0, 0, -3.5); scene.add(damaso.raiz); damaso.reproducir('Interact', 0); gente.push(damaso);
   const goblin2 = new Personaje('Goblin_B', aspectoDe({ tipo: 'Goblin_B' }));
   await goblin2.cargar(); goblin2.raiz.scale.multiplyScalar(0.62); goblin2.raiz.position.set(OX - 3, 0, 3.1); goblin2.raiz.rotation.y = 0.3; scene.add(goblin2.raiz); gente.push(goblin2);
+  // Eulogio, el forjador, martillando en el yunque
+  const eulogio = new Personaje('Hiker', PASOS.forja.aventurero.aspecto);
+  await eulogio.cargar(); eulogio.raiz.position.set(OX - 2.6, 0, OZ - 0.3); eulogio.raiz.rotation.y = Math.PI; scene.add(eulogio.raiz); eulogio.reproducir('Hammering', 0); gente.push(eulogio);
   const goblin = new Personaje('Goblin', aspectoDe({ tipo: 'Goblin' }));
   await goblin.cargar(); goblin.raiz.scale.multiplyScalar(0.62); goblin.raiz.position.set(4, 0, 1.4); goblin.raiz.rotation.y = -Math.PI / 2; scene.add(goblin.raiz);
   goblin.reproducir('Working_A', 0); gente.push(goblin);
@@ -207,9 +261,9 @@ async function personas() {
 // ---------------------------------------------------------------- cámara isométrica (perspectiva cerrada desde arriba)
 const giro = THREE.MathUtils.degToRad(+(q.get('giro') ?? 45));
 const alto = THREE.MathUtils.degToRad(+(q.get('alto') ?? 38));
-const dist = +(q.get('dist') ?? 52);
+const dist = +(q.get('dist') ?? 62);
 camera.fov = 22; camera.near = 1; camera.far = 200;
-const objetivo = new THREE.Vector3(+(q.get('x') ?? -6), 0.6, 0.4);
+const objetivo = new THREE.Vector3(+(q.get('x') ?? -6), 0.6, +(q.get('z') ?? 4));
 camera.position.set(objetivo.x + Math.sin(giro) * Math.cos(alto) * dist, objetivo.y + Math.sin(alto) * dist, objetivo.z + Math.cos(giro) * Math.cos(alto) * dist);
 camera.lookAt(objetivo); camera.updateProjectionMatrix();
 
@@ -219,9 +273,11 @@ motor.cadaFotograma((dt, t) => {
 });
 
 const listo = (async () => {
-  paredes(sala, { ventana: 3.4, paso: 3.4 });
-  paredes(mostrador, { ventana: -1.5, derecha: false });
-  await Promise.all([suelo(sala), suelo(mostrador), muebles(), mueblesMostrador(), personas(), exterior()]);
+  // la L: Sala de Mapas y Mostrador al fondo, la Forja delante del Mostrador (la esquina libre será el salón)
+  paredes(sala, { ventana: 3.4, izquierda: { paso: 3.4 } });
+  paredes(mostrador, { ventana: -1.5, derecha: false, frente: { paso: -2.5 } });
+  paredes(forja, { fondo: false, derecha: { paso: 0 } });
+  await Promise.all([suelo(sala), suelo(mostrador), suelo(forja), muebles(), mueblesMostrador(), mueblesForja(), personas(), exterior()]);
   sala.traverse((o: any) => { if (o.isMesh) { o.castShadow = o.castShadow || false; o.receiveShadow = true; } });
   motor.renderer.shadowMap.needsUpdate = true;
 })();
