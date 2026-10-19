@@ -164,7 +164,9 @@ export class Refugio {
     const orden = [...guardadas].sort((a, b) => (a.id === SALA_SUPERVISOR ? -1 : b.id === SALA_SUPERVISOR ? 1 : a.planta - b.planta));
     let n = 0;
     for (const sg of orden) {
-      const sala = await this.montarSala(sg, guardadas);
+      // una sala que no se puede montar no bloquea la carga del resto (queda el aviso en la consola)
+      let sala: Sala;
+      try { sala = await this.montarSala(sg, guardadas); } catch (e) { console.error('FALLO al montar la sala ' + sg.id, e); this.progresoCarga = ++n / orden.length; continue; }
       this.progresoCarga = ++n / orden.length;
       window.dispatchEvent(new CustomEvent('refugio:carga', { detail: { progreso: this.progresoCarga, sala: sg.nombre } }));
       if (sg.id === SALA_SUPERVISOR || (!this.supervisor && n === 1)) await this.prepararSupervisor(sala);

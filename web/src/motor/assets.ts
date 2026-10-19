@@ -83,7 +83,9 @@ function hueco() {
 
 export async function modelo(ruta: string, o: OpcionesModelo = {}): Promise<THREE.Object3D> {
   if (ruta in SUSTITUTOS) { const otra = SUSTITUTOS[ruta]; if (otra === null) return hueco(); ruta = otra; }
-  const g = await gltf(ruta);
+  // un modelo que no carga (falta el archivo, una descarga a medias) no bloquea nada: queda su hueco y el aviso
+  let g: GLTF;
+  try { g = await gltf(ruta); } catch { console.error('FALLO: falta el modelo ' + ruta + ' (vuelve a abrir el juego para bajar el material)'); return hueco(); }
   const obj = SkeletonUtils.clone(g.scene);
   const pack = ruta.includes('dungeon-remastered') ? 'dungeon' : ruta.split('/')[0] === 'quaternius' ? ruta.split('/')[1] : ruta.split('/')[0];
   obj.traverse((n: any) => {
