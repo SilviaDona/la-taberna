@@ -143,6 +143,9 @@ export class Almacen {
   reiniciar() { const proyecto = this.estado.proyecto; this.estado = estadoInicial(); this.estado.proyecto = proyecto; ponerProyecto(this.estado); asegurarCarpetas(this.estado); this.guardarYa(); }
 }
 
+// los nombres de serie que tuvieron las salas de los pasos (la Cocina fue la Forja; el Comedor, el Salón)
+const NOMBRES_PASO_ANTIGUOS = ['Forja', 'La Forja', 'Salón de los Peregrinos', 'Salón'];
+
 // El estado guardado se valida campo a campo: lo que no cuadra se descarta o vuelve a su valor inicial.
 // Si falta lo imprescindible (salas), se lanza y el almacén aparta la copia y arranca de cero.
 export function sanear(e: any): EstadoRefugio {
@@ -156,12 +159,12 @@ export function sanear(e: any): EstadoRefugio {
     .map((x: any) => ({ id: x.id, tipo: x.tipo, nombre: !esSalaDeRepo(x.tipo) && NOMBRES_ANTIGUOS[x.nombre] ? NOMBRES_ANTIGUOS[x.nombre] : str(x.nombre, x.id), ruta: typeof x.ruta === 'string' ? x.ruta : undefined, planta: x.planta, lado: x.lado, orden: x.orden, variante: str(x.variante, 'neutro'), estilo: typeof x.estilo === 'string' ? x.estilo : undefined,
       ...(esSalaDeRepo(x.tipo) && x.decorado ? { decorado: sanearDecorado(x.decorado).decorado ?? undefined } : {}),
       // (las de los pasos llevan siempre la escena de su paso: la de serie, que el juego pone al día)
-      ...(esSalaDeRepo(x.tipo) && esPaso(x.paso) ? { paso: x.paso, adornos: sanearAdornos(x.adornos), decorado: conAdornos(PASOS[x.paso as PasoId].decorado, sanearAdornos(x.adornos)) } : {}), ...(x.oficio ? { oficio: x.oficio } : {}) }) as SalaGuardada);
+      ...(esSalaDeRepo(x.tipo) && esPaso(x.paso) ? { ...(NOMBRES_PASO_ANTIGUOS.includes(x.nombre) ? { nombre: PASOS[x.paso as PasoId].sala } : {}), paso: x.paso, adornos: sanearAdornos(x.adornos), decorado: conAdornos(PASOS[x.paso as PasoId].decorado, sanearAdornos(x.adornos)) } : {}), ...(x.oficio ? { oficio: x.oficio } : {}) }) as SalaGuardada);
   if (!leidas.length) throw new Error('sin salas');
   const salas = distribuir(leidas);
   const ids = new Set(salas.map((x: any) => x.id));
   const habitantes = tonosParaRepetidos((arr(e.habitantes) ?? []).filter((h: any) => h && typeof h.id === 'string' && typeof h.salaId === 'string' && ids.has(h.salaId))
-    .map((h: any) => ({ ...h, nombre: str(h.nombre, h.id), mote: str(h.mote, ''), tipo: str(h.tipo, 'Hiker'), bio: str(h.bio, ''), voz: Number.isFinite(h.voz) ? h.voz : 120, tono: Number.isFinite(h.tono) && h.tono > 0 ? Math.min(359, Math.max(1, Math.round(h.tono) % 360 || 1)) : undefined, accesorios: arr(h.accesorios)?.filter((a: unknown) => typeof a === 'string'), aspecto: sanearAspecto(h.aspecto) ?? undefined })));   // un refugio guardado tampoco tiene gemelos
+    .map((h: any) => ({ ...h, nombre: str(h.nombre, h.id), mote: h.mote === 'El Forjador' ? PASOS.forja.aventurero.mote : str(h.mote, ''), tipo: str(h.tipo, 'Hiker'), bio: str(h.bio, ''), voz: Number.isFinite(h.voz) ? h.voz : 120, tono: Number.isFinite(h.tono) && h.tono > 0 ? Math.min(359, Math.max(1, Math.round(h.tono) % 360 || 1)) : undefined, accesorios: arr(h.accesorios)?.filter((a: unknown) => typeof a === 'string'), aspecto: sanearAspecto(h.aspecto) ?? undefined })));   // un refugio guardado tampoco tiene gemelos
   const jv = e.jugador && typeof e.jugador === 'object' ? e.jugador : {};
   const num = (v: unknown, def: number) => (Number.isFinite(v) ? (v as number) : def);
   const objNum = (v: unknown) => Object.fromEntries(Object.entries(v && typeof v === 'object' ? v as object : {}).filter(([, n]) => Number.isFinite(n)));

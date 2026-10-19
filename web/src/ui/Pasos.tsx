@@ -20,7 +20,8 @@ const accion = (nombre: string, d: Record<string, unknown>) => cliente.accion<{ 
 const nombrePaso = (p: PasoId | 'hecha') => (p === 'hecha' ? 'cerrada' : `${PASOS[p].numero} · ${PASOS[p].sala}`);
 
 export function PanelDePaso({ salaId, sala, generales }: { salaId: string; sala: any; generales: (ItemMenu & { f: () => void })[] }) {
-  const [vista, setVista] = useState<Vista>({ v: 'menu' });
+  // (el buhonero del salón abre el panel directamente en su tienda)
+  const [vista, setVista] = useState<Vista>(() => (juego.get().panelDatos as any)?.vista === 'mercader' ? { v: 'mercader' } : { v: 'menu' });
   const menu = () => setVista({ v: 'menu' });
   switch (vista.v) {
     case 'proyecto': return <ElegirProyecto volver={menu} />;

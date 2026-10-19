@@ -1,0 +1,28 @@
+/* La taberna isométrica: carteles, ficha de quien se selecciona y título de la sala */
+/* carteles de las salas, colgados sobre cada una en la vista general */
+.capa-taberna{position:fixed;inset:0;pointer-events:none;transition:opacity .3s}
+.cartel-sala{position:absolute;left:0;top:0;pointer-events:auto;cursor:pointer;display:flex;opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s;align-items:center;gap:8px;padding:5px 12px 5px 6px;border:2px solid #3b2414;border-radius:4px;background:#f1dfb4;color:#3b2414;font:600 15px "Refugio Titulo",serif;box-shadow:0 3px 0 #3b2414,0 6px 14px rgba(0,0,0,.45);white-space:nowrap}
+.cartel-sala b{display:inline-grid;place-items:center;min-width:28px;height:24px;padding:0 4px;border-radius:3px;background:#3b2414;color:#ffcf7a;font-size:13px}
+.cartel-sala.visible{opacity:1;visibility:visible}
+.cartel-sala:hover{background:#ffe9b8}
+/* la ficha de quien se selecciona con el ratón */
+.ficha-npc{position:fixed;left:18px;bottom:18px;min-width:240px;max-width:320px;padding:12px 16px 12px;background:linear-gradient(#f6e6bf,#e9d3a1);border:3px solid #3b2414;border-radius:6px;box-shadow:0 4px 0 #3b2414,0 10px 26px rgba(0,0,0,.5);color:#3b2414;opacity:0;transform:translateY(16px);transition:opacity .25s,transform .25s;pointer-events:none}
+.ficha-npc.visible{opacity:1;transform:none;pointer-events:auto}
+.ficha-npc h2{margin:0;font:700 22px "Refugio Titulo",serif}
+.ficha-npc em{display:block;color:#8a5a34;margin:2px 0 6px}
+.ficha-npc p{margin:0 0 10px;font-size:14px}
+.ficha-npc button{font:600 13px "Refugio Titulo",serif;background:#3b2414;color:#f1dfb4;border:0;border-radius:4px;padding:5px 14px;margin-right:10px;opacity:.6}
+.ficha-npc small{font-size:11px;color:#6b4a2b}
+/* el título de la sala en la que estás */
+.titulo-sala{position:fixed;top:18px;left:50%;transform:translate(-50%,-24px);opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;text-align:center;padding:10px 34px 12px;background:linear-gradient(#f6e6bf,#e9d3a1);border:3px solid #3b2414;border-radius:6px;box-shadow:0 4px 0 #3b2414,0 10px 26px rgba(0,0,0,.5);color:#3b2414;min-width:340px}
+.titulo-sala.visible{opacity:1;transform:translate(-50%,0)}
+.titulo-sala small{font:700 12px "Refugio Titulo",serif;letter-spacing:.18em;color:#8a5a34}
+.titulo-sala h1{margin:2px 0 4px;font:700 30px "Refugio Titulo",serif;letter-spacing:.04em}
+.titulo-sala p{margin:0 0 6px;font-size:15px}
+.titulo-sala code{background:#3b2414;color:#ffcf7a;padding:1px 6px;border-radius:3px;font-size:13px}
+.titulo-sala kbd{font:600 11px "Taberna Texto",sans-serif;background:#3b2414;color:#f1dfb4;padding:1px 6px;border-radius:3px;margin-right:4px}
+.titulo-sala{font-size:12px}
+.ficha-npc button.activo{opacity:1;cursor:pointer}
+.ficha-npc button.activo:hover{background:#5a3a22}
+.ficha-npc .estado-npc{display:block;font-size:12px;color:#6b4a2b;margin:-4px 0 8px}
+#mundo ~ .ficha-npc, body:has(#mundo) .ficha-npc{bottom:64px}

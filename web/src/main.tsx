@@ -27,13 +27,23 @@ async function cargarFuentes() {
 }
 
 const fuentes = cargarFuentes();
-const motor = new Motor(document.getElementById('mundo')!);
-(window as any).__motor = motor;
+// La Taberna se ve en isométrica (herramientas/tabernaIso.ts, conectada a las sesiones de verdad); la vista de
+// refugio de antes sigue con ?vista=refugio mientras se termina de pasar todo
+const VISTA_REFUGIO = new URLSearchParams(location.search).get('vista') === 'refugio';
+const motorListo: Promise<Motor> = VISTA_REFUGIO ? Promise.resolve(new Motor(document.getElementById('mundo')!)) : import('./herramientas/tabernaIso').then(m => m.motor);
+if (VISTA_REFUGIO) motorListo.then(motor => {
+  let refugio: Refugio;
+  const listo = fuentes.then(() => { refugio = new Refugio(motor); (window as any).__refugio = refugio; return refugio.listo; });
+  (window as any).__ready = () => listo;
+  motor.arrancar();
+});
+motorListo.then(motor => {
+  (window as any).__motor = motor;
+  // fuera de primer plano el motor deja de pintar y la interfaz deja de animarse
+  vigilarPrimerPlano(activo => motor.alCambiarPrimerPlano(activo));
+});
 import('./mundo/animaciones').then(m => { (window as any).__anim = m; });   // QA: componer y probar clips desde la página
 (window as any).__THREE = THREE;   // para la QA (rayos, cajas)
-let refugio: Refugio;
-const listo = fuentes.then(() => { refugio = new Refugio(motor); (window as any).__refugio = refugio; return refugio.listo; });
-(window as any).__ready = () => listo;
 createRoot(document.getElementById('ui')!).render(<><Hud /><Dialogo /><Paneles /><Terminales /><Navegadores /><ClienteGit /><Explorador /><div className="columna-izquierda"><Pletina /><Barra /></div><Avisos /><Hechos /><Visor /><ModoDecorar /><Buscador /><CargaSalas /><Carga /></>);
 cliente.conectar();
 Object.assign(window as any, { __juego: juego, __cliente: cliente, __vivo: vivo, __intercoms: intercoms, __navegadores: { navegadores, abrirNavegador }, __git: { ventanaGit, abrirGit }, __archivos: { ventanaArchivos, abrirArchivos } }); // para QA y depuración
@@ -41,6 +51,3 @@ Object.assign(window as any, { __juego: juego, __cliente: cliente, __vivo: vivo,
 // tecla de pánico (Electron): lo abierto sale a tu escritorio. Contesta al momento; si no hay conexión, Electron se lo
 // pide al servidor por su cuenta (./shelter superficie)
 (window as any).__superficie = () => { if (!vivo.get().conectado) return Promise.reject(new Error('Sin conexión')); cliente.accion('superficie.sacar', { todo: true, ventanaNueva: true }).catch(() => {}); return Promise.resolve(true); };
-motor.arrancar();
-// fuera de primer plano el motor deja de pintar y la interfaz deja de animarse
-vigilarPrimerPlano(activo => motor.alCambiarPrimerPlano(activo));

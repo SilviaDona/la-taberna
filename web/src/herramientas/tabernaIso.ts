@@ -10,10 +10,20 @@ import { muroEntramado, materialYeso, materialAcero, caja } from '../mundo/salas
 import { Personaje } from '../mundo/personaje';
 import { PASOS } from '@shared/pasos';
 import { aspectoDe } from '@shared/aspecto';
+import { PACKS } from '@shared/decorado';
+import { mercancia, type Adorno } from '@shared/mercader';
+import type { PasoId } from '@shared/pasos';
+import { vivo } from '../red/cliente';
+import { juego } from '../ui/estadoJuego';
+import { CapaEtiquetas } from '../mundo/etiquetas';
+import { Retrato } from '../mundo/retrato';
+import './tabernaIso.css';
 
 const q = new URLSearchParams(location.search);
 const L = 12, H = 4.43, BAJO = 1.1;           // lado de la sala, alto de las paredes del fondo y de las de delante
-const motor = new Motor(document.getElementById('lienzo')!);
+// en el juego (index.html) pinta en #mundo y se conecta a lo de verdad; en taberna.html es la maqueta suelta
+const EN_JUEGO = !!document.getElementById('mundo');
+export const motor = new Motor((document.getElementById('lienzo') ?? document.getElementById('mundo'))!);
 const { scene, camera } = motor;
 scene.background = new THREE.Color('#2b2420');
 const sala = new THREE.Group(); scene.add(sala);
@@ -419,24 +429,24 @@ async function exterior() {
 // ---------------------------------------------------------------- gente: Aurelia en la mesa de mapas y la Tabernera
 const gente: Personaje[] = [];
 // los que se pueden seleccionar con el ratón, con su ficha
-interface Npc { p: Personaje; nombre: string; mote: string; rol: string }
+interface Npc { p: Personaje; nombre: string; mote: string; rol: string; paso?: PasoId; mercader?: boolean }
 const npcs: Npc[] = [];
 let jugador: Personaje | undefined;
-const ficha = (p: Personaje, nombre: string, mote: string, rol: string) => { npcs.push({ p, nombre, mote, rol }); return p; };
+const ficha = (p: Personaje, nombre: string, mote: string, rol: string, extra: Partial<Npc> = {}) => { npcs.push({ p, nombre, mote, rol, ...extra }); return p; };
 async function personas() {
   const aurelia = new Personaje('Hiker', PASOS.mapas.aventurero.aspecto);
   await aurelia.cargar(); aurelia.raiz.position.set(-0.3, 0, 0.8); aurelia.raiz.rotation.y = Math.PI / 2; scene.add(aurelia.raiz);
-  aurelia.reproducir('Interact', 0); gente.push(aurelia); ficha(aurelia, 'Aurelia', PASOS.mapas.aventurero.mote, 'Paso 1 · Sala de Mapas');
+  aurelia.reproducir('Interact', 0); gente.push(aurelia); ficha(aurelia, 'Aurelia', PASOS.mapas.aventurero.mote, 'Paso 1 · Sala de Mapas', { paso: 'mapas' });
   const tu = new Personaje('Protagonist_B', aspectoDe({ tipo: 'Protagonist_B' }));
   await tu.cargar(); tu.raiz.position.set(0, 0, L); tu.raiz.rotation.y = -Math.PI * 0.75; scene.add(tu.raiz); gente.push(tu); jugador = tu;
   // Dámaso, el escribano del Mostrador, tras la barra con el libro de supuestos
   const damaso = new Personaje('Hiker', PASOS.mostrador.aventurero.aspecto);
-  await damaso.cargar(); damaso.raiz.position.set(OX + 0, 0, -3.5); scene.add(damaso.raiz); damaso.reproducir('Interact', 0); gente.push(damaso); ficha(damaso, 'Dámaso', PASOS.mostrador.aventurero.mote, 'Paso 2 · Mostrador del BA');
+  await damaso.cargar(); damaso.raiz.position.set(OX + 0, 0, -3.5); scene.add(damaso.raiz); damaso.reproducir('Interact', 0); gente.push(damaso); ficha(damaso, 'Dámaso', PASOS.mostrador.aventurero.mote, 'Paso 2 · Mostrador del BA', { paso: 'mostrador' });
   const goblin2 = new Personaje('Goblin_B', aspectoDe({ tipo: 'Goblin_B' }));
   await goblin2.cargar(); goblin2.raiz.scale.multiplyScalar(0.62); goblin2.raiz.position.set(OX - 3, 0, 3.1); goblin2.raiz.rotation.y = 0.3; scene.add(goblin2.raiz); gente.push(goblin2);
   // Eulogio, el cocinero, emplatando en la mesa grande
   const eulogio = new Personaje('Hiker', PASOS.forja.aventurero.aspecto);
-  await eulogio.cargar(); eulogio.raiz.position.set(OX, 0, OZ + 0.2); eulogio.raiz.rotation.y = Math.PI; scene.add(eulogio.raiz); eulogio.reproducir('Working_A', 0); gente.push(eulogio); ficha(eulogio, 'Eulogio', PASOS.forja.aventurero.mote, 'Pasos 3–4 · Cocina');
+  await eulogio.cargar(); eulogio.raiz.position.set(OX, 0, OZ + 0.2); eulogio.raiz.rotation.y = Math.PI; scene.add(eulogio.raiz); eulogio.reproducir('Working_A', 0); gente.push(eulogio); ficha(eulogio, 'Eulogio', PASOS.forja.aventurero.mote, 'Pasos 3–4 · Cocina', { paso: 'forja' });
   // los de las salas nuevas y los parroquianos del Salón, sentados a probar
   const poner = async (tipo: string, aspecto: any, g: THREE.Group, x: number, z: number, rot: number, clip: string, escala = 1) => {
     const p = new Personaje(tipo, aspecto); await p.cargar(); if (escala !== 1) p.raiz.scale.multiplyScalar(escala);
@@ -444,7 +454,7 @@ async function personas() {
   };
   for (const [id, g, x, z, rot, clip] of [['torre', torre, 1.8, 1.5, Math.PI, 'Interact'], ['salon', salon, -0.2, 0.4, 0.4, 'Idle_A'], ['mensajero', mensajero, -1.4, -1.4, Math.PI, 'Working_A'], ['libro', libro, 0.6, -0.7, Math.PI, 'Interact']] as const) {
     const a = PASOS[id].aventurero;
-    ficha(await poner('Hiker', a.aspecto, g, x, z, rot, clip), a.nombre, a.mote, `Paso ${PASOS[id].numero} · ${PASOS[id].sala}`);
+    ficha(await poner('Hiker', a.aspecto, g, x, z, rot, clip), a.nombre, a.mote, `Paso ${PASOS[id].numero} · ${PASOS[id].sala}`, { paso: id });
   }
   // los peregrinos del Comedor, probando el plato: caminantes con sombrero y mochila, gente del camino y goblins
   const PEREGRINOS: [string, number, number, number, string, string][] = [['Hiker', -3.9, -1.6, 2.2, 'Romero', 'Peregrino de larga ruta'], ['Survivalist', -2, -1.6, -2.3, 'Brígida', 'Peregrina con prisa'], ['Goblin_B', 0.7, -1.7, 2.3, 'Trasgo', 'Goblin que lo prueba todo'], ['Protagonist_A', -3, 3.4, Math.PI, 'Elvira', 'Peregrina primeriza'], ['Goblin', 3.5, 1.5, -2.2, 'Nabo', 'Goblin de paladar fino'], ['Hiker', 1.6, 2.8, 2, 'Tomás', 'Peregrino veterano']];
@@ -452,6 +462,12 @@ async function personas() {
   const goblin = new Personaje('Goblin', aspectoDe({ tipo: 'Goblin' }));
   await goblin.cargar(); goblin.raiz.scale.multiplyScalar(0.62); goblin.raiz.position.set(4, 0, 1.4); goblin.raiz.rotation.y = -Math.PI / 2; scene.add(goblin.raiz);
   goblin.reproducir('Working_A', 0); gente.push(goblin); ficha(goblin, 'Grisko', 'Goblin recadero', 'Lleva y trae entre salas');
+  // Gorgo, el buhonero, con su fardo en el salón central: vende adornos por el oro de los pasos
+  const gorgo = new Personaje('Goblin_B', aspectoDe({ tipo: 'Goblin_B' }));
+  await gorgo.cargar(); gorgo.raiz.scale.multiplyScalar(0.7); gorgo.raiz.position.set(-3.2, 0, 13.5); gorgo.raiz.rotation.y = 0.6; scene.add(gorgo.raiz);
+  gorgo.reproducir('Idle_A', 0); gente.push(gorgo); ficha(gorgo, 'Gorgo', 'El Buhonero', 'Vende adornos por oro (cambia cada día)', { mercader: true });
+  await colocar(scene, R.dun('chest'), { pos: [-2.2, 0, 13.1], ancho: 0.9, rot: 0.6, sombra: true }).catch(() => null);
+  await colocar(scene, `${PACKS.sv.carpeta}/Backpack${PACKS.sv.ext}`, { pos: [-3.9, 0, 12.9], alto: 0.6, sombra: true }).catch(() => null);
 }
 
 // ---------------------------------------------------------------- cámara, ratón y salas
@@ -486,14 +502,14 @@ function enfocar(sl: SalaIso | null) {
 }
 
 // la interfaz: carteles (ocultos salvo con el ratón encima o la Tabernera dentro), título y ficha de quien se selecciona
-const capa = document.createElement('div'); capa.className = 'capa'; document.body.appendChild(capa);
+const capa = document.createElement('div'); capa.className = 'capa-taberna'; document.body.appendChild(capa);
 const titulo = document.createElement('div'); titulo.className = 'titulo-sala'; document.body.appendChild(titulo);
 const fichaNpc = document.createElement('div'); fichaNpc.className = 'ficha-npc'; document.body.appendChild(fichaNpc);
 const carteles = SALAS.map(sl => {
   const p = PASOS[sl.id];
   const c = document.createElement('button'); c.className = 'cartel-sala';
   c.innerHTML = `<b>${p.numero}</b><span>${p.sala}</span>`;
-  c.onclick = () => enfocar(sl); capa.appendChild(c);
+  c.onclick = () => { if (EN_JUEGO && camObjetivo.distanceTo(new THREE.Vector3(sl.grupo.position.x, 0.6, sl.grupo.position.z + 0.6)) < 1) abrirPanel(sl.id); else enfocar(sl); }; capa.appendChild(c);
   return c;
 });
 let salaRaton: SalaIso | null = null, salaJugador: SalaIso | null = null;
@@ -508,13 +524,32 @@ anillo.rotation.x = -Math.PI / 2; anillo.visible = false; anillo.renderOrder = 3
 let elegido: Npc | null = null;
 function seleccionar(n: Npc | null) {
   elegido = n; anillo.visible = !!n;
-  fichaNpc.innerHTML = n ? `<h2>${n.nombre}</h2><em>«${n.mote}»</em><p>${n.rol}</p><button disabled>Hablar</button><small>Esc para soltar</small>` : '';
-  fichaNpc.classList.toggle('visible', !!n);
+  pintarFicha();
 }
+function pintarFicha() {
+  const n = elegido;
+  const hab = n && habitanteDe(n);
+  const puede = EN_JUEGO && n && (hab || n.mercader);
+  const est = hab ? juego.get().habitantes.find(x => x.id === hab.id) : null;
+  fichaNpc.innerHTML = n ? `<h2>${escapar(hab?.nombre ?? n.nombre)}</h2><em>«${escapar(hab?.mote || n.mote)}»</em>${est && est.estado !== 'ocioso' ? `<span class="estado-npc">${TEXTO_ESTADO[est.estado] ?? est.estado}${est.detalle ? ': ' + escapar(est.detalle).slice(0, 80) : ''}</span>` : ''}<p>${n.rol}</p>`
+    + (puede ? `<button class="activo" data-a="hablar">${n.mercader ? 'Ver lo que trae' : 'Hablar'} <small style="color:#ffcf7a">E</small></button>${n.paso ? '<button class="activo" data-a="panel">Historias <small style="color:#ffcf7a">Enter</small></button>' : ''}` : '<button disabled>Hablar</button>')
+    + '<small>Esc para soltar</small>' : '';
+  fichaNpc.classList.toggle('visible', !!n);
+  fichaNpc.querySelector('[data-a=hablar]')?.addEventListener('click', () => n && hablarCon(n));
+  fichaNpc.querySelector('[data-a=panel]')?.addEventListener('click', () => n?.paso && abrirPanel(n.paso));
+}
+const TEXTO_ESTADO: Record<string, string> = { pensando: '… pensando', trabajando: '⚙ trabajando', esperando: '? te espera', terminado: '✓ ha terminado', error: '✕ avería' };
+const escapar = (t: string) => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } as any)[c]);
 addEventListener('keydown', e => {
-  if (e.key === 'Escape') { seleccionar(null); enfocar(null); }
+  // con una conversación, un panel o escribiendo, las teclas no son de la taberna
+  const t = e.target as HTMLElement | null;
+  if (EN_JUEGO && (juego.get().hablandoCon || juego.get().panel || t?.closest?.('input, textarea, [contenteditable], .intercom, .ventana'))) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'Escape' && (elegido || camDist !== GENERAL.dist)) { seleccionar(null); enfocar(null); if (EN_JUEGO) e.stopImmediatePropagation(); return; }
+  if (EN_JUEGO && elegido && e.code === 'KeyE') { hablarCon(elegido); e.preventDefault(); return; }
+  if (EN_JUEGO && elegido?.paso && e.code === 'Enter') { abrirPanel(elegido.paso); e.preventDefault(); return; }
   const sl = SALAS.find(x => x.tecla === e.key); if (sl) enfocar(sl);
-});
+}, true);
 // el ratón: qué sala hay debajo, a quién se apunta y adónde se va
 const rayo = new THREE.Raycaster(), raton = new THREE.Vector2(), SUELO_Y = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 function apuntar(ev: MouseEvent) {
@@ -544,7 +579,7 @@ lienzo.addEventListener('mousemove', ev => {
 lienzo.addEventListener('mouseleave', () => { salaRaton = null; });
 lienzo.addEventListener('click', ev => {
   apuntar(ev);
-  const n = npcBajoRaton(); if (n) { seleccionar(n); return; }
+  const n = npcBajoRaton(); if (n) { if (n === elegido && ev.detail >= 2 && EN_JUEGO) hablarCon(n); else seleccionar(n); return; }
   const p = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (!p) return;
   // dentro de la taberna (las salas y el salón central): la Tabernera va andando hasta ahí
   if (p.x > -L * 1.5 && p.x < L * 1.5 && p.z > -L / 2 && p.z < L * 2.5) jugador?.irA(new THREE.Vector3(p.x, 0, p.z));
@@ -572,6 +607,7 @@ motor.cadaFotograma((dt, t) => {
   if (jugador) { const sl = salaEn(jugador.raiz.position.x, jugador.raiz.position.z); if (sl !== salaJugador) { salaJugador = sl; ponerTitulo(sl); } }
   if (elegido) { anillo.position.set(elegido.p.raiz.position.x, 0.03, elegido.p.raiz.position.z); anillo.material.opacity = 0.65 + 0.3 * Math.sin(t * 4); }
   moverCarteles();
+  if (EN_JUEGO) alFotograma(t);
 });
 
 const listo = (async () => {
@@ -595,6 +631,106 @@ const listo = (async () => {
   if (q.get('raton')) salaRaton = porId(q.get('raton'));
   if (q.get('elegir')) seleccionar(npcs.find(n => n.nombre === q.get('elegir')) ?? null);
 })();
+if (EN_JUEGO) listo.then(() => { conectar(); dispatchEvent(new CustomEvent('refugio:carga', { detail: { progreso: 1, sala: '' } })); });
 (window as any).__ready = () => listo;
 (window as any).__step = (dt: number) => motor.paso(dt);
 if (!(window as any).__noLoop) listo.then(() => motor.alCambiarPrimerPlano(true));
+
+// ---------------------------------------------------------------- conexión con el juego de verdad
+// Cada aventurero de un paso es el habitante real de su sala: hablar con él abre el intercomunicador del juego (la
+// conversación con Claude Code, con adjuntos, dictado y los comandos de sus skills); su estado sale encima, con la
+// barra de progreso mientras trabaja. Los adornos comprados al buhonero se ponen en su sala.
+type HabVivo = { id: string; nombre: string; mote: string; tipo: string; bio: string; salaId: string };
+function habitanteDe(n: Npc): HabVivo | undefined {
+  if (!n.paso) return undefined;
+  return ((vivo.get().estado?.habitantes ?? []) as HabVivo[]).find(h => h.salaId === n.paso);
+}
+const sesionDe = (hid: string) => Object.values(vivo.get().sesiones).filter((s: any) => s.habitanteId === hid && s.estado !== 'cerrada')
+  .sort((a: any, b: any) => urg(a) - urg(b) || b.actualizada - a.actualizada)[0] as any;
+const urg = (s: any) => s.estado === 'esperando' ? 0 : s.estado === 'error' ? 1 : s.estado === 'terminada' && s.sinLeer ? 2 : s.estado === 'trabajando' || s.estado === 'arrancando' ? 3 : 4;
+function estadoDe(s: any): [string, string] {
+  if (!s) return ['ocioso', ''];
+  if (s.estado === 'arrancando') return ['pensando', 'preparándose…'];
+  if (s.estado === 'trabajando') return [s.actividad?.modo && s.actividad.modo !== 'pensar' ? 'trabajando' : 'pensando', s.actividad?.texto ?? ''];
+  if (s.estado === 'esperando') return ['esperando', s.pendiente?.titulo ?? 'te espera'];
+  if (s.estado === 'terminada' && s.sinLeer) return ['terminado', 'listo: ' + (s.titulo ?? '')];
+  if (s.estado === 'error') return ['error', s.error ?? 'avería'];
+  return ['ocioso', s.titulo ?? ''];
+}
+const inicios = new Map<string, number>();
+function progresoDe(s: any): number | undefined {
+  if (!s || !['arrancando', 'trabajando'].includes(s.estado)) { if (s) inicios.delete(s.id); return undefined; }
+  const t0 = inicios.get(s.id) ?? (inicios.set(s.id, Date.now()), Date.now());
+  const x = (Date.now() - t0) / 1000 / 25 + (s.herramientas ?? 0) / 12;
+  return Math.min(0.95, 0.04 + (1 - Math.exp(-x / 3)));
+}
+function publicar() {
+  const salas: any[] = vivo.get().estado?.salas ?? [];
+  const lista = ((vivo.get().estado?.habitantes ?? []) as HabVivo[]).map(h => {
+    const s = sesionDe(h.id); const [estado, detalle] = estadoDe(s); const sala = salas.find(x => x.id === h.salaId);
+    return { id: h.id, nombre: h.nombre, mote: h.mote, tipo: h.tipo, bio: h.bio, sala: h.salaId, salaNombre: sala?.nombre ?? h.salaId, ruta: sala?.ruta, carpeta: sala?.carpeta ?? sala?.ruta, estado, detalle, sesionId: s?.id, robot: false };
+  });
+  juego.set({ habitantes: lista as any, salaActual: salaJugador?.id ?? '' });
+}
+let retrato: Retrato | null = null;
+function hablarCon(n: Npc) {
+  if (n.mercader) { juego.set({ panel: 'sala', panelDatos: { salaId: salaJugador?.id ?? 'mapas', vista: 'mercader' } }); return; }
+  const h = habitanteDe(n); if (!h) return;
+  retrato?.destruir(); retrato = new Retrato(n.p); (window as any).__retrato = retrato.canvas;
+  const sl = SALAS.find(x => x.id === n.paso); if (sl) enfocar(sl);
+  etiquetas.raiz.style.display = 'none';
+  juego.set({ hablandoCon: h.id, indicacion: null });
+}
+function abrirPanel(salaId: string) { juego.set({ panel: 'sala', panelDatos: { salaId } }); }
+const etiquetas = EN_JUEGO ? new CapaEtiquetas() : (null as unknown as CapaEtiquetas);
+let ultimaPublicacion = 0;
+function alFotograma(t: number) {
+  if (t - ultimaPublicacion > 0.5) { ultimaPublicacion = t; publicar(); if (elegido) pintarFichaSiCambia(); }
+  fichaNpc.style.visibility = juego.get().hablandoCon ? 'hidden' : '';
+  if (juego.get().hablandoCon) return;
+  if (etiquetas.raiz.style.display === 'none') etiquetas.raiz.style.display = '';
+  const items = npcs.filter(n => n.paso).map(n => {
+    const h = habitanteDe(n); const s = h && sesionDe(h.id); const [estado, detalle] = estadoDe(s);
+    const pos = n.p.raiz.position.clone(); pos.y += 1.75 * n.p.raiz.scale.y;
+    return { k: n, pos, alto: 0, nombre: h?.nombre ?? n.nombre, estado, detalle: n === elegido && estado !== 'ocioso' ? detalle.slice(0, 50) : '', cerca: n === elegido, prompt: n === elegido ? 'Hablar' : '', progreso: progresoDe(s) };
+  });
+  etiquetas.actualizar(camera, items as any);
+}
+let fichaFirma = '';
+function pintarFichaSiCambia() {
+  const h = elegido && habitanteDe(elegido); const e = h && juego.get().habitantes.find(x => x.id === h.id);
+  const f = (elegido?.nombre ?? '') + (e ? e.estado + e.detalle : '');
+  if (f !== fichaFirma) { fichaFirma = f; pintarFicha(); }
+}
+// los adornos de cada sala (modo decorar): x de la escena (±5,8 m) a lo ancho, z de fondo (−2,25) a frente (2,1) a lo hondo
+const adornosEn = new Map<string, THREE.Group>();
+let firmaAdornos = '';
+function ponerAdornos() {
+  const salas: any[] = vivo.get().estado?.salas ?? [];
+  const f = JSON.stringify(salas.map(s => [s.id, s.adornos ?? []]));
+  if (f === firmaAdornos) return; firmaAdornos = f;
+  for (const sl of SALAS) {
+    adornosEn.get(sl.id)?.removeFromParent();
+    const ads: Adorno[] = salas.find(s => s.id === sl.id)?.adornos ?? [];
+    const g = new THREE.Group(); g.position.copy(sl.grupo.position); scene.add(g); adornosEn.set(sl.id, g);
+    for (const a of ads) {
+      const m = mercancia(a.mercancia); if (!m) continue;
+      const [pack, nombre] = m.modelo.split('/'); const pk = PACKS[pack]; if (!pk) continue;
+      const x = THREE.MathUtils.clamp(a.x, -5.2, 5.2), z = m.pared ? -L / 2 + 0.3 : THREE.MathUtils.mapLinear(a.z, -2.25, 2.1, -4.6, 4.6);
+      colocar(g, `${pk.carpeta}/${nombre}${pk.ext}`, { pos: [x, m.pared ? (m.y ?? 1.2) + 0.6 : 0, z], rot: THREE.MathUtils.degToRad(a.giro), sombra: true, ...(m.alto ? { alto: m.alto } : {}) })
+        .then(() => { motor.renderer.shadowMap.needsUpdate = true; }).catch(() => null);
+    }
+  }
+}
+function conectar() {
+  publicar(); ponerAdornos(); vivo.suscribir(() => ponerAdornos());
+  addEventListener('refugio:fin-dialogo', () => { retrato?.destruir(); retrato = null; (window as any).__retrato = undefined; });
+  // viaje rápido (plano, tablón, buscador): a la sala y, con `hablar`, la conversación con su aventurero
+  addEventListener('refugio:ir', (ev: any) => {
+    const { salaId, habitanteId, hablar } = ev.detail ?? {};
+    const sl = SALAS.find(x => x.id === salaId); if (sl) { enfocar(sl); jugador?.irA(new THREE.Vector3(sl.grupo.position.x + 1.5, 0, sl.grupo.position.z + 2.5)); }
+    const hab = ((vivo.get().estado?.habitantes ?? []) as HabVivo[]).find(h => h.id === habitanteId);
+    const n = hab && npcs.find(x => x.paso === hab.salaId);
+    if (n) { seleccionar(n); if (hablar) hablarCon(n); }
+  });
+}
