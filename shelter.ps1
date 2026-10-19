@@ -134,7 +134,7 @@ if ($orden -eq 'instalar-app') {
   foreach ($d in $destinos) {
     $a = $wsh.CreateShortcut((Join-Path $d 'work-shelter.lnk'))
     $a.TargetPath = $ps
-    $a.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"`$env:SHELTER_OCULTO='1'; & '$RAIZ\shelter.ps1'`""
+    $a.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"`$env:SHELTER_OCULTO='1'; & '$($RAIZ.Replace("'", "''"))\shelter.ps1'`""
     $a.WorkingDirectory = $RAIZ
     $a.WindowStyle = 7
     $a.Description = 'work-shelter'

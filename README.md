@@ -94,7 +94,8 @@ Algunos consejos:
 
 ## Requisitos
 
-- macOS (Apple Silicon o Intel). El dictado por voz necesita macOS 26; todo lo demás, cualquier macOS reciente.
+- macOS (Apple Silicon o Intel) o Windows 11 (ver [Windows](#windows)). El dictado por voz necesita macOS 26; todo lo
+  demás, cualquier macOS reciente.
 - [Claude Code](https://docs.claude.com/claude-code) instalado y con sesión iniciada (`claude` y luego `/login` en una
   terminal). Los habitantes consumen los límites de tu plan, como si trabajaras en la terminal.
 - Opcional: [`gh`](https://cli.github.com) con sesión iniciada (pull requests, contribuciones y notificaciones de
@@ -148,6 +149,73 @@ Mando del propio juego los aplica («Aplicar los cambios del juego» o «Reinici
 
 Cerrar la ventana pide confirmación y para todas las sesiones. Si recargas, no se pierde nada: el servidor espera 20
 segundos a que vuelvas antes de parar las sesiones.
+
+## Windows
+
+work-shelter también funciona en Windows 11. Es una adaptación nueva: lo de macOS sigue igual y algunas cosas de
+Windows aún no se han probado en un PC de verdad (lista al final de esta sección).
+
+### Instalar, paso a paso
+
+1. **Instala Claude Code y entra con tu cuenta.** Es lo único que hace falta tener antes. Sigue
+   https://docs.claude.com/claude-code. Para comprobarlo, abre **PowerShell** (pulsa la tecla Windows, escribe
+   «PowerShell» y pulsa Intro), escribe `claude` y pulsa Intro. Si te pide entrar, escribe `/login` y sigue los
+   pasos. Luego escribe `/exit`.
+2. **Abre PowerShell** (no hace falta «como administrador»).
+3. **Copia esta línea, pégala con clic derecho y pulsa Intro:**
+   ```powershell
+   irm https://raw.githubusercontent.com/SilviaDona/la-taberna/main/instalar.ps1 | iex
+   ```
+4. **Espera.** La primera vez tarda entre 5 y 15 minutos: descarga el juego, Node (si no lo tienes), sus piezas y
+   unos 100 MB de material gráfico. Si no tienes git, lo instala solo para tu usuario con `winget`.
+5. **Ábrelo.** Al terminar se abre solo. Desde entonces, haz doble clic en **work-shelter** en el Escritorio o
+   búscalo en el menú Inicio.
+
+Para ponerlo al día, repite el paso 3. Para desinstalarlo, borra los dos accesos directos y la carpeta
+`%LOCALAPPDATA%\work-shelter-public` (pégalo en la barra del Explorador de archivos). Tus contraseñas de
+integraciones están en el **Administrador de credenciales** de Windows (Credenciales de Windows › «work-shelter-public:…»).
+
+Quien ya tiene el código puede usar `shelter.cmd` en vez de `./shelter` (`shelter.cmd instalar-app` crea los
+accesos directos).
+
+### Qué cambia respecto a macOS
+
+| En macOS | En Windows |
+|---|---|
+| ⌘ en los atajos (⌘K, ⌘B, ⌘J…) | Ctrl (algunos, como la barra, las ventanas y la música, con Ctrl+Mayús) |
+| Tecla de pánico ⇧⌥⌘Esc | Ctrl+Mayús+Alt+Esc |
+| Terminales con tu shell (zsh) | PowerShell |
+| Salir a la superficie en iTerm o Terminal | Windows Terminal (o PowerShell si no lo tienes) |
+| Llavero de macOS | Administrador de credenciales de Windows |
+| Datos en `~/Library/Application Support/work-shelter-public` | `%APPDATA%\work-shelter-public` |
+| Registro en `~/Library/Logs/work-shelter-public` | `%LOCALAPPDATA%\work-shelter-public\Logs` |
+| Dictado (🎙/⌘D) en el propio Mac | **Desactivado**: usa Win+H, el dictado de Windows |
+| Spotify en la Discoteca | Necesita Google Chrome instalado; si no suena, no está soportado aún |
+
+La privacidad es la misma: el servidor solo escucha en 127.0.0.1, no hay telemetría ni claves de API, y los
+habitantes usan tu Claude Code. En Windows, el anfitrión de terminales usa una tubería con nombre de tu usuario.
+
+### Si algo falla
+
+- **«No se puede cargar el archivo … porque la ejecución de scripts está deshabilitada».** Usa la línea del paso 3
+  tal cual (no cambia nada del sistema) o abre el juego con `shelter.cmd`.
+- **No pasa nada al hacer doble clic.** Mira el registro: pega `%LOCALAPPDATA%\work-shelter-public\Logs` en el
+  Explorador y abre `shelter.log`. También puedes abrir PowerShell, ir a la carpeta del juego
+  (`cd $env:LOCALAPPDATA\work-shelter-public`) y ejecutar `.\shelter.cmd` para ver los mensajes.
+- **«No encuentro Claude Code».** Instálalo (paso 1), cierra y vuelve a abrir el juego.
+- **«Falta git» y winget no lo instala.** Instálalo desde https://git-scm.com/download/win y repite el paso 3.
+- **No se descarga el material** (error 403 de GitHub). Es un límite de GitHub por conexión: espera una hora y repite.
+- **Windows Defender o SmartScreen avisan.** El juego no está firmado; puedes revisar el código en el repo.
+- **Las terminales del juego no abren.** Cierra el juego del todo y vuelve a abrirlo; si sigue, pásale a quien te
+  ayude el `shelter.log`.
+
+### Probado y por probar en Windows
+
+- Probado en el CI (`.github/workflows/windows.yml`, `windows-latest`): instalación con `npm ci`, tipos, pruebas
+  (incluidas credenciales, papelera, imágenes y terminales con ConPTY), compilación de la interfaz y arranque del
+  servidor con `shelter.ps1`, que contesta solo en 127.0.0.1.
+- Sin probar en un PC: la ventana de Electron, los accesos directos y su icono, `instalar.ps1` de principio a fin,
+  salir a la superficie en Windows Terminal, abrir carpetas y editor, Spotify en Chrome.
 
 ## Primer arranque
 

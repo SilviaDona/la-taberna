@@ -1,6 +1,6 @@
 # work-shelter — instrucciones para agentes (Claude Code y Codex)
 
-Juego de gestión de refugio que es una interfaz de trabajo sobre Claude Code: cada repo es una sala y cada habitante, una sesión real de Claude Code (Agent SDK) con la cuenta de quien juega. Todo en español (código, comentarios, interfaz, commits). Solo macOS.
+Juego de gestión de refugio que es una interfaz de trabajo sobre Claude Code: cada repo es una sala y cada habitante, una sesión real de Claude Code (Agent SDK) con la cuenta de quien juega. Todo en español (código, comentarios, interfaz, commits). macOS y Windows 11: lo que depende del sistema va en `server/plataforma.ts` (carpetas, abrir, papelera, shell y canal de las terminales, imágenes) y `server/integraciones/llavero.ts` (llavero o Administrador de credenciales); arranque en Windows con `shelter.cmd`/`shelter.ps1` e `instalar.ps1`; CI en `.github/workflows/windows.yml`. Plan: `docs/plan-taberna.md`.
 
 Es una propuesta inicial para que cada cual la haga suya (README, «Qué es esto (y qué no)»). La galería de tiro y la economía (`web/src/mundo/tiro.ts`, `server/juego.ts`, `shared/catalogo.ts`) son una primera iteración sin terminar: se pueden rehacer o quitar sin miedo; el resto del refugio solo las toca por las acciones `juego.*` y el estado `jugador`.
 
