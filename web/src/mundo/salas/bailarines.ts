@@ -7,7 +7,7 @@
 // No son obstáculos: si el Supervisor se mete en la pista, se apartan un poco.
 import * as THREE from 'three';
 import { Personaje } from '../personaje';
-import type { Aspecto } from '@shared/aspecto';
+import { aspectoDe, type Aspecto } from '@shared/aspecto';
 
 export interface Ritmo { sonando: boolean; bpm: number; pulso: number; energia: number }   // pulso: golpes desde el inicio (con decimales)
 
@@ -49,8 +49,10 @@ export function montarBailarines(g: THREE.Group, casas: [number, number][], ritm
   const colores = [tinte('#c94f7c', '#3a3346'), tinte('#3fa7c9', '#2d3440'), tinte('#d9a03a', '#3b3329'), tinte('#7a5bd1', '#2e2a3d'), tinte('#5fbf86', '#2b3a33')];
   const bailarines: Bailarin[] = [];
   casas.forEach(([x, z], i) => {
-    const tipo = i % 2 ? 'Robot_Two' : 'Robot_One';
-    const p = new Personaje(tipo, { especie: 'robot', piezas: { cabeza: `cabeza.${tipo}`, torso: `torso.${tipo}`, brazos: `brazos.${tipo}`, piernas: `piernas.${tipo}` }, colores: colores[i % colores.length] });
+    // goblins de fiesta: piel verde y la ropa de cada uno de su color
+    const tipo = i % 2 ? 'Goblin_B' : 'Goblin';
+    const g0 = aspectoDe({ tipo });
+    const p = new Personaje(tipo, { ...g0, colores: { ...g0.colores, torso1: colores[i % colores.length].torso1, piernas1: colores[i % colores.length].piernas1 } });
     const b: Bailarin = { p, e: ESTILOS[i % ESTILOS.length], casa: new THREE.Vector3(x, 0, z), desfase: (i * 0.37) % 1, aparte: new THREE.Vector3(), turno: i, compas: -1, clip: '', listo: false, bailando: false, giroDescanso: [0.5, -0.4, 0.9, -0.8, 0.2][i % 5], huesos: {}, pose: new Map() };
     bailarines.push(b);
     p.cargar().then(() => {

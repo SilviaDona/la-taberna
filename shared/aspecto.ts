@@ -308,6 +308,8 @@ const H = (f: string, extra: Partial<Record<Ranura, string>> = {}): Aspecto => {
   return { especie: 'humano', piezas: { cara: tiene('cara'), cejas: tiene('cejas'), pelo: tiene('pelo'), barba: tiene('barba'), torso: tiene('torso'), brazos: tiene('brazos'), piernas: tiene('piernas'), ...extra }, colores: {} };
 };
 const R = (f: string, extra: Partial<Record<Ranura, string>> = {}): Aspecto => ({ especie: 'robot', piezas: { cabeza: id('cabeza', f), torso: id('torso', f), brazos: id('brazos', f), piernas: id('piernas', f), ...extra }, colores: {} });
+/** El aspecto de serie de cualquier personaje de KayKit (cara, pelo, barba y ropa suyos) */
+export const aspectoDeFuente = (f: string, extra: Partial<Record<Ranura, string>> = {}) => H(f, extra);
 /** El aspecto de cada modelo de KayKit tal y como venía (los habitantes sin aspecto propio y los reclutas de la Puerta) */
 export const DE_SERIE: Record<string, Aspecto> = {
   Protagonist_B: H('Protagonist_B', { sombrero: 'sombrero.Protagonist_B', espalda: 'espalda.Protagonist_B.Backpack' }),
@@ -324,7 +326,16 @@ export const DE_SERIE: Record<string, Aspecto> = {
   '4GTN': R('4GTN'),
   '4GTN_Forgotten': R('4GTN_Forgotten', { sombrero: 'sombrero.4GTN_Forgotten.Hat' }),
   CombatMech: R('CombatMech', { espalda: 'espalda.CombatMech.WingLeft', complemento: 'complemento.CombatMech.ShoulderLeft' }),
+  // los goblins de la taberna (ayudantes, bailarines, el gólem de la despensa y los reclutas pequeños): sin un modelo
+  // propio en KayKit, son humanos de piel verde con la cara chata del cavernícola y ropa de faena
+  Goblin: goblin('#6e8f3c', '#6b4a2b', '#3b2a1c'),
+  Goblin_B: goblin('#86a345', '#4a6b2f', '#2e2418', { sombrero: 'sombrero.Rogue_Hooded' }),
 };
+/** Un goblin: piel verde, cara chata del cavernícola, sin pelo y ropa de cuero del pícaro */
+export function goblin(piel: string, torso: string, piernas: string, extra: Partial<Record<Ranura, string>> = {}): Aspecto {
+  return { especie: 'humano', piezas: { cara: 'cara.Caveman', cejas: 'cejas.Caveman', pelo: '', barba: '', torso: 'torso.Rogue', brazos: 'brazos.Rogue', piernas: 'piernas.Rogue', ...extra }, colores: { piel, torso1: torso, piernas1: piernas } };
+}
+export const GOBLINS = ['Goblin', 'Goblin_B'];
 export const TIPOS_DE_SERIE = Object.keys(DE_SERIE);
 
 // ---------------------------------------------------------------- validación

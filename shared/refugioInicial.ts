@@ -69,7 +69,7 @@ export const HABITANTES_INICIALES: HabitanteInicial[] = tonosParaRepetidos([
   H('ondina', 'Ondina', 'Bandeja de Entrada', 'Rogue', 'comunicaciones', 'Clava en el tablón las cartas, los pregones y los rumores. Sobre todo los rumores.', 190),
   H('calixto', 'Calixto', 'Reunión Que Pudo Ser Una Carta', 'Engineer', 'planificacion', 'Lleva el almanaque más ordenado de la taberna y ningún hueco libre.', 120),
   H('mona', 'Octocat', 'La Octogata', 'Octocat', 'git', 'Familiar del escriba: mitad gata, mitad pulpo, toda control de versiones. Con un tentáculo prepara, con otro hace commit y con un tercero ya está haciendo push.', 205),
-  H('cmd', 'CM-4', 'Gólem de los Encargos', 'Clanker', 'logistica', 'Gólem de hierro despertado por un hechizo de intendencia. Mueve encargos como antes movía piedras.', 90),
+  H('cmd', 'Grisko', 'Goblin de los Encargos', 'Goblin', 'logistica', 'Goblin intendente que llegó escondido en un saco de nabos. Mueve encargos de un tablero a otro más rápido que nadie y cobra en queso.', 230),
   H('fermin', 'Fermín', 'Refactor Eterno', 'Hiker', 'hidroponia', 'Fue el hortelano de la taberna antes de que llegara el Archimago. Riega las hierbas y sigue diciendo que la taberna se mantiene sola. Sigue mintiendo.', 115),
   H('guardian', 'Guardián', 'Portero', 'Barbarian', 'puerta', 'Vigila la puerta de la posada. No deja pasar a nadie sin un package.json.', 80),
   H('dj80', 'Trovador', 'Laúd Eterno', 'Rogue', 'discoteca', 'Bardo errante que se quedó por la comida. Asegura que no hay bug que aguante una balada a 120 BPM. Antes de las doce, nada con letra.', 70),

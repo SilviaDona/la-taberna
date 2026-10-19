@@ -1,4 +1,4 @@
-// Robots ayudantes: cada subagente de una sesión aparece como un robot pequeño en la sala del repo cuyos archivos toca
+// Goblins ayudantes: cada subagente de una sesión aparece como un goblin pequeño en la sala del repo cuyos archivos toca
 // (también dentro de worktrees, el servidor resuelve la ruta). Leyendo: hojea un diario; escribiendo: trabaja con la
 // llave. Al terminar celebra y se va por el paso lateral; si falla, saltan chispas.
 import * as THREE from 'three';
@@ -33,7 +33,7 @@ export class Ayudantes {
   private async crear(a: Ayudante, sala: Sala, sesionId: string) {
     const ocupados = [...this.robots.values()].filter(x => x.sala === sala).map(x => x.hueco);
     let hueco = 0; while (ocupados.includes(hueco)) hueco++;
-    const p = new Personaje(hueco % 2 ? 'Robot_Two' : 'Robot_One');
+    const p = new Personaje(hueco % 2 ? 'Goblin_B' : 'Goblin');
     const rb: Robot = { a: { ...a }, p, sala, sesionId, saliendo: 0, listo: false, hueco };
     this.robots.set(a.id, rb);
     await p.cargar();

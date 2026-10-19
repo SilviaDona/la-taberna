@@ -11,6 +11,8 @@ import { Aparato, Opciones, Teclas, cerrarPanel, useMenu, useTeclas, type ItemMe
 import { PanelesSala } from './PanelesSala';
 import { Bienvenida } from './Puente';
 import { rotuloPlanta } from '@shared/disposicion';
+import { encargos } from '@shared/encargos';
+import type { ResumenSesion } from '@shared/protocolo';
 import { tonoSala, sectorDe, sectorDePlanta, SECTORES, ORDEN_SECTORES } from '@shared/sectores';
 import { DESCRIPCION_SALA } from '@shared/refugioInicial';
 import { FUENTES } from '@shared/fuentes';
@@ -242,24 +244,30 @@ function FichaSala({ sala, habitantes }: { sala: any; habitantes: ResumenHabitan
   </>;
 }
 
-// ---------------------------------------------------------------- qué pasa ahora: ocupados, notificaciones, próximo evento
-const TEXTO_ESTADO: Record<string, string> = { esperando: 'te espera', error: 'avería', terminado: 'terminó, sin leer', trabajando: 'trabajando', pensando: 'pensando' };
+// ---------------------------------------------------------------- Tablón de encargos (Tab): todo lo que está en curso
+// Cada conversación abierta de cualquier sala es un encargo: primero los que te esperan (un permiso, una pregunta, un
+// plan, una avería o algo terminado sin leer), luego los que están en faena. Debajo, cartas y almanaque.
 function Ocupados() {
-  // las copias holográficas (worktrees) cuentan como uno más: tienen su propio intercomunicador
-  const hs = ocupados(juego.usar(e => [...e.habitantes, ...e.copias]));
+  const sesiones = vivo.usar(e => Object.values(e.sesiones) as ResumenSesion[]);
+  const habitantes = juego.usar(e => [...e.habitantes, ...e.copias]);
+  const salas = vivo.usar(e => (e.estado?.salas ?? []) as { id: string; nombre: string }[]);
+  const lista = encargos(sesiones, habitantes, salas);
+  const teEsperan = lista.filter(x => x.espera).length;
   const notifs = vivo.usar(e => e.notificaciones).filter((n: any) => !n.vista);
   const eventos = vivo.usar(e => e.eventos).filter((ev: any) => ev.fin > Date.now()).slice(0, 3);
   const items: (ItemMenu & { f: () => void })[] = [
-    ...hs.map(h => ({ texto: <><span className={'glifo-estado ' + h.estado} /> <b>{h.nombre}</b> <span className="tenue">· {h.salaNombre}</span></>, pista: <>{TEXTO_ESTADO[h.estado]}{h.detalle ? ' — ' + h.detalle : ''}</>, clase: h.estado, f: () => { cerrarPanel(); irA(h.sala, h.id, h.estado !== 'trabajando' && h.estado !== 'pensando'); } })),
-    { texto: <>Comunicaciones <span className="tenue">· {notifs.length} sin ver</span></>, pista: notifs[0] ? `${notifs[0].autor}: ${notifs[0].titulo}` : 'nada nuevo', f: () => { cerrarPanel(); irA('comunicaciones'); } },
-    { texto: <>Planificación <span className="tenue">· {eventos.length ? 'próximo evento' : 'sin eventos'}</span></>, pista: eventos[0] ? `${new Date(eventos[0].inicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ${eventos[0].titulo}` : '', f: () => { cerrarPanel(); irA('planificacion'); } },
+    ...lista.map(x => ({ texto: <><span className={'glifo-estado ' + (x.espera ? 'esperando' : 'trabajando')} /> <b>{x.s.titulo || 'Encargo sin título'}</b> <span className="tenue">· {x.quien}, {x.sala}</span></>,
+      pista: x.espera ? <b>{x.espera}</b> : (x.s.actividad?.texto ?? x.s.estado), clase: x.espera ? 'esperando' : 'trabajando',
+      f: () => { cerrarPanel(); irA(x.s.salaId, x.s.habitanteId, !!x.espera); } })),
+    { texto: <>Tablón de Anuncios <span className="tenue">· {notifs.length} cartas sin leer</span></>, pista: notifs[0] ? `${notifs[0].autor}: ${notifs[0].titulo}` : 'nada nuevo', f: () => { cerrarPanel(); irA('comunicaciones'); } },
+    { texto: <>Almanaque <span className="tenue">· {eventos.length ? 'próximo evento' : 'sin eventos'}</span></>, pista: eventos[0] ? `${new Date(eventos[0].inicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ${eventos[0].titulo}` : '', f: () => { cerrarPanel(); irA('planificacion'); } },
   ];
   const [i, setI] = useMenu(items.length, k => items[k].f(), e => (e.code === 'Tab' ? (cerrarPanel(), true) : undefined));
   return (
-    <Aparato rotulo="QUÉ PASA AHORA" ancho={46} piloto={hs.some(h => h.estado === 'esperando') ? 'esperando' : hs.length ? 'trabajando' : 'ociosa'}>
-      {!hs.length && <p className="tenue">Nadie trabaja ahora mismo. La taberna descansa.</p>}
-      <Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} />
-      <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>ir (y hablar si te espera) <kbd>Q</kbd>en la taberna: ir al primero que te espera <kbd>Esc</kbd>cerrar</Teclas>
+    <Aparato rotulo="TABLÓN DE ENCARGOS" ancho={60} piloto={teEsperan ? 'esperando' : lista.length ? 'trabajando' : 'ociosa'}>
+      <p className="voz">{lista.length ? <>{lista.length} {lista.length === 1 ? 'encargo' : 'encargos'} en curso{teEsperan ? <> · <b>{teEsperan} te {teEsperan === 1 ? 'espera' : 'esperan'}</b></> : ''}.</> : 'Ningún encargo en curso. La taberna descansa.'}</p>
+      <div className="lista-desplazable"><Opciones items={items} i={i} setI={setI} alElegir={k => items[k].f()} /></div>
+      <Teclas><kbd>↑↓</kbd>elegir <kbd>Enter</kbd>ir (y hablar si te espera) <kbd>Q</kbd>en la taberna: ir al primero que te espera <kbd>Tab</kbd><kbd>Esc</kbd>cerrar</Teclas>
     </Aparato>
   );
 }
@@ -268,7 +276,7 @@ function Ocupados() {
 const CONTROLES: [string, string][] = [
   ['WASD / flechas', 'andar; mantenidas, corre (Shift: correr ya)'], ['W / S en el rellano', 'subir y bajar en montacargas'], ['E / Enter', 'hablar, usar, avanzar, elegir'],
   ['clic', 'ir a un sitio; clic en un aventurero: ir y hablar'], ['rueda / Z / − =', 'zoom, vista general y vista de sala'],
-  ['M', 'plano con viaje rápido y reorganización'], ['Tab', 'qué pasa ahora: ocupados, notificaciones y próximo evento'],
+  ['M', 'plano con viaje rápido y reorganización'], ['Tab', 'tablón de encargos: lo que está en curso en todas las salas y quién te espera'],
   ['Q', 'ir directo al primer aventurero que te espera'], ['T', 'terminal real de la sala (shell sobre PTY)'],
   ['R', 'cuaderno: transcripción completa de una conversación'], ['I', 'inventario, guía de campo y tienda'],
   ['N / C / L', 'ir a comunicaciones, planificación o logística'], ['G', 'cliente de git (en una sala de repo, con su repo)'], ['P', 'Chapa y Pintura: cambiar el aspecto (tuyo o de un aventurero)'],

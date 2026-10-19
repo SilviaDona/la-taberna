@@ -73,6 +73,7 @@ El presupuesto de luces de `docs/diseno-refugio.md` sigue igual (pocas luces rea
 | 2 — Material | Descargar y fijar Dungeon/Medieval/RPG; añadir packs a `PACKS` de `shared/decorado.ts`; medirlos en `server/atrezo.ts`; licencias en `docs/assets.md` | M (3–5 días) |
 | 3 — Piel de taberna | Estructura (muros de piedra, vigas, escalera), paletas nuevas en `PALETAS_DECORADO`, luz cálida con parpadeo en `web/src/motor`, bases de serie de las cuatro plantillas (taberna, alquimista, herrería, biblioteca), cielo y calle medievales, aspectos de parroquianos | L (3–4 semanas) |
 | 4 — Salas de servicio | Rehacer Puerta, Sótano del mago, Tablón, Almanaque, Despensa, Archivo del escriba, Escenario del bardo con la misma lógica y textos nuevos | L (2–3 semanas) |
+| 4b — Salas de oficio de UX (hecha) | Biblioteca, Taller, Torre del Vigía, Puerta del Mensajero, Armería, Escenario y mesas de proyecto como plantillas reclutables, con CLAUDE.md, skills, decorado y acciones rápidas; Tablón de encargos (Tab); goblins en lugar de robots. Ver `docs/oficios.md` | M |
 | 5 — UX e interfaz | Tema de la interfaz React (pergamino, serifas, iconos), textos y manual F1, sonido ambiente de taberna (CC0), renombrar identidad en disco (`la-taberna`, puerto propio) | M (1–2 semanas) |
 
 Riesgos: Spotify/Widevine en Windows (Chrome instalado), `node-pty` precompilado para la versión de Electron,

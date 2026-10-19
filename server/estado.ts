@@ -12,6 +12,7 @@ import { FUENTES } from './integraciones/adaptadores.ts';
 import { sanearDecorado, type Decorado } from '../shared/decorado.ts';
 import { rutaEjemplo } from './ejemplos.ts';
 import { carpetaApp } from './plataforma.ts';
+import { esOficio, type Oficio } from '../shared/oficios.ts';
 
 export const DATOS = path.resolve(process.env.SHELTER_DATOS || path.join(import.meta.dirname, '..', '.data'));
 
@@ -27,6 +28,8 @@ export interface SalaGuardada {
   variante: string;             // paleta
   estilo?: string;
   decorado?: Decorado;          // la escena que le ha diseñado su habitante («Adaptar la sala al repo»); sin él, su plantilla
+  oficio?: Oficio;              // sala de oficio de UX (shared/oficios.ts): su carpeta es propia, en CARPETAS_SALAS
+  estandarte?: string;          // color del estandarte de una mesa de proyecto (#rrggbb)
 }
 export interface HabitanteGuardado { id: string; nombre: string; mote: string; tipo: string; bio: string; salaId: string; tinte?: string; tono?: number; voz: number; ultimaSesion?: string; accesorios?: string[]; aspecto?: Aspecto }
 export interface Jugador {
@@ -130,7 +133,9 @@ export function sanear(e: any): EstadoRefugio {
   const leidas = (arr(e.salas) ?? []).filter((x: any) => x && typeof x.id === 'string' && typeof x.tipo === 'string' && Number.isInteger(x.planta) && x.planta >= 0 && (x.lado === 'izq' || x.lado === 'der') && Number.isInteger(x.orden) && x.orden >= 0)
     // La Taberna: las salas especiales con su nombre de refugio pasan a su nombre de taberna (las que renombraste, no)
     .map((x: any) => ({ id: x.id, tipo: x.tipo, nombre: !esSalaDeRepo(x.tipo) && NOMBRES_ANTIGUOS[x.nombre] ? NOMBRES_ANTIGUOS[x.nombre] : str(x.nombre, x.id), ruta: typeof x.ruta === 'string' ? x.ruta : undefined, planta: x.planta, lado: x.lado, orden: x.orden, variante: str(x.variante, 'neutro'), estilo: typeof x.estilo === 'string' ? x.estilo : undefined,
-      ...(esSalaDeRepo(x.tipo) && x.decorado ? { decorado: sanearDecorado(x.decorado).decorado ?? undefined } : {}) }) as SalaGuardada);
+      ...(esSalaDeRepo(x.tipo) && x.decorado ? { decorado: sanearDecorado(x.decorado).decorado ?? undefined } : {}),
+      ...(esSalaDeRepo(x.tipo) && esOficio(x.oficio) ? { oficio: x.oficio } : {}),
+      ...(typeof x.estandarte === 'string' && /^#[0-9a-f]{6}$/i.test(x.estandarte) ? { estandarte: x.estandarte.toLowerCase() } : {}) }) as SalaGuardada);
   if (!leidas.length) throw new Error('sin salas');
   const salas = distribuir(leidas);
   const ids = new Set(salas.map((x: any) => x.id));
