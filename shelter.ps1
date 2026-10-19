@@ -116,6 +116,7 @@ if ($LASTEXITCODE -ne 0) {
 if ($orden -eq 'instalar-app') {
   Amarillo 'Creando los accesos directos…'
   $icono = Join-Path $RAIZ '.runtime\icono.ico'
+  New-Item -ItemType Directory -Force -Path (Join-Path $RAIZ '.runtime') | Out-Null   # con Node del sistema, la carpeta aún no existe
   try {
     # un .ico con la imagen PNG dentro (Windows lo admite desde Vista), reducida a 256 px
     Add-Type -AssemblyName System.Drawing
