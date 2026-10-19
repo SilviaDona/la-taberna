@@ -572,7 +572,8 @@ async function empezarTrabajo(ws: WebSocket, m: Extract<MensajeCliente, { t: 'em
   const carpeta = carpetaDe(sala);
   if (!sala.ruta) mkdirSync(carpeta, { recursive: true });
   const cwd = m.opciones.cwd ? path.resolve(m.opciones.cwd) : carpeta;
-  if (cwd !== carpeta && salaDeRuta(cwd) !== sala.id) throw new Error('Esa carpeta no es de esta sala.');
+  // (las salas de los pasos comparten la carpeta del proyecto: cualquiera de ellas trabaja en ella y en lo que tenga dentro)
+  if (cwd !== carpeta && salaDeRuta(cwd) !== sala.id && !(sala.paso && cwd.startsWith(carpeta + path.sep))) throw new Error('Esa carpeta no es de esta sala.');
   if (!e.habitantes.some(h => h.id === m.habitanteId && h.salaId === sala.id)) throw new Error('Ese aventurero no vive en esta sala.');
   // retomar una conversación que ya está abierta no la duplica: se vuelve a ella
   const abierta = m.opciones.reanudar ? sesiones.lista().find(p => p.claudeId === m.opciones.reanudar && p.estado !== 'cerrada') : undefined;
