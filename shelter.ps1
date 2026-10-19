@@ -97,7 +97,8 @@ if (-not (Test-Path 'assets\indice.json')) {
   if ($ok) { & $NODE scripts/indexar-assets.mjs | Out-Null; $ok = $LASTEXITCODE -eq 0 }
   if (-not $ok) { Fallo 'No se pudo descargar el material. Comprueba la conexión y vuelve a abrir work-shelter.' }
 }
-if (-not (Test-Path 'assets\kaykit\character-animations-1.1\Mannequin Character\characters\Mannequin_Medium.glb')) {
+# (y el de La Taberna, KayKit Dungeon Remastered: quien lo tenía instalado de antes no lo tiene)
+if (-not (Test-Path 'assets\kaykit\character-animations-1.1\Mannequin Character\characters\Mannequin_Medium.glb') -or -not (Test-Path 'assets\kaykit-extra\dungeon-remastered-1.1\Assets\gltf\wall.gltf')) {
   Amarillo 'Descargando los personajes que faltan (CC0, unos 30 MB, solo una vez)…'
   & $NODE scripts/descargar-extra.mjs assets
   if ($LASTEXITCODE -eq 0) { & $NODE scripts/indexar-assets.mjs | Out-Null } else { Amarillo 'No se pudieron bajar los personajes: se reintentará en el próximo arranque.' }

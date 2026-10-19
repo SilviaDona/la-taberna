@@ -70,7 +70,8 @@ fi
 
 # 4b. Los personajes de KayKit del probador de Chapa y Pintura: si faltan (una descarga a medias), se baja lo que falte
 # aunque el resto ya estuviera
-if [ ! -f "assets/kaykit/character-animations-1.1/Mannequin Character/characters/Mannequin_Medium.glb" ]; then
+# (y el de La Taberna, KayKit Dungeon Remastered: quien lo tenía instalado de antes no lo tiene)
+if [ ! -f "assets/kaykit/character-animations-1.1/Mannequin Character/characters/Mannequin_Medium.glb" ] || [ ! -f "assets/kaykit-extra/dungeon-remastered-1.1/Assets/gltf/wall.gltf" ]; then
   amarillo "Descargando los personajes que faltan (CC0, unos 30 MB, solo una vez)…"
   "$NODE" scripts/descargar-extra.mjs assets && "$NODE" scripts/indexar-assets.mjs >/dev/null || amarillo "No se pudieron bajar los personajes: se reintentará en el próximo arranque."
 fi
