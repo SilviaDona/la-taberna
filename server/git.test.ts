@@ -14,6 +14,7 @@ let repo = '';
 beforeEach(() => {
   repo = mkdtempSync(path.join(os.tmpdir(), 'shelter-git-'));
   sh(repo, 'init', '-q', '-b', 'main');
+  sh(repo, 'config', 'core.autocrlf', 'false');   // el git de Windows trae autocrlf: el repo de prueba, con LF tal cual
   sh(repo, 'config', 'user.email', 'prueba@refugio'); sh(repo, 'config', 'user.name', 'Prueba'); sh(repo, 'config', 'commit.gpgsign', 'false');
   writeFileSync(path.join(repo, 'a.txt'), lineas(40));
   sh(repo, 'add', '.'); sh(repo, 'commit', '-q', '-m', 'primero');
