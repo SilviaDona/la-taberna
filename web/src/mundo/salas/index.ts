@@ -88,7 +88,7 @@ export async function construirSala(sg: SalaGuardada, numero: number, pasos: { i
     id: sg.id, tipo: sg.tipo, nombre: sg.nombre, subtitulo: sub, rama: falta ? undefined : rama, numero: numero ? String(numero).padStart(2, '0') : (CODIGO[sg.tipo] ?? '··'),
     // «espejo» en el decorado: la escena de base, al revés de como sale de serie (se espeja con la paridad de la semilla)
     variante: varianteDe(sg), semilla: hash(sg.id) + (sg.decorado?.espejo ? 1 : 0), paneles, pasos,
-    planta: sg.planta, lado: sg.lado, orden: sg.orden, ruta: sg.ruta,
+    planta: sg.planta, lado: sg.lado, orden: sg.orden, ruta: sg.ruta, ...(sg.decorado?.piel ? { piel: sg.decorado.piel } : {}),
   }, f);
   // misma luz que el taller web en todas: interiores en penumbra cálida con pozas bajo las lámparas
   const fl = luz ?? LUZ[sg.tipo] ?? 1; if (fl !== 1) for (const a of sala.anclas) a.intensidad *= fl;

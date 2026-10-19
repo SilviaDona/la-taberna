@@ -76,6 +76,7 @@ export interface Decorado {
   paredes?: [string, string, string];          // los tres paneles de la pared del fondo, de izquierda a derecha
   luz?: number;              // 0,2 (penumbra) a 1,4 (muy iluminada)
   espejo?: boolean;          // la base, reflejada de izquierda a derecha
+  piel?: 'taberna';          // paredes de entramado (yeso y vigas), mesa de madera con libro y vela en vez de ordenador, sin tuberías ni pantalla del repo
   // en la sala vacía: dónde va cada cosa imprescindible (en las demás bases ya la trae la base)
   pantallaRepo?: { x: number; y: number; ancho: number };   // la pantalla con el estado real del repo, en la pared del fondo
   puesto?: { x: number; z: number; giro?: number; pantalla?: 'monitor' | 'doble' | 'ordenador'; mesa?: string };   // la mesa del habitante
@@ -124,6 +125,7 @@ export function sanearDecorado(d: unknown): { decorado: Decorado | null; avisos:
   }
   const luz = lim(x.luz, 0.2, 1.4, 'luz'); if (luz !== undefined) out.luz = luz;
   if (x.espejo === true) out.espejo = true;
+  if (x.piel === 'taberna') out.piel = 'taberna';
   const giro = (v: unknown) => { const n = num(v); return n === undefined ? undefined : Math.round(((n % 360) + 360) % 360); };
   const punto = (p: any, que: string): PuntoDecorado | undefined => {
     if (!p || typeof p !== 'object') return undefined;

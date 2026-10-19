@@ -222,6 +222,66 @@ export async function paredes(g: THREE.Group, ancho: number, v: Variante, panele
   return Promise.all(ps);
 }
 
+// La Taberna (piel de taberna): paredes de entramado como las de una posada, yeso claro entre vigas de roble oscuro
+// (durmiente, carrera, pies derechos cada metro y medio y tornapuntas en cruz), y en el centro una ventana con
+// marco de madera que deja ver el cielo de fuera a la hora real. Los laterales, igual, sin ventana.
+const ROBLE_OSCURO = '#3a2414';
+function materialYeso() {
+  return mat('yeso', () => {
+    const { c, g } = lienzo(512, 512);
+    g.fillStyle = '#e8d7b4'; g.fillRect(0, 0, 512, 512);
+    // manchas suaves de cal y humo, más oscuras arriba (el humo de las velas sube)
+    const gr = g.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, 'rgba(90,60,30,0.28)'); gr.addColorStop(0.5, 'rgba(90,60,30,0.05)'); gr.addColorStop(1, 'rgba(90,60,30,0.12)');
+    g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
+    ensuciar(g, 512, 512, 0.18, 11);
+    const t = texturaDe(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return new THREE.MeshStandardMaterial({ map: t, color: '#ffffff', roughness: 0.95, metalness: 0 });
+  });
+}
+function muroEntramado(g: THREE.Group, x0: number, x1: number, z: number, giro: number, ventana?: { x: number; y: number; w: number; h: number }) {
+  const largo = x1 - x0; const madera = materialAcero(ROBLE_OSCURO);
+  const grupo = new THREE.Group(); grupo.rotation.y = giro; grupo.position.z = z; g.add(grupo);
+  const forma = new THREE.Shape([new THREE.Vector2(x0, 0), new THREE.Vector2(x1, 0), new THREE.Vector2(x1, ALTO), new THREE.Vector2(x0, ALTO)]);
+  if (ventana) forma.holes.push(new THREE.Path([new THREE.Vector2(ventana.x - ventana.w / 2, ventana.y - ventana.h / 2), new THREE.Vector2(ventana.x - ventana.w / 2, ventana.y + ventana.h / 2), new THREE.Vector2(ventana.x + ventana.w / 2, ventana.y + ventana.h / 2), new THREE.Vector2(ventana.x + ventana.w / 2, ventana.y - ventana.h / 2)]));
+  const geo = new THREE.ShapeGeometry(forma);
+  const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 3, uv.getY(i) / 3);
+  const yeso = new THREE.Mesh(geo, materialYeso()); yeso.receiveShadow = true; yeso.userData.pared = true; grupo.add(yeso);
+  const viga = (w: number, h: number, x: number, y: number, rz = 0) => { const b = caja(w, h, 0.16, madera, x, y, 0.08); b.rotation.z = rz; b.userData.pared = true; grupo.add(b); };
+  viga(largo, 0.28, (x0 + x1) / 2, 0.14);              // durmiente
+  viga(largo, 0.24, (x0 + x1) / 2, ALTO - 0.5);         // carrera
+  viga(largo, 0.18, (x0 + x1) / 2, 1.25);               // peto
+  const n = Math.max(2, Math.round(largo / 1.5)); const paso = largo / n;
+  for (let i = 0; i <= n; i++) {
+    const x = x0 + i * paso;
+    if (ventana && Math.abs(x - ventana.x) < ventana.w / 2 + 0.15) continue;
+    viga(0.22, ALTO - 0.4, x, (ALTO - 0.4) / 2 + 0.1);
+  }
+  // tornapuntas en cruz en los vanos de los extremos, sobre el peto
+  const hT = ALTO - 0.5 - 1.25, diag = Math.hypot(paso, hT), ang = Math.atan2(hT, paso);
+  for (const i of [0, n - 1]) { const cx = x0 + (i + 0.5) * paso, cy = 1.25 + hT / 2; viga(diag, 0.14, cx, cy, ang); viga(diag, 0.14, cx, cy, -ang); }
+  if (ventana) {   // marco de la ventana, con cruceta y alféizar
+    const { x, y, w, h } = ventana;
+    viga(w + 0.3, 0.2, x, y + h / 2 + 0.1); viga(w + 0.5, 0.16, x, y - h / 2 - 0.08);
+    viga(0.18, h, x - w / 2 - 0.09, y); viga(0.18, h, x + w / 2 + 0.09, y);
+    viga(0.08, h, x, y); viga(w, 0.08, x, y);
+  }
+  return grupo;
+}
+export async function paredesTaberna(g: THREE.Group, ancho: number, pasos: { izq: boolean; der: boolean } = { izq: false, der: false }) {
+  const zB = -FONDO / 2;
+  const ventana = { x: 0, y: ALTO * 0.55, w: 1.8, h: 1.6 };
+  muroEntramado(g, -ancho / 2, ancho / 2, zB, 0, ventana);
+  vidriera(g, 0, ventana.y, zB - 0.05, ventana.w + 0.2, ventana.h + 0.2);
+  // laterales: de la pared del fondo hacia el corte (abiertos por delante si hay paso a la sala vecina)
+  for (const s of [-1, 1]) {
+    const abierto = s < 0 ? pasos.izq : pasos.der;
+    const largo = abierto ? FONDO / 2 + 0.3 : FONDO + 0.2;
+    const m = muroEntramado(g, 0, largo, 0, 0);
+    if (s > 0) { m.rotation.y = -Math.PI / 2; m.position.set(ancho / 2 + 0.02, 0, zB); }
+    else { m.rotation.y = Math.PI / 2; m.position.set(-ancho / 2 - 0.02, 0, zB + largo); }
+  }
+}
+
 export async function suelo(g: THREE.Group, ancho: number, v: Variante, semilla: number) {
   // La Taberna: tarima de tablones (KayKit Dungeon Remastered, losas de 4 × 4 m) de pared a pared y hasta el borde del
   // corte; giradas al azar de media vuelta para que no se repita la veta
@@ -615,6 +675,7 @@ export interface OpcionesSala {
   variante: Variante; semilla: number; paneles?: string[];
   pasos?: { izq: boolean; der: boolean };
   planta: number; lado: 'izq' | 'der'; orden: number; ruta?: string;
+  piel?: 'taberna';   // paredes de entramado de taberna en vez de muros de piedra
 }
 
 export interface Contexto {
@@ -641,7 +702,7 @@ export async function crearSala(o: OpcionesSala, amueblar: Amueblar): Promise<Sa
     actualizar: () => {}, ponerEstado: () => {}, escribirPantalla: () => {}, ponerIcono: () => {} } as unknown as Sala;
   const zB = -FONDO / 2; const K = ESCALA_KAYKIT;
   marco(g, ancho);
-  await Promise.all([paredes(g, ancho, v, o.paneles ?? ['Wall_2', 'Wall_1', 'Wall_5'], o.pasos), suelo(g, ancho, v, o.semilla)]);
+  await Promise.all([o.piel === 'taberna' ? paredesTaberna(g, ancho, o.pasos) : paredes(g, ancho, v, o.paneles ?? ['Wall_2', 'Wall_1', 'Wall_5'], o.pasos), suelo(g, ancho, v, o.semilla)]);
   const ps: Promise<unknown>[] = [];
   const actualizadores: ((dt: number, t: number, a: number) => void)[] = [];
   const alEstados: ((e: EstadoSala) => void)[] = [];
@@ -673,6 +734,8 @@ export async function crearSala(o: OpcionesSala, amueblar: Amueblar): Promise<Sa
   fusionarEstaticos(g);
   // vida común
   const polvo = new Polvo(new THREE.Box3(new THREE.Vector3(-ancho / 2 + 0.5, 0.3, -FONDO / 2 + 0.6), new THREE.Vector3(ancho / 2 - 0.5, ALTO - 0.8, FONDO / 2 - 0.3)), 200);
+  // (la taberna no tiene tuberías: su vapor sale de la chimenea, si la hay, o no sale)
+  if (o.piel === 'taberna' && !ctx.vapor) ctx.vapor = { pos: new THREE.Vector3(0, -50, 0), dir: new THREE.Vector3(0, 1, 0) };
   const vapor = new Vapor(ctx.vapor?.pos ?? new THREE.Vector3(-2.4, 3.15, zB + 0.85), 9, ctx.vapor?.dir ?? new THREE.Vector3(0.35, 0.9, 0.25));
   const chispas = new Chispas();
   g.add(polvo.puntos, vapor.grupo, chispas.grupo);

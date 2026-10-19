@@ -12,7 +12,7 @@ import { FUENTES } from './integraciones/adaptadores.ts';
 import { sanearDecorado, type Decorado } from '../shared/decorado.ts';
 import { rutaEjemplo } from './ejemplos.ts';
 import { carpetaApp } from './plataforma.ts';
-import { esPaso, sanearHistorias, sanearProyecto, PASOS_IDS, type PasoId, type Historia, type Proyecto } from '../shared/pasos.ts';
+import { esPaso, sanearHistorias, sanearProyecto, PASOS, PASOS_IDS, type PasoId, type Historia, type Proyecto } from '../shared/pasos.ts';
 import { esClonDeEjemplo } from './ejemplos.ts';
 
 export const DATOS = path.resolve(process.env.SHELTER_DATOS || path.join(import.meta.dirname, '..', '.data'));
@@ -153,7 +153,8 @@ export function sanear(e: any): EstadoRefugio {
     // La Taberna: las salas especiales con su nombre de refugio pasan a su nombre de taberna (las que renombraste, no)
     .map((x: any) => ({ id: x.id, tipo: x.tipo, nombre: !esSalaDeRepo(x.tipo) && NOMBRES_ANTIGUOS[x.nombre] ? NOMBRES_ANTIGUOS[x.nombre] : str(x.nombre, x.id), ruta: typeof x.ruta === 'string' ? x.ruta : undefined, planta: x.planta, lado: x.lado, orden: x.orden, variante: str(x.variante, 'neutro'), estilo: typeof x.estilo === 'string' ? x.estilo : undefined,
       ...(esSalaDeRepo(x.tipo) && x.decorado ? { decorado: sanearDecorado(x.decorado).decorado ?? undefined } : {}),
-      ...(esSalaDeRepo(x.tipo) && esPaso(x.paso) ? { paso: x.paso } : {}), ...(x.oficio ? { oficio: x.oficio } : {}) }) as SalaGuardada);
+      // (las de los pasos llevan siempre la escena de su paso: la de serie, que el juego pone al día)
+      ...(esSalaDeRepo(x.tipo) && esPaso(x.paso) ? { paso: x.paso, decorado: PASOS[x.paso as PasoId].decorado } : {}), ...(x.oficio ? { oficio: x.oficio } : {}) }) as SalaGuardada);
   if (!leidas.length) throw new Error('sin salas');
   const salas = distribuir(leidas);
   const ids = new Set(salas.map((x: any) => x.id));

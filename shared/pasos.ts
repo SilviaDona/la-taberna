@@ -60,27 +60,35 @@ function decorado(d: Omit<Decorado, 'version' | 'base'> & { piezas: PiezaDecorad
 
 
 function decoradoMapas(): Decorado {
-  const color = AZUL;
-  return decorado({
-    subtitulo: 'HISTORIAS Y ACS', acento: color, resumen: 'Sala de Mapas: mesa larga con los mapas de cada historia, donde se planean los prototipos.',
-    pantallaRepo: { x: -0.2, y: 2.4, ancho: 2 },
-    puesto: { x: -3.4, z: -1.3, pantalla: 'monitor', mesa: 'mueble/desk' },
-    pieza: { x: 2.4, z: -0.3, giro: 180, gestos: ['Interact', 'Working_A'] }, aficion: { x: 0.4, z: 0.2, giro: 180, gestos: ['Idle_A'] },
-    lamparas: [{ x: 2.4, z: -1, color: AMBAR, intensidad: 80 }, { x: -3.4, z: -1.2, color: AMBAR, intensidad: 50 }],
+  // la primera sala con piel de taberna (entramado, mesa de madera con libro y vela): la mesa larga de los mapas, con
+  // las historias extendidas, librerías de códices, el estandarte azul del gremio, toneles y el cofre de los planos
+  return {
+    version: 1, base: 'vacia', piel: 'taberna', luz: 1.05, paleta: 'taller', acento: AZUL,
+    subtitulo: 'HISTORIAS Y ACS', resumen: 'Sala de Mapas: mesa larga con los mapas de cada historia, librerías de códices y el estandarte del gremio.',
+    puesto: { x: -3.6, z: -1.2, giro: 180, mesa: 'dun/table_medium' },
+    pieza: { x: 2.2, z: 0.15, giro: 180, gestos: ['Interact', 'Holding_A', 'Use_Item'] }, aficion: { x: -0.6, z: 0.2, giro: 160, gestos: ['Idle_A'] },
+    lamparas: [{ x: -3.6, z: -0.6, color: AMBAR, intensidad: 90 }, { x: 2.2, z: -0.6, color: AMBAR, intensidad: 110 }, { x: 0, z: -1.6, color: FUEGO, intensidad: 50 }],
     piezas: [
-      P('mueble/table_medium_long', 2.4, -1.3, { ancho: 1.8, color: ROBLE }),          // 0 mesa del proyecto
-      P('herr/map', 2.1, -1.3, { sobre: 0, ancho: 0.7 }),
-      P('herr/journal_open', 2.8, -1.4, { sobre: 0, ancho: 0.4 }),
-      P('mueble/mug_A', 1.6, -1.2, { sobre: 0, alto: 0.15, color: '#d9a35a' }),
-      P('herr/lantern', 3.1, -1.2, { sobre: 0, alto: 0.4, luz: AMBAR }),
-      P('mueble/chair_A_wood', 1.8, -0.1, { giro: 200, alto: 0.95, color: ROBLE }),
-      P('mueble/chair_A_wood', 3, -0.1, { giro: 160, alto: 0.95, color: ROBLE }),
-      P('mueble/rug_oval_B', 2.4, 0.2, { ancho: 2, color }),
-      P('mueble/shelf_B_large', -5.1, -1.9, { ancho: 1.3, pared: true, color: NOGAL }),
-      P('mueble/chair_stool_wood', -2.6, -0.4, { alto: 0.5, color: ROBLE }),
+      P('dun/table_long_decorated_A', 2.2, -1, { giro: 90, alto: 0.85, color: ROBLE }),       // 0 la mesa de los mapas
+      P('herr/map', 1.7, -1, { sobre: 0, ancho: 0.8 }),
+      P('herr/map_empty', 2.6, -1.1, { sobre: 0, ancho: 0.7, giro: 15 }),
+      P('dun/candle_triple', 3.2, -1.15, { sobre: 0, alto: 0.35, luz: AMBAR }),
+      P('herr/drafting_compass', 2.2, -0.85, { sobre: 0, alto: 0.2, tumbada: true }),
+      P('dun/stool_round', 1.4, -0.2, { alto: 0.5, color: ROBLE }),
+      P('dun/chair', 3, -0.15, { alto: 0.95, giro: 180, color: ROBLE }),
+      P('mueble/rug_oval_B', 2.2, -0.5, { ancho: 3, color: AZUL }),
+      P('dun/bookcase_double_decoratedA', -1.5, -1.95, { alto: 2, pared: true }),
+      P('dun/bookcase_single_decoratedB', 5, -1.95, { alto: 2.3, pared: true }),
+      P('dun/banner_patternA_blue', -5, -2.2, { y: 1.3, alto: 2.2, pared: true }),
+      P('dun/shelf_small_candles', 3.2, -2.2, { y: 2.1, ancho: 1, pared: true, luz: AMBAR }),
+      P('dun/barrel_large', 5.15, -0.3, { alto: 0.9, color: ROBLE }),
+      P('dun/barrel_small_stack', 4.4, 0.25, { alto: 0.75, color: ROBLE }),
+      P('dun/chest', 0.9, -1.75, { ancho: 0.8 }),
+      P('dun/crates_stacked', -5.1, 0.1, { alto: 1 }),
+      P('dun/candle_lit', 0.9, -1.75, { sobre: 14, alto: 0.25, luz: AMBAR }),
     ],
-    carteles: [{ x: 2.4, y: 2.6, ancho: 1, titulo: 'PLAN', lineas: ['AC→pantalla', 'supuestos'], fondo: color, tinta: PERGAMINO }],
-  });
+    carteles: [{ x: 0.6, y: 1.6, ancho: 0.55, titulo: 'PLAN', lineas: ['AC→pantalla', 'supuestos'], fondo: '#f1dfb4', tinta: '#3b2414' }],
+  };
 }
 
 const DECORADOS: Record<Exclude<PasoId, 'mapas'>, Decorado> = {

@@ -24,6 +24,7 @@ export async function amueblarDecorado(ctx: Contexto, d: Decorado, base: Amuebla
 
 // ---------------------------------------------------------------- la sala vacía: lo imprescindible
 async function montarVacia(ctx: Contexto, d: Decorado) {
+  if (d.piel === 'taberna') return montarTaberna(ctx, d);
   const { g, v, zB } = ctx;
   await bandaAlta(ctx, { reloj: 4.9, valvulas: [-4.8], tramos: [[-4.4, 2.4], [3.6, 2.6]] });
   // la pantalla con el estado real del repo, en su marco
@@ -53,6 +54,22 @@ async function montarVacia(ctx: Contexto, d: Decorado) {
   ctx.sala.zonasPaseo = [[-2.5, 2.5]];
   ctx.vapor = { pos: new THREE.Vector3(-1.2, 3.15, zB + 0.85), dir: new THREE.Vector3(0.3, 0.9, 0.3) };
   ctx.lamparas = [{ x: -3.6, z: 0.5, o: { intensidad: 80 } }, { x: pr.x, z: 0.9, o: { intensidad: 90, sombra: true, corta: true } }, { x: 3.8, z: 0.5, o: { intensidad: 70 } }];
+}
+
+// La sala vacía con piel de taberna: sin tuberías, ni reloj de fábrica, ni pantalla del repo (los carteles y el atrezo
+// del decorado cuentan de qué va la sala); el puesto es una mesa de madera con libro, tintero y vela, y una silla.
+// Lo que hace el aventurero se ve en el panel de la sala y en su intercomunicador.
+async function montarTaberna(ctx: Contexto, d: Decorado) {
+  const { zB } = ctx;
+  const pu = d.puesto ?? { x: 4.3, z: -0.75, giro: 134 };
+  const giroMesa = ((pu.giro ?? 180) - 180) * G;
+  await puestoTrabajo(ctx, { x: pu.x, z: pu.z, giro: giroMesa, pantalla: null, teclado: false, mesa: rutaAtrezo(pu.mesa ?? 'dun/table_medium')!, silla: rutaAtrezo('dun/chair')!,
+    encima: [{ ruta: rutaAtrezo('dun/book_tan')!, x: -0.25, z: 0.05, c: { alto: 0.12, rot: 0.3 } }, { ruta: rutaAtrezo('dun/candle_lit')!, x: 0.35, z: -0.15, c: { alto: 0.3 } }, { ruta: rutaAtrezo('herr/journal_open')!, x: 0.05, z: 0.1, c: { ancho: 0.4 } }] });
+  ctx.sala.anclas.push({ tipo: 'punto', pos: new THREE.Vector3(pu.x, 1.2, pu.z), intensidad: 2.2, color: new THREE.Color('#ffb347'), distancia: 3.2, prioridad: 2 });
+  puntoPieza(ctx, d.pieza ?? { x: -0.5, z: zB + 1.3, giro: 180 }, 'pieza');
+  const panel = new PanelSala(); panel.titulo = d.subtitulo ?? 'TABERNA'; panel.color = ctx.v.pantalla; ctx.panel = panel;
+  ctx.sala.zonasPaseo = [[-2.5, 2.5]];
+  ctx.lamparas = [{ x: -3.6, z: 0.4, o: { intensidad: 90, color: '#ffb35c' } }, { x: 0, z: 0.5, o: { intensidad: 100, sombra: true, color: '#ffb35c' } }, { x: 3.6, z: 0.4, o: { intensidad: 90, color: '#ffb35c' } }];
 }
 
 function puntoPieza(ctx: Contexto, p: PuntoDecorado, id: string, alHacer?: () => void) {
