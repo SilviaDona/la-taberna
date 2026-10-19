@@ -4,7 +4,9 @@
 import { tonosParaRepetidos } from './reclutas.ts';
 import type { Aspecto } from './aspecto.ts';
 import { distribuir } from './disposicion.ts';
-export interface SalaInicial { origen?: string; id: string; tipo: 'repo' | 'coordinacion' | 'comunicaciones' | 'planificacion' | 'logistica' | 'git' | 'puente' | 'camara' | 'puerta' | 'hidroponia' | 'galeria' | 'discoteca' | 'chapa'; nombre: string; carpeta?: string; planta: number; lado: 'izq' | 'der'; orden: number; variante: string; estilo?: string }
+import type { Decorado } from './decorado.ts';
+import { TABERNA_ESTUDIO } from './tabernaEstudio.ts';
+export interface SalaInicial { origen?: string; id: string; tipo: 'repo' | 'coordinacion' | 'comunicaciones' | 'planificacion' | 'logistica' | 'git' | 'puente' | 'camara' | 'puerta' | 'hidroponia' | 'galeria' | 'discoteca' | 'chapa'; nombre: string; carpeta?: string; planta: number; lado: 'izq' | 'der'; orden: number; variante: string; estilo?: string; decorado?: Decorado }
 export interface HabitanteInicial { id: string; nombre: string; mote: string; tipo: string; bio: string; salaId: string; voz: number; tinte?: string; tono?: number; aspecto?: Aspecto }
 
 // el sitio de cada sala (planta, lado, orden) lo decide `distribuir`: aquí solo qué salas hay
@@ -21,7 +23,7 @@ export const SALAS_INICIALES: SalaInicial[] = distribuir<Omit<SalaInicial, 'plan
   // cuatro repos públicos muy conocidos, uno de cada clase, cada uno en la plantilla de su tipo de proyecto (la misma que
   // le toca a cualquier repo que recluta la Puerta). Se retiran o se vinculan a un repo tuyo desde el panel de la sala, y
   // su habitante la decora a su gusto con «Adaptar la sala al repo»
-  { id: 'express', tipo: 'repo', nombre: 'express', carpeta: 'express', origen: 'expressjs/express', variante: 'web', estilo: 'estudio' },
+  { id: 'express', tipo: 'repo', nombre: 'express', carpeta: 'express', origen: 'expressjs/express', variante: 'web', estilo: 'estudio', decorado: TABERNA_ESTUDIO },
   { id: 'requests', tipo: 'repo', nombre: 'requests', carpeta: 'requests', origen: 'psf/requests', variante: 'comms', estilo: 'laboratorio' },
   { id: 'ripgrep', tipo: 'repo', nombre: 'ripgrep', carpeta: 'ripgrep', origen: 'BurntSushi/ripgrep', variante: 'logistica', estilo: 'fundicion' },
   { id: 'awesome', tipo: 'repo', nombre: 'awesome', carpeta: 'awesome', origen: 'sindresorhus/awesome', variante: 'taller', estilo: 'archivo' },
