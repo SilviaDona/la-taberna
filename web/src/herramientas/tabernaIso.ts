@@ -258,18 +258,76 @@ async function personas() {
   goblin.reproducir('Working_A', 0); gente.push(goblin);
 }
 
-// ---------------------------------------------------------------- cámara isométrica (perspectiva cerrada desde arriba)
+// ---------------------------------------------------------------- cámara isométrica y salas: entrar y salir
+// En la vista general, cada sala lleva su cartel flotante (paso y nombre). Al entrar en una (clic, o 1, 2, 3), la cámara
+// se acerca y arriba sale su título: paso, sala y qué se hace en ella. Esc vuelve a la vista general.
 const giro = THREE.MathUtils.degToRad(+(q.get('giro') ?? 45));
 const alto = THREE.MathUtils.degToRad(+(q.get('alto') ?? 38));
-const dist = +(q.get('dist') ?? 62);
 camera.fov = 22; camera.near = 1; camera.far = 200;
-const objetivo = new THREE.Vector3(+(q.get('x') ?? -6), 0.6, +(q.get('z') ?? 4));
-camera.position.set(objetivo.x + Math.sin(giro) * Math.cos(alto) * dist, objetivo.y + Math.sin(alto) * dist, objetivo.z + Math.cos(giro) * Math.cos(alto) * dist);
-camera.lookAt(objetivo); camera.updateProjectionMatrix();
+const GENERAL = { centro: new THREE.Vector3(+(q.get('x') ?? -6), 0.6, +(q.get('z') ?? 4)), dist: +(q.get('dist') ?? 62) };
+const SALAS = [
+  { id: 'mapas' as const, grupo: sala, tecla: '1' },
+  { id: 'mostrador' as const, grupo: mostrador, tecla: '2' },
+  { id: 'forja' as const, grupo: forja, tecla: '3' },
+];
+let dentro: (typeof SALAS)[number] | null = null;
+const camObjetivo = GENERAL.centro.clone(), camMirada = GENERAL.centro.clone();
+let camDist = GENERAL.dist, camDistAhora = GENERAL.dist;
+function colocarCamara() {
+  camera.position.set(camMirada.x + Math.sin(giro) * Math.cos(alto) * camDistAhora, camMirada.y + Math.sin(alto) * camDistAhora, camMirada.z + Math.cos(giro) * Math.cos(alto) * camDistAhora);
+  camera.lookAt(camMirada); camera.updateProjectionMatrix();
+}
+colocarCamara();
+
+// la interfaz: carteles de las salas y el título de la sala en la que estás
+const capa = document.createElement('div'); capa.className = 'capa'; document.body.appendChild(capa);
+const titulo = document.createElement('div'); titulo.className = 'titulo-sala'; document.body.appendChild(titulo);
+const carteles = SALAS.map(sl => {
+  const p = PASOS[sl.id];
+  const c = document.createElement('button'); c.className = 'cartel-sala';
+  c.innerHTML = `<b>${p.numero}</b><span>${p.sala}</span>`;
+  c.onclick = () => entrar(sl); capa.appendChild(c);
+  return c;
+});
+function entrar(sl: (typeof SALAS)[number] | null) {
+  dentro = sl;
+  if (sl) { camObjetivo.set(sl.grupo.position.x, 0.6, sl.grupo.position.z + 0.6); camDist = 30; }
+  else { camObjetivo.copy(GENERAL.centro); camDist = GENERAL.dist; }
+  const p = sl && PASOS[sl.id];
+  titulo.innerHTML = p ? `<small>PASO ${p.numero}</small><h1>${p.sala}</h1><p>${p.etapa}${p.comando ? ` · <code>${p.comando}</code>` : ''}</p><kbd>Esc</kbd> volver a la taberna` : '';
+  titulo.classList.toggle('visible', !!p);
+  capa.classList.toggle('oculta', !!p);
+}
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') entrar(null);
+  const sl = SALAS.find(x => x.tecla === e.key); if (sl) entrar(sl);
+});
+// un clic en el suelo de una sala entra en ella
+const rayo = new THREE.Raycaster(), raton = new THREE.Vector2();
+motor.renderer.domElement.addEventListener('click', ev => {
+  const r = motor.renderer.domElement.getBoundingClientRect();
+  raton.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  rayo.setFromCamera(raton, camera);
+  const p = rayo.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3()); if (!p) return;
+  const sl = SALAS.find(x => Math.abs(p.x - x.grupo.position.x) < L / 2 && Math.abs(p.z - x.grupo.position.z) < L / 2);
+  if (sl && sl !== dentro) entrar(sl);
+});
+const v = new THREE.Vector3();
+function moverCarteles() {
+  const r = motor.renderer.domElement.getBoundingClientRect();
+  SALAS.forEach((sl, i) => {
+    v.set(sl.grupo.position.x, H + 1.2, sl.grupo.position.z - L / 2 + 0.4).project(camera);
+    carteles[i].style.transform = `translate(-50%, -100%) translate(${(v.x + 1) / 2 * r.width}px, ${(1 - v.y) / 2 * r.height}px)`;
+  });
+}
+if (q.get('sala')) { const sl = SALAS.find(x => x.id === q.get('sala')); if (sl) { entrar(sl); camMirada.copy(camObjetivo); camDistAhora = camDist; colocarCamara(); } }
 
 motor.cadaFotograma((dt, t) => {
   for (const p of gente) p.actualizar(dt);
   for (const l of puntos) l.luz.intensity = l.base * (0.85 + 0.15 * Math.sin(t * l.vel) * Math.sin(t * l.vel * 0.37 + 1.3));
+  camMirada.x = THREE.MathUtils.damp(camMirada.x, camObjetivo.x, 4, dt); camMirada.z = THREE.MathUtils.damp(camMirada.z, camObjetivo.z, 4, dt);
+  camDistAhora = THREE.MathUtils.damp(camDistAhora, camDist, 4, dt);
+  colocarCamara(); moverCarteles();
 });
 
 const listo = (async () => {
