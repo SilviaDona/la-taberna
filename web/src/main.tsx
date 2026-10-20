@@ -16,6 +16,7 @@ import { ventanaArchivos, abrirArchivos } from './ui/archivos/ventana';
 import { Avisos, Carga, CargaSalas } from './ui/Puente';
 import { Hechos, Visor } from './ui/Pasos';
 import { ModoDecorar } from './ui/Mercader';
+import { Mochila } from './ui/Mochila';
 import { Pletina } from './ui/Discoteca';
 import { Buscador } from './ui/Buscador';
 import { cliente, vivo } from './red/cliente';
@@ -44,7 +45,7 @@ motorListo.then(motor => {
 });
 import('./mundo/animaciones').then(m => { (window as any).__anim = m; });   // QA: componer y probar clips desde la página
 (window as any).__THREE = THREE;   // para la QA (rayos, cajas)
-createRoot(document.getElementById('ui')!).render(<><Hud /><Dialogo /><Paneles /><Terminales /><Navegadores /><ClienteGit /><Explorador /><div className="columna-izquierda"><Pletina /><Barra /></div><Avisos /><Hechos /><Visor /><ModoDecorar /><Buscador /><CargaSalas /><Carga /></>);
+createRoot(document.getElementById('ui')!).render(<><Hud /><Dialogo /><Paneles /><Terminales /><Navegadores /><ClienteGit /><Explorador /><div className="columna-izquierda"><Pletina /><Barra /></div><Avisos /><Hechos /><Visor /><ModoDecorar /><Mochila /><Buscador /><CargaSalas /><Carga /></>);
 cliente.conectar();
 Object.assign(window as any, { __juego: juego, __cliente: cliente, __vivo: vivo, __intercoms: intercoms, __navegadores: { navegadores, abrirNavegador }, __git: { ventanaGit, abrirGit }, __archivos: { ventanaArchivos, abrirArchivos } }); // para QA y depuración
 (window as any).__salirRefugio = () => new Promise<void>(ok => { cliente.enviar({ t: 'salir' }); setTimeout(ok, 300); });

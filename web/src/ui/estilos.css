@@ -994,3 +994,8 @@ html.en-segundo-plano *, html.en-segundo-plano *::before, html.en-segundo-plano 
 .modo-decorar { position: fixed; left: 50%; bottom: calc(var(--u) * 4); transform: translateX(-50%); z-index: 50; padding: .6em 1.1em; background: linear-gradient(180deg, #3b2b1a, #241a10); border: 2px solid #c8902a; border-radius: 4px; color: var(--crema); font: calc(var(--u) * .85) var(--t-rotulo); text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,.6); }
 .teclas-decorar { margin-top: .4em; opacity: .85; font-size: .9em; } .teclas-decorar kbd { margin: 0 .2em 0 .7em; }
 .visor-doc table { border-collapse: collapse; margin: 1em 0; } .visor-doc th, .visor-doc td { border: 1px solid #c9b48a; padding: .35em .7em; text-align: left; } .visor-doc th { background: #eadcb8; }
+.mochila { position: fixed; left: 50%; bottom: calc(var(--u) * 4); transform: translateX(-50%); z-index: 52; max-width: min(92vw, 720px); padding: .6em 1em; background: linear-gradient(180deg, #f6e6bf, #e9d3a1); border: 3px solid #3b2414; border-radius: 6px; box-shadow: 0 4px 0 #3b2414, 0 10px 24px rgba(0,0,0,.5); color: #3b2414; font: calc(var(--u) * .85) var(--t-texto, sans-serif); }
+.mochila .icono { font-size: 1.4em; vertical-align: middle; }
+.mochila button { margin-left: .5em; font-weight: 600; background: #3b2414; color: #f1dfb4; border: 0; border-radius: 4px; padding: .25em .8em; cursor: pointer; }
+.mochila.confirmar ul { margin: .4em 0 .6em; padding-left: 1.2em; }
+.mochila.confirmar button { margin: 0 .5em 0 0; }

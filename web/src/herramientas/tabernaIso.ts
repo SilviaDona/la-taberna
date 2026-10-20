@@ -14,6 +14,7 @@ import { PACKS } from '@shared/decorado';
 import { mercancia, type Adorno } from '@shared/mercader';
 import { modo } from '../ui/Mercader';
 import { verEntregable } from '../ui/Pasos';
+import { mochila, recoger, entregar } from '../ui/Mochila';
 import { cliente } from '../red/cliente';
 import type { PasoId } from '@shared/pasos';
 import { vivo } from '../red/cliente';
@@ -441,7 +442,7 @@ async function personas() {
   await aurelia.cargar(); aurelia.raiz.position.set(-0.3, 0, 0.8); aurelia.raiz.rotation.y = Math.PI / 2; scene.add(aurelia.raiz);
   aurelia.reproducir('Interact', 0); gente.push(aurelia); ficha(aurelia, 'Aurelia', PASOS.mapas.aventurero.mote, 'Paso 1 · Sala de Mapas', { paso: 'mapas' });
   const tu = new Personaje('Protagonist_B', aspectoDe({ tipo: 'Protagonist_B' }));
-  await tu.cargar(); tu.marcha.ritmoAndar = 1.7; tu.marcha.ritmoCorrer = 1.35; tu.raiz.position.set(0, 0, L); tu.raiz.rotation.y = -Math.PI * 0.75; scene.add(tu.raiz); gente.push(tu); jugador = tu;
+  await tu.cargar(); tu.marcha.ritmoAndar = 2.4; tu.marcha.ritmoCorrer = 1.7; tu.raiz.position.set(0, 0, L); tu.raiz.rotation.y = -Math.PI * 0.75; scene.add(tu.raiz); gente.push(tu); jugador = tu;
   // Dámaso, el escribano del Mostrador, tras la barra con el libro de supuestos
   const damaso = new Personaje('Hiker', PASOS.mostrador.aventurero.aspecto);
   await damaso.cargar(); damaso.raiz.position.set(OX + 0, 0, -3.5); scene.add(damaso.raiz); damaso.reproducir('Interact', 0); gente.push(damaso); ficha(damaso, 'Dámaso', PASOS.mostrador.aventurero.mote, 'Paso 2 · Mostrador del BA', { paso: 'mostrador' });
@@ -551,7 +552,7 @@ function pintarFicha() {
   const puede = EN_JUEGO && n && (hab || n.mercader);
   const est = hab ? juego.get().habitantes.find(x => x.id === hab.id) : null;
   fichaNpc.innerHTML = n ? `<h2>${escapar(hab?.nombre ?? n.nombre)}</h2><em>«${escapar(hab?.mote || n.mote)}»</em>${est && est.estado !== 'ocioso' ? `<span class="estado-npc">${TEXTO_ESTADO[est.estado] ?? est.estado}${est.detalle ? ': ' + escapar(est.detalle).slice(0, 80) : ''}</span>` : ''}<p>${n.rol}</p>`
-    + (puede ? `<button class="activo" data-a="hablar">${n.mercader ? 'Ver lo que trae' : 'Hablar'} <small style="color:#ffcf7a">E</small></button>${n.paso || n.sala ? '<button class="activo" data-a="panel">'+(n.sala ? 'Su sala' : 'Historias')+' <small style="color:#ffcf7a">Enter</small></button>' : ''}` : '<button disabled>Hablar</button>')
+    + (puede ? `<button class="activo" data-a="hablar">${n.mercader ? 'Ver lo que trae' : mochila.get().e && n.paso ? 'Entregar' : 'Hablar'} <small style="color:#ffcf7a">E</small></button>${n.paso || n.sala ? '<button class="activo" data-a="panel">'+(n.sala ? 'Su sala' : 'Historias')+' <small style="color:#ffcf7a">Enter</small></button>' : ''}` : '<button disabled>Hablar</button>')
     + '<small>Esc para soltar</small>' : '';
   fichaNpc.classList.toggle('visible', !!n);
   fichaNpc.querySelector('[data-a=hablar]')?.addEventListener('click', () => n && hablarCon(n));
@@ -566,6 +567,11 @@ addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === 'Escape' && (elegido || camDist !== GENERAL.dist)) { seleccionar(null); enfocar(null); if (EN_JUEGO) e.stopImmediatePropagation(); return; }
   if (EN_JUEGO && elegido && e.code === 'KeyE') { hablarCon(elegido); e.preventDefault(); return; }
+  // con algo en las manos y nadie elegido, E se lo da al aventurero que tengas al lado
+  if (EN_JUEGO && !elegido && e.code === 'KeyE' && mochila.get().e && jugador) {
+    const cerca = npcs.filter(n => n.paso).map(n => ({ n, d: n.p.raiz.position.distanceTo(jugador!.raiz.position) })).sort((a, b) => a.d - b.d)[0];
+    if (cerca && cerca.d < 2.6) { seleccionar(cerca.n); hablarCon(cerca.n); e.preventDefault(); return; }
+  }
   if (EN_JUEGO && (elegido?.paso || elegido?.sala) && e.code === 'Enter') { abrirPanel((elegido.paso ?? elegido.sala)!); e.preventDefault(); return; }
   if (e.key === '+' || e.code === 'Equal' || e.code === 'NumpadAdd') { zoom(0.85); return; }
   if (e.key === '-' || e.code === 'Minus' || e.code === 'NumpadSubtract') { zoom(1.18); return; }
@@ -632,7 +638,7 @@ lienzo.addEventListener('wheel', ev => { ev.preventDefault(); zoom(Math.exp(ev.d
 lienzo.addEventListener('mouseleave', () => { salaRaton = null; });
 lienzo.addEventListener('click', ev => {
   apuntar(ev);
-  if (EN_JUEGO) { const p0 = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (p0 && soltar(p0)) return; const en = entregableBajoRaton(); if (en) { verEntregable(en); return; } }
+  if (EN_JUEGO) { const p0 = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (p0 && soltar(p0)) return; const en = entregableBajoRaton(); if (en) { irARecoger(en); return; } }
   const n = npcBajoRaton(); if (n) { if (n === elegido && ev.detail >= 2 && EN_JUEGO) hablarCon(n); else seleccionar(n); return; }
   const p = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (!p) return;
   // dentro de la taberna (las salas y el salón central): la Tabernera va andando hasta ahí
@@ -662,7 +668,7 @@ motor.cadaFotograma((dt, t) => {
   if (jugador) { const sl = salaEn(jugador.raiz.position.x, jugador.raiz.position.z); if (sl !== salaJugador) { salaJugador = sl; ponerTitulo(sl); } }
   if (elegido) { anillo.position.set(elegido.p.raiz.position.x, 0.03, elegido.p.raiz.position.z); anillo.material.opacity = 0.65 + 0.3 * Math.sin(t * 4); }
   moverCarteles();
-  if (EN_JUEGO) { alFotograma(t); moverEtiquetasEntrega(); }
+  if (EN_JUEGO) { alFotograma(t); moverEtiquetasEntrega(); moverLlevado(t); }
 });
 
 const listo = (async () => {
@@ -729,6 +735,7 @@ function publicar() {
 }
 let retrato: Retrato | null = null;
 function hablarCon(n: Npc) {
+  if (mochila.get().e && n.paso && entregar(n.paso)) return;   // con algo en las manos, hablar es entregárselo
   if (n.mercader) { juego.set({ panel: 'sala', panelDatos: { salaId: salaJugador?.id ?? 'mapas', vista: 'mercader' } }); return; }
   const h = habitanteDe(n); if (!h) return;
   retrato?.destruir(); retrato = new Retrato(n.p); (window as any).__retrato = retrato.canvas;
@@ -747,7 +754,7 @@ function alFotograma(t: number) {
   const items = npcs.filter(n => n.paso || n.sala).map(n => {
     const h = habitanteDe(n); const s = h && sesionDe(h.id); const [estado, detalle] = estadoDe(s);
     const pos = n.p.raiz.position.clone(); pos.y += 1.75 * n.p.raiz.scale.y;
-    return { k: n, pos, alto: 0, nombre: h?.nombre ?? n.nombre, estado, detalle: n === elegido && estado !== 'ocioso' ? detalle.slice(0, 50) : '', cerca: n === elegido, prompt: n === elegido ? 'Hablar' : '', progreso: progresoDe(s) };
+    return { k: n, pos, alto: 0, nombre: h?.nombre ?? n.nombre, estado, detalle: n === elegido && estado !== 'ocioso' ? detalle.slice(0, 50) : '', cerca: n === elegido, prompt: n === elegido ? (mochila.get().e && n.paso ? 'Entregar' : 'Hablar') : '', progreso: progresoDe(s) };
   });
   etiquetas.actualizar(camera, items as any);
 }
@@ -844,7 +851,7 @@ modo.suscribir(() => { if (!enDecorar()) { aro.visible = false; destino = null; 
 // ---------------------------------------------------------------- la mesa de entregas de cada sala
 // Lo que deja cada aventurero se ve en su sala, en una mesita junto a la entrada: el prototipo es un plato, el plan un
 // pergamino, el handoff una carta, el registro un libro… (los tres últimos). Un clic lo abre en el visor del juego.
-type EntVista = { ruta: string; nombre: string; tipo: string; paso: string; fecha: number };
+type EntVista = { ruta: string; nombre: string; tipo: string; paso: PasoId; fecha: number; historia: string };
 // el hueco de la mesa en cada sala se busca solo: el punto libre de muebles más cercano a la entrada (delante y al centro)
 const huecos = new Map<string, [number, number]>();
 function huecoLibre(sl: SalaIso): [number, number] {
@@ -876,13 +883,14 @@ function modeloDe(e: EntVista) {
   return R.herr('journal_open');
 }
 const mesasEnt = new Map<string, THREE.Group>();
-const objEnt: { o: THREE.Object3D; e: EntVista; etq: HTMLButtonElement }[] = [];
+const objEnt: { o: THREE.Object3D; e: EntVista; etq: HTMLDivElement }[] = [];
 // cada entregable lleva encima su etiqueta (para no confundirlo con los adornos de la sala): clic para verlo
 const ICONO_ENT: Record<string, string> = { html: '🍲', md: '📜', json: '🗂', texto: '📄', imagen: '🖼', otro: '📦' };
 function etiquetaEntrega(e: EntVista) {
-  const b = document.createElement('button'); b.className = 'etq-entrega';
-  b.textContent = `${ICONO_ENT[e.tipo] ?? '📦'} ${e.nombre}`; b.title = 'Clic para verlo';
-  b.onclick = () => verEntregable(e); capa.appendChild(b); return b;
+  const b = document.createElement('div'); b.className = 'etq-entrega';
+  const ver = document.createElement('button'); ver.textContent = `${ICONO_ENT[e.tipo] ?? '📦'} ${e.nombre}`; ver.title = 'Verlo'; ver.onclick = () => verEntregable(e);
+  const coger = document.createElement('button'); coger.textContent = '✋'; coger.title = 'Cogerlo para llevárselo al siguiente paso'; coger.onclick = () => irARecoger(e);
+  b.append(ver, coger); capa.appendChild(b); return b;
 }
 function moverEtiquetasEntrega() {
   const r = lienzo.getBoundingClientRect(); const v = new THREE.Vector3();
@@ -898,7 +906,7 @@ function moverEtiquetasEntrega() {
 let firmaEnt = '';
 function ponerEntregables() {
   const hs: any[] = vivo.get().estado?.historias ?? [];
-  const todos: EntVista[] = hs.flatMap(h => (h.entregables ?? []) as EntVista[]);
+  const todos: EntVista[] = hs.flatMap(h => ((h.entregables ?? []) as EntVista[]).map(e => ({ ...e, historia: h.id })));
   const f = JSON.stringify(todos.map(e => [e.ruta, e.paso, e.fecha]));
   if (f === firmaEnt) return; firmaEnt = f;
   for (const g of mesasEnt.values()) g.removeFromParent(); mesasEnt.clear(); for (const x of objEnt) x.etq.remove(); objEnt.length = 0;
@@ -930,4 +938,29 @@ function entregableBajoRaton(): EntVista | null {
   return null;
 }
 // QA: lo que hay en las mesas de entregas y mirar a un punto
-Object.assign(window as any, { __entregas: objEnt, __mirar: (x: number, z: number, dist = 20) => { camObjetivo.set(x, 0.6, z); camMirada.copy(camObjetivo); camDist = camDistAhora = dist; colocarCamara(); } });
+Object.assign(window as any, { __jugador: () => jugador, __entregas: objEnt, __mirar: (x: number, z: number, dist = 20) => { camObjetivo.set(x, 0.6, z); camMirada.copy(camObjetivo); camDist = camDistAhora = dist; colocarCamara(); } });
+
+// ---------------------------------------------------------------- recoger y llevar (ui/Mochila.tsx)
+// Clic en un entregable (o ✋ en su etiqueta): la Tabernera va a la mesa y lo coge; lo lleva sobre la cabeza hasta
+// dárselo (E) al aventurero del paso siguiente.
+function irARecoger(e: EntVista) {
+  const x = objEnt.find(y => y.e.ruta === e.ruta && y.e.paso === e.paso); if (!x || !jugador) { recoger(e); return; }
+  const p = x.o.getWorldPosition(new THREE.Vector3());
+  const desde = jugador.raiz.position, dir = new THREE.Vector3().subVectors(desde, p).setY(0);
+  const junto = p.clone().add(dir.lengthSq() > 0.01 ? dir.normalize().multiplyScalar(0.9) : new THREE.Vector3(0, 0, 0.9)).setY(0);
+  jugador.irA(junto, corre, () => { jugador!.giroObjetivo = Math.atan2(p.x - jugador!.raiz.position.x, p.z - jugador!.raiz.position.z); recoger({ historia: e.historia, ruta: e.ruta, nombre: e.nombre, tipo: e.tipo, paso: e.paso }); });
+}
+let llevado: THREE.Object3D | null = null, llevadoClave = '';
+mochila.suscribir(() => {
+  const e = mochila.get().e; const clave = e ? e.paso + e.ruta : '';
+  if (clave === llevadoClave) return; llevadoClave = clave;
+  llevado?.removeFromParent(); llevado = null;
+  if (!e) return;
+  const g = new THREE.Group(); scene.add(g); llevado = g;
+  colocar(g, modeloDe({ ...e, fecha: 0 }), { pos: [0, 0, 0], ancho: e.tipo === 'html' ? 0.55 : 0.45, sombra: true }).catch(() => null);
+  const halo = new THREE.PointLight('#ffd27a', 1.2, 2, 1.6); halo.position.y = 0.3; g.add(halo);
+});
+function moverLlevado(t: number) {
+  if (!llevado || !jugador) return;
+  llevado.position.set(jugador.raiz.position.x, 2.15 + Math.sin(t * 3) * 0.06, jugador.raiz.position.z); llevado.rotation.y = t * 0.8;
+}

@@ -35,6 +35,9 @@ if ($OCULTO) { New-Item -ItemType Directory -Force -Path $LOGS | Out-Null; Start
 
 $orden = if ($args.Count) { [string]$args[0] } else { '' }
 $resto = if ($args.Count -gt 1) { $args[1..($args.Count - 1)] } else { @() }
+# `shelter.cmd navegador`: sin la ventana de Electron (no se descarga): el juego se abre en el navegador del sistema
+$NAVEGADOR = $orden -eq 'navegador' -or [bool]$env:SHELTER_NAVEGADOR
+if ($orden -eq 'navegador') { $orden = '' }
 $SUBORDEN = $orden -in @('superficie', 'enganchar')
 if (-not $SUBORDEN) { Write-Host '== work-shelter ==' }
 
@@ -90,7 +93,7 @@ if (-not (Test-Path $sello) -or ((Get-Content $sello -Raw).Trim() -ne $huella)) 
 
 # 3b. Binario de Electron (la ventana del juego): este paquete lo descarga aparte
 $ELECTRON = Join-Path $RAIZ 'node_modules\electron\dist\electron.exe'
-if (-not (Test-Path $ELECTRON)) {
+if (-not $NAVEGADOR -and -not (Test-Path $ELECTRON)) {
   Amarillo 'Descargando la ventana del juego (Electron, solo la primera vez)…'
   & $NODE node_modules/electron/install.js
   if ($LASTEXITCODE -ne 0) { Amarillo 'No se pudo descargar Electron: work-shelter se abrirá en el navegador.' }
@@ -183,12 +186,12 @@ try {
   if ($env:SHELTER_SIN_VENTANA) {
     Write-Host "Abre: $URL"
     if ($servidor) { $servidor.WaitForExit() }
-  } elseif (Test-Path $ELECTRON) {
+  } elseif (-not $NAVEGADOR -and (Test-Path $ELECTRON)) {
     $env:SHELTER_URL = $URL
     $e = Start-Process -FilePath $ELECTRON -ArgumentList 'electron/main.cjs' -WorkingDirectory $RAIZ -PassThru
     $e.WaitForExit()
   } else {
-    Amarillo 'No encuentro Electron; abro work-shelter en el navegador.'
+    if (-not $NAVEGADOR) { Amarillo 'No encuentro Electron; abro work-shelter en el navegador.' }
     Start-Process $URL
     if ($servidor) { $servidor.WaitForExit() }
   }

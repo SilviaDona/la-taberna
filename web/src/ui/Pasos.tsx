@@ -128,7 +128,7 @@ function VolverACocina({ id, volver, hecho }: { id: string; volver: () => void; 
 }
 
 /** Arranca el paso con el aventurero de su sala: una conversación nueva con su skill, en la carpeta del proyecto */
-function trabajar(paso: PasoId, h: Historia) {
+export function trabajar(paso: PasoId, h: Historia) {
   const salaId = paso;
   const hab = juego.get().habitantes.find(x => x.sala === salaId && !x.copia);
   const prompt = promptDePaso(paso, h);

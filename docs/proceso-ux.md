@@ -64,3 +64,9 @@ Hechas en Linux sin GPU (SwiftShader) con una taberna y un proyecto de prueba, y
 
 - En cada sala hay una **mesa de entregas** con lo último que ha dejado su aventurero: el prototipo es un plato, el plan un pergamino, el handoff una carta, el registro un libro. Lo reciente brilla. Un clic lo abre en el juego.
 - **La Barra**, en el salón central: Bartolo, el tabernero, para cualquier encargo fuera del proceso (sin skill de UX). Trabaja en la carpeta del proyecto. Tecla 4 para ir.
+
+## El proceso, andando
+
+- Clic en un entregable de la mesa (o ✋ en su etiqueta): vas a por él y lo llevas sobre la cabeza. Abajo ves qué llevas y a quién llevárselo.
+- Llévaselo al aventurero del paso siguiente y pulsa **E** (o «Entregar» en su ficha): te enseña la puerta de calidad del paso; con **Sí**, la historia pasa de paso, cobras su oro y él se pone a trabajar.
+- Llevarlo no mueve el archivo: sigue en la carpeta de la historia.
