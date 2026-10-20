@@ -53,3 +53,9 @@ Hechas en Linux sin GPU (SwiftShader) con una taberna y un proyecto de prueba, y
 - **Mientras trabaja**, sobre su cabeza sale una barra de progreso (estimada: Claude Code no sabe cuánto le falta).
 - **Al terminar**, sale un aviso ✔ con lo que ha dejado. «Ver» lo abre dentro del juego: el prototipo (el plato) funciona tal cual, aislado del juego; los documentos Markdown se leen como documento. Todos los entregables de una historia están en su ficha («📜 Entregables»).
 - **El oro** se gana cumpliendo pasos. En el panel de cualquier sala de un paso: «Llamar a Gorgo, el buhonero» (trae seis cosas distintas cada día) y «Decorar esta sala» (pones lo del baúl; flechas para moverlo, Q/E para girarlo, Supr lo devuelve al baúl, Enter para acabar). Lo que vendes de vuelta te da la mitad.
+
+## Moverse por la taberna
+
+- Clic en el suelo: vas andando hasta ahí. Con **Mayús** pulsada, corres.
+- **W A S D**: mueven la cámara; **rueda del ratón** (o + y −): zoom; **1 a 8**: cada sala; **Esc**: vista general.
+- Al comprar algo a Gorgo, el objeto sigue al ratón: **clic** donde lo quieres (también en otra sala), **Q/E** lo giran, **Supr** lo devuelve al baúl.

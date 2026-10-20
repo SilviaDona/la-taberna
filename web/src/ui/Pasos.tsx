@@ -28,7 +28,7 @@ export function PanelDePaso({ salaId, sala, generales }: { salaId: string; sala:
     case 'nueva': return <NuevaHistoria volver={menu} alCrear={id => setVista({ v: 'historia', id })} />;
     case 'historia': return <HistoriaEnPaso salaId={salaId} id={vista.id} volver={menu} ir={setVista} />;
     case 'supuestos': return <AnadirSupuestos id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} />;
-    case 'mercader': return <Mercader volver={menu} />;
+    case 'mercader': return <Mercader volver={menu} salaId={salaId} />;
     case 'decorar': return <Decorar salaId={salaId} volver={menu} />;
     case 'entregables': return <ListaEntregables id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} />;
     case 'volver': return <VolverACocina id={vista.id} volver={() => setVista({ v: 'historia', id: vista.id })} hecho={menu} />;

@@ -12,6 +12,8 @@ import { PASOS } from '@shared/pasos';
 import { aspectoDe, firmaAspecto, type Aspecto } from '@shared/aspecto';
 import { PACKS } from '@shared/decorado';
 import { mercancia, type Adorno } from '@shared/mercader';
+import { modo } from '../ui/Mercader';
+import { cliente } from '../red/cliente';
 import type { PasoId } from '@shared/pasos';
 import { vivo } from '../red/cliente';
 import { juego } from '../ui/estadoJuego';
@@ -438,7 +440,7 @@ async function personas() {
   await aurelia.cargar(); aurelia.raiz.position.set(-0.3, 0, 0.8); aurelia.raiz.rotation.y = Math.PI / 2; scene.add(aurelia.raiz);
   aurelia.reproducir('Interact', 0); gente.push(aurelia); ficha(aurelia, 'Aurelia', PASOS.mapas.aventurero.mote, 'Paso 1 · Sala de Mapas', { paso: 'mapas' });
   const tu = new Personaje('Protagonist_B', aspectoDe({ tipo: 'Protagonist_B' }));
-  await tu.cargar(); tu.raiz.position.set(0, 0, L); tu.raiz.rotation.y = -Math.PI * 0.75; scene.add(tu.raiz); gente.push(tu); jugador = tu;
+  await tu.cargar(); tu.marcha.ritmoAndar = 1.7; tu.marcha.ritmoCorrer = 1.35; tu.raiz.position.set(0, 0, L); tu.raiz.rotation.y = -Math.PI * 0.75; scene.add(tu.raiz); gente.push(tu); jugador = tu;
   // Dámaso, el escribano del Mostrador, tras la barra con el libro de supuestos
   const damaso = new Personaje('Hiker', PASOS.mostrador.aventurero.aspecto);
   await damaso.cargar(); damaso.raiz.position.set(OX + 0, 0, -3.5); scene.add(damaso.raiz); damaso.reproducir('Interact', 0); gente.push(damaso); ficha(damaso, 'Dámaso', PASOS.mostrador.aventurero.mote, 'Paso 2 · Mostrador del BA', { paso: 'mostrador' });
@@ -548,8 +550,37 @@ addEventListener('keydown', e => {
   if (e.key === 'Escape' && (elegido || camDist !== GENERAL.dist)) { seleccionar(null); enfocar(null); if (EN_JUEGO) e.stopImmediatePropagation(); return; }
   if (EN_JUEGO && elegido && e.code === 'KeyE') { hablarCon(elegido); e.preventDefault(); return; }
   if (EN_JUEGO && elegido?.paso && e.code === 'Enter') { abrirPanel(elegido.paso); e.preventDefault(); return; }
+  if (e.key === '+' || e.code === 'Equal' || e.code === 'NumpadAdd') { zoom(0.85); return; }
+  if (e.key === '-' || e.code === 'Minus' || e.code === 'NumpadSubtract') { zoom(1.18); return; }
   const sl = SALAS.find(x => x.tecla === e.key); if (sl) enfocar(sl);
 }, true);
+// W A S D mueven la cámara por la taberna (en la dirección en que se mira)
+const teclasCam = new Set<string>();
+addEventListener('keydown', e => {
+  if (!['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code) || e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target as HTMLElement | null;
+  if (EN_JUEGO && (juego.get().hablandoCon || juego.get().panel || t?.closest?.('input, textarea, [contenteditable], .intercom, .ventana'))) return;
+  teclasCam.add(e.code);
+});
+addEventListener('keyup', e => teclasCam.delete(e.code));
+addEventListener('blur', () => teclasCam.clear());
+function moverCamara(dt: number) {
+  if (!teclasCam.size) return;
+  if (EN_JUEGO && (juego.get().hablandoCon || juego.get().panel)) { teclasCam.clear(); return; }
+  const adelante = new THREE.Vector2(-Math.sin(giro), -Math.cos(giro)), derecha = new THREE.Vector2(Math.cos(giro), -Math.sin(giro));
+  const d = new THREE.Vector2();
+  if (teclasCam.has('KeyW')) d.add(adelante); if (teclasCam.has('KeyS')) d.sub(adelante);
+  if (teclasCam.has('KeyD')) d.add(derecha); if (teclasCam.has('KeyA')) d.sub(derecha);
+  if (!d.lengthSq()) return;
+  d.normalize().multiplyScalar(camDist * 0.35 * dt * (corre ? 2 : 1));
+  camObjetivo.x = THREE.MathUtils.clamp(camObjetivo.x + d.x, -30, 30); camObjetivo.z = THREE.MathUtils.clamp(camObjetivo.z + d.y, -12, 40);
+  camMirada.x = camObjetivo.x; camMirada.z = camObjetivo.z;
+}
+// Mayús: correr (también a mitad de camino)
+let corre = false;
+addEventListener('keydown', e => { if (e.key === 'Shift') { corre = true; if (jugador) jugador.corriendo = true; } });
+addEventListener('keyup', e => { if (e.key === 'Shift') { corre = false; if (jugador) jugador.corriendo = false; } });
+addEventListener('blur', () => { corre = false; if (jugador) jugador.corriendo = false; });
 // el ratón: qué sala hay debajo, a quién se apunta y adónde se va
 const rayo = new THREE.Raycaster(), raton = new THREE.Vector2(), SUELO_Y = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 function apuntar(ev: MouseEvent) {
@@ -574,15 +605,20 @@ lienzo.addEventListener('mousemove', ev => {
   apuntar(ev);
   const p = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3());
   salaRaton = p ? salaEn(p.x, p.z) : null;
+  if (EN_JUEGO && p && arrastrar(p)) { lienzo.style.cursor = 'crosshair'; return; }
   lienzo.style.cursor = npcBajoRaton() ? 'pointer' : 'default';
 });
+// la rueda acerca y aleja la cámara (y + / − con el teclado)
+function zoom(f: number) { camDist = THREE.MathUtils.clamp(camDist * f, 12, 140); }
+lienzo.addEventListener('wheel', ev => { ev.preventDefault(); zoom(Math.exp(ev.deltaY * 0.0012)); }, { passive: false });
 lienzo.addEventListener('mouseleave', () => { salaRaton = null; });
 lienzo.addEventListener('click', ev => {
   apuntar(ev);
+  if (EN_JUEGO) { const p0 = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (p0 && soltar(p0)) return; }
   const n = npcBajoRaton(); if (n) { if (n === elegido && ev.detail >= 2 && EN_JUEGO) hablarCon(n); else seleccionar(n); return; }
   const p = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (!p) return;
   // dentro de la taberna (las salas y el salón central): la Tabernera va andando hasta ahí
-  if (p.x > -L * 1.5 && p.x < L * 1.5 && p.z > -L / 2 && p.z < L * 2.5) jugador?.irA(new THREE.Vector3(p.x, 0, p.z));
+  if (p.x > -L * 1.5 && p.x < L * 1.5 && p.z > -L / 2 && p.z < L * 2.5) jugador?.irA(new THREE.Vector3(p.x, 0, p.z), corre);
 });
 const v = new THREE.Vector3();
 function moverCarteles() {
@@ -600,6 +636,7 @@ motor.cadaFotograma((dt, t) => {
   for (const p of gente) p.actualizar(dt);
   if (Math.floor(t * 2) !== Math.floor((t - dt) * 2) || t < 0.1) ponerHora(horaAhora());   // dos veces por segundo basta
   for (const l of puntos) l.luz.intensity = factorVelas * l.base * (0.85 + 0.15 * Math.sin(t * l.vel) * Math.sin(t * l.vel * 0.37 + 1.3));
+  moverCamara(dt);
   camMirada.x = THREE.MathUtils.damp(camMirada.x, camObjetivo.x, 4, dt); camMirada.z = THREE.MathUtils.damp(camMirada.z, camObjetivo.z, 4, dt);
   camDistAhora = THREE.MathUtils.damp(camDistAhora, camDist, 4, dt);
   colocarCamara();
@@ -704,20 +741,25 @@ function pintarFichaSiCambia() {
 }
 // los adornos de cada sala (modo decorar): x de la escena (±5,8 m) a lo ancho, z de fondo (−2,25) a frente (2,1) a lo hondo
 const adornosEn = new Map<string, THREE.Group>();
+const objAdorno = new Map<string, THREE.Group>();
 let firmaAdornos = '';
 function ponerAdornos() {
   const salas: any[] = vivo.get().estado?.salas ?? [];
   const f = JSON.stringify(salas.map(s => [s.id, s.adornos ?? []]));
   if (f === firmaAdornos) return; firmaAdornos = f;
+  for (const o of objAdorno.values()) o.removeFromParent();
+  objAdorno.clear();
   for (const sl of SALAS) {
     adornosEn.get(sl.id)?.removeFromParent();
     const ads: Adorno[] = salas.find(s => s.id === sl.id)?.adornos ?? [];
     const g = new THREE.Group(); g.position.copy(sl.grupo.position); scene.add(g); adornosEn.set(sl.id, g);
     for (const a of ads) {
       const m = mercancia(a.mercancia); if (!m) continue;
+      const cont = new THREE.Group(); g.add(cont); objAdorno.set(a.id, cont);
       const [pack, nombre] = m.modelo.split('/'); const pk = PACKS[pack]; if (!pk) continue;
       const x = THREE.MathUtils.clamp(a.x, -5.2, 5.2), z = m.pared ? -L / 2 + 0.3 : THREE.MathUtils.mapLinear(a.z, -2.25, 2.1, -4.6, 4.6);
-      colocar(g, `${pk.carpeta}/${nombre}${pk.ext}`, { pos: [x, m.pared ? (m.y ?? 1.2) + 0.6 : 0, z], rot: THREE.MathUtils.degToRad(a.giro), sombra: true, ...(m.alto ? { alto: m.alto } : {}) })
+      cont.position.set(x, m.pared ? (m.y ?? 1.2) + 0.6 : 0, z); cont.userData.pared = !!m.pared;
+      colocar(cont, `${pk.carpeta}/${nombre}${pk.ext}`, { pos: [0, 0, 0], rot: THREE.MathUtils.degToRad(a.giro), sombra: true, ...(m.alto ? { alto: m.alto } : {}) })
         .then(() => { motor.renderer.shadowMap.needsUpdate = true; }).catch(() => null);
     }
   }
@@ -748,3 +790,35 @@ function conectar() {
     if (n) { seleccionar(n); if (hablar) hablarCon(n); }
   });
 }
+
+// ---------------------------------------------------------------- modo decorar con el ratón
+// El adorno que se está colocando sigue al puntero por el suelo de las salas de los pasos (con un aro debajo: verde
+// donde se puede, rojo fuera); un clic lo deja ahí (si es otra sala, se cambia de sala). Q/E giran, Supr lo devuelve.
+const aro = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.85, 40), new THREE.MeshBasicMaterial({ color: '#5fe07a', transparent: true, opacity: 0.85, depthWrite: false }));
+aro.rotation.x = -Math.PI / 2; aro.visible = false; aro.renderOrder = 3; scene.add(aro);
+let destino: { sala: SalaIso; x: number; z: number } | null = null;
+function enDecorar() { const m = modo.get(); return m.salaId && m.id ? m : null; }
+function arrastrar(p: THREE.Vector3): boolean {
+  const m = enDecorar(); if (!m) { aro.visible = false; destino = null; return false; }
+  const o = objAdorno.get(m.id!); const sl = salaEn(p.x, p.z);
+  const lx = sl ? THREE.MathUtils.clamp(p.x - sl.grupo.position.x, -5.2, 5.2) : 0, lz = sl ? THREE.MathUtils.clamp(p.z - sl.grupo.position.z, -4.6, 4.6) : 0;
+  destino = sl ? { sala: sl, x: lx, z: lz } : null;
+  aro.visible = true; aro.position.set(sl ? sl.grupo.position.x + lx : p.x, 0.04, sl ? sl.grupo.position.z + lz : p.z);
+  (aro.material as THREE.MeshBasicMaterial).color.set(sl ? '#5fe07a' : '#e05f5f');
+  if (o && sl && !o.userData.pared) { o.parent !== scene && scene.attach(o); o.position.set(sl.grupo.position.x + lx, 0, sl.grupo.position.z + lz); }
+  return true;
+}
+function soltar(_p: THREE.Vector3): boolean {
+  const m = enDecorar(); if (!m) return false;
+  if (!destino) { return true; }
+  const d = destino; const x = d.x, z = THREE.MathUtils.mapLinear(d.z, -4.6, 4.6, -2.25, 2.1);
+  const giro = ((vivo.get().estado?.salas ?? []).find((s: any) => s.id === m.salaId)?.adornos ?? []).find((a: Adorno) => a.id === m.id)?.giro ?? 0;
+  const hecho = () => { aro.visible = false; destino = null; modo.set({ salaId: null, id: null }); };
+  if (d.sala.id === m.salaId) cliente.accion('decorar.mover', { salaId: m.salaId, id: m.id, x, z, giro }).then(hecho).catch(() => {});
+  else {
+    const merc = ((vivo.get().estado?.salas ?? []).find((s: any) => s.id === m.salaId)?.adornos ?? []).find((a: Adorno) => a.id === m.id)?.mercancia;
+    cliente.accion('decorar.quitar', { salaId: m.salaId, id: m.id }).then(() => cliente.accion('decorar.poner', { salaId: d.sala.id, mercancia: merc, x, z, giro })).then(hecho).catch(() => {});
+  }
+  return true;
+}
+modo.suscribir(() => { if (!enDecorar()) { aro.visible = false; destino = null; firmaAdornos = ''; ponerAdornos(); } });   // sin colocar, vuelve a su sitio

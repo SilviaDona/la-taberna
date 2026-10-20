@@ -11,12 +11,19 @@ const usarOro = () => vivo.usar(e => (e.estado?.jugador?.chatarra ?? 0) as numbe
 const usarBaul = () => vivo.usar(e => (e.estado?.jugador?.baul ?? {}) as Record<string, number>);
 const RAREZA: Record<string, string> = { común: '', rara: '◆ rara', legendaria: '★ legendaria' };
 
-export function Mercader({ volver }: { volver: () => void }) {
+export function Mercader({ volver, salaId }: { volver: () => void; salaId: string }) {
   const oro = usarOro(); const baul = usarBaul();
   const [aviso, setAviso] = useState('');
   const hoy = existencias().map(id => mercancia(id)!);
   const enBaul = MERCANCIAS.filter(m => baul[m.id]);
-  const hacer = (n: string, id: string) => cliente.accion<{ oro: number }>(n, { id }).then(r => { SFX.exito(); setAviso(r.oro < 0 ? `Comprado por ${-r.oro} de oro: está en tu baúl.` : `Vendido por ${r.oro} de oro.`); }).catch(e => { SFX.error(); setAviso((e as Error).message); });
+  const hacer = (n: string, id: string) => cliente.accion<{ oro: number }>(n, { id }).then(async r => {
+    SFX.exito();
+    if (r.oro >= 0) { setAviso(`Vendido por ${r.oro} de oro.`); return; }
+    // lo comprado se coloca al momento: sigue al ratón hasta que haces clic donde lo quieres
+    await cliente.accion('decorar.poner', { salaId, mercancia: id, x: 0, z: 0.6, giro: 0 });
+    const a = (vivo.get().estado?.salas?.find((s: any) => s.id === salaId)?.adornos ?? []) as Adorno[];
+    cerrarPanel(); modo.set({ salaId, id: a[a.length - 1]?.id ?? null });
+  }).catch(e => { SFX.error(); setAviso((e as Error).message); });
   const items: (ItemMenu & { f: () => void })[] = [
     ...hoy.map(m => ({ texto: <>{m.nombre} <span className="tenue">{RAREZA[m.rareza]}</span></>, pista: <>{m.precio} de oro{baul[m.id] ? ` · tienes ${baul[m.id]}` : ''}</>, apagado: oro < m.precio, clase: m.rareza === 'legendaria' ? 'esperando' : '', f: () => hacer('mercader.comprar', m.id) })),
     ...enBaul.map(m => ({ texto: <>Vender {m.nombre} <span className="tenue">(×{baul[m.id]} en el baúl)</span></>, pista: `+${precioVenta(m)} de oro`, f: () => hacer('mercader.vender', m.id) })),
@@ -80,10 +87,10 @@ export function ModoDecorar() {
       const p = pos.current; const paso = ev.shiftKey ? 0.1 : 0.3;
       let usado = true;
       switch (ev.code) {
-        case 'ArrowLeft': case 'KeyA': if (p) { p.x -= paso; mandar(); SFX.tick(); } break;
-        case 'ArrowRight': case 'KeyD': if (p) { p.x += paso; mandar(); SFX.tick(); } break;
-        case 'ArrowUp': case 'KeyW': if (p) { p.z -= paso; mandar(); SFX.tick(); } break;
-        case 'ArrowDown': case 'KeyS': if (p) { p.z += paso; mandar(); SFX.tick(); } break;
+        case 'ArrowLeft': if (p) { p.x -= paso; mandar(); SFX.tick(); } break;
+        case 'ArrowRight': if (p) { p.x += paso; mandar(); SFX.tick(); } break;
+        case 'ArrowUp': if (p) { p.z -= paso; mandar(); SFX.tick(); } break;
+        case 'ArrowDown': if (p) { p.z += paso; mandar(); SFX.tick(); } break;
         case 'KeyQ': if (p) { p.giro = (p.giro - 45) % 360; mandar(); SFX.tick(); } break;
         case 'KeyE': if (p) { p.giro = (p.giro + 45) % 360; mandar(); SFX.tick(); } break;
         case 'Tab': { const i = adornos.findIndex(x => x.id === m.id); const sig = adornos[(i + (ev.shiftKey ? adornos.length - 1 : 1)) % Math.max(1, adornos.length)]; if (sig) { modo.set({ id: sig.id }); SFX.tick(); } break; }
@@ -100,7 +107,7 @@ export function ModoDecorar() {
   return (
     <div className="modo-decorar interactivo">
       <b>🔨 Modo decorar</b> {nombre ? <>· moviendo <b>{nombre}</b></> : <span className="tenue">· no hay nada puesto</span>}
-      <div className="teclas-decorar"><kbd>←→↑↓</kbd>mover <kbd>⇧</kbd>fino <kbd>Q</kbd><kbd>E</kbd>girar <kbd>Tab</kbd>otro <kbd>Supr</kbd>al baúl <kbd>Enter</kbd>listo</div>
+      <div className="teclas-decorar"><b>clic</b> colocar <kbd>←→↑↓</kbd>mover <kbd>⇧</kbd>fino <kbd>Q</kbd><kbd>E</kbd>girar <kbd>Tab</kbd>otro <kbd>Supr</kbd>al baúl <kbd>Enter</kbd>listo</div>
     </div>
   );
 }
