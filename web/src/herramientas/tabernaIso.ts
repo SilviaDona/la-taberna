@@ -662,7 +662,7 @@ motor.cadaFotograma((dt, t) => {
   if (jugador) { const sl = salaEn(jugador.raiz.position.x, jugador.raiz.position.z); if (sl !== salaJugador) { salaJugador = sl; ponerTitulo(sl); } }
   if (elegido) { anillo.position.set(elegido.p.raiz.position.x, 0.03, elegido.p.raiz.position.z); anillo.material.opacity = 0.65 + 0.3 * Math.sin(t * 4); }
   moverCarteles();
-  if (EN_JUEGO) alFotograma(t);
+  if (EN_JUEGO) { alFotograma(t); moverEtiquetasEntrega(); }
 });
 
 const listo = (async () => {
@@ -876,14 +876,32 @@ function modeloDe(e: EntVista) {
   return R.herr('journal_open');
 }
 const mesasEnt = new Map<string, THREE.Group>();
-const objEnt: { o: THREE.Object3D; e: EntVista }[] = [];
+const objEnt: { o: THREE.Object3D; e: EntVista; etq: HTMLButtonElement }[] = [];
+// cada entregable lleva encima su etiqueta (para no confundirlo con los adornos de la sala): clic para verlo
+const ICONO_ENT: Record<string, string> = { html: '🍲', md: '📜', json: '🗂', texto: '📄', imagen: '🖼', otro: '📦' };
+function etiquetaEntrega(e: EntVista) {
+  const b = document.createElement('button'); b.className = 'etq-entrega';
+  b.textContent = `${ICONO_ENT[e.tipo] ?? '📦'} ${e.nombre}`; b.title = 'Clic para verlo';
+  b.onclick = () => verEntregable(e); capa.appendChild(b); return b;
+}
+function moverEtiquetasEntrega() {
+  const r = lienzo.getBoundingClientRect(); const v = new THREE.Vector3();
+  const tapado = !!(juego.get().hablandoCon || juego.get().panel);
+  objEnt.forEach((x, i) => {
+    new THREE.Box3().setFromObject(x.o).getCenter(v); v.y += 0.45; v.project(camera);
+    const sl = salaEn(x.o.getWorldPosition(new THREE.Vector3()).x, x.o.getWorldPosition(new THREE.Vector3()).z);
+    const ver = !tapado && v.z < 1 && (camDist < 60 || sl === salaRaton || sl === salaJugador);
+    x.etq.style.display = ver ? '' : 'none';
+    if (ver) x.etq.style.transform = `translate(-50%, -100%) translate(${(v.x + 1) / 2 * r.width}px, ${(1 - v.y) / 2 * r.height - (i % 3) * 2}px)`;
+  });
+}
 let firmaEnt = '';
 function ponerEntregables() {
   const hs: any[] = vivo.get().estado?.historias ?? [];
   const todos: EntVista[] = hs.flatMap(h => (h.entregables ?? []) as EntVista[]);
   const f = JSON.stringify(todos.map(e => [e.ruta, e.paso, e.fecha]));
   if (f === firmaEnt) return; firmaEnt = f;
-  for (const g of mesasEnt.values()) g.removeFromParent(); mesasEnt.clear(); objEnt.length = 0;
+  for (const g of mesasEnt.values()) g.removeFromParent(); mesasEnt.clear(); for (const x of objEnt) x.etq.remove(); objEnt.length = 0;
   for (const sl of SALAS) {
     const lista = todos.filter(e => e.paso === sl.id).sort((a, b) => b.fecha - a.fecha).slice(0, 3);
     if (!lista.length) continue;
@@ -895,7 +913,7 @@ function ponerEntregables() {
       lista.forEach((e, i) => {
         const nuevo = Date.now() - e.fecha < 30 * 60_000;   // lo de la última media hora brilla
         colocar(g, modeloDe(e), { pos: [(i - (lista.length - 1) / 2) * 0.45, tope, 0], ancho: e.tipo === 'html' ? 0.5 : 0.4, rot: i * 0.5, sombra: true }).then(o => {
-          objEnt.push({ o, e });
+          objEnt.push({ o, e, etq: etiquetaEntrega(e) });
           if (nuevo) { const l = new THREE.PointLight('#ffd27a', 1.4, 2.2, 1.6); l.position.set(o.position.x, tope + 0.5, 0); g.add(l); }
           motor.renderer.shadowMap.needsUpdate = true;
         }).catch(() => null);
