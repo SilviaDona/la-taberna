@@ -87,8 +87,8 @@ export function estadoInicial(): EstadoRefugio {
 // de esos datos.
 export const CARPETAS_SALAS = process.env.SHELTER_DATOS ? path.join(DATOS, 'salas') : path.join(carpetaApp(), 'salas');
 export function carpetaDe(s: SalaGuardada) { return s.ruta ?? path.join(CARPETAS_SALAS, s.id); }
-/** Las salas de los pasos trabajan en la carpeta del proyecto (sin proyecto, en una suya) */
-export function ponerProyecto(e: EstadoRefugio) { for (const s of e.salas) if (s.paso) { if (e.proyecto) s.ruta = e.proyecto.ruta; else delete s.ruta; } }
+/** Las salas de los pasos y La Barra trabajan en la carpeta del proyecto (sin proyecto, en una suya) */
+export function ponerProyecto(e: EstadoRefugio) { for (const s of e.salas) if (s.paso || s.id === 'barra') { if (e.proyecto) s.ruta = e.proyecto.ruta; else delete s.ruta; } }
 // Salas del refugio de antes que la taberna del proceso de UX ya no tiene: las de enlace (comunicaciones, agenda,
 // Linear, git), las de ocio salvo el sastre, los repos de ejemplo y las salas de oficio de la primera versión
 const TIPOS_RETIRADOS = ['comunicaciones', 'planificacion', 'logistica', 'git', 'hidroponia', 'galeria', 'discoteca'];
@@ -105,7 +105,7 @@ export function migrarATabernaUX(e: EstadoRefugio) {
 }
 /** Salas de servicio de serie que le faltan a un refugio guardado: entran en su sitio (el resto se recoloca). */
 export function anadirSalasDeServicio(e: EstadoRefugio) {
-  const faltan = SALAS_INICIALES.filter(s => !esSalaDeRepo(s.tipo) && !e.salas.some(x => x.tipo === s.tipo || x.id === s.id));
+  const faltan = SALAS_INICIALES.filter(s => (!esSalaDeRepo(s.tipo) || s.id === 'barra') && !e.salas.some(x => (x.tipo === s.tipo && s.id !== 'barra') || x.id === s.id));
   if (faltan.length) e.salas = distribuir([...e.salas, ...faltan.map(({ carpeta: _, origen: __, ...x }) => ({ ...x }) as SalaGuardada)]);
   return faltan.length > 0;
 }

@@ -59,3 +59,8 @@ Hechas en Linux sin GPU (SwiftShader) con una taberna y un proyecto de prueba, y
 - Clic en el suelo: vas andando hasta ahí. Con **Mayús** pulsada, corres.
 - **W A S D**: mueven la cámara; **rueda del ratón** (o + y −): zoom; **1 a 8**: cada sala; **Esc**: vista general.
 - Al comprar algo a Gorgo, el objeto sigue al ratón: **clic** donde lo quieres (también en otra sala), **Q/E** lo giran, **Supr** lo devuelve al baúl.
+
+## Lo que dejan los aventureros y La Barra
+
+- En cada sala hay una **mesa de entregas** con lo último que ha dejado su aventurero: el prototipo es un plato, el plan un pergamino, el handoff una carta, el registro un libro. Lo reciente brilla. Un clic lo abre en el juego.
+- **La Barra**, en el salón central: Bartolo, el tabernero, para cualquier encargo fuera del proceso (sin skill de UX). Trabaja en la carpeta del proyecto. Tecla 4 para ir.

@@ -16,9 +16,10 @@ describe('disposición del refugio', () => {
   });
   it('un repo propio entra detrás de los pasos y nadie comparte hueco', () => {
     const s = distribuir([...SALAS_INICIALES, repo('Banco')]);
-    // cabe en la planta de los pasos (8 por planta), el último
+    // cabe en la planta de los pasos (8 por planta), el último; La Barra (un ala) va debajo, y el sastre después
     expect(s.find(x => x.id === 'Banco')).toMatchObject({ planta: 2, lado: 'der', orden: 3 });
-    expect(s.find(x => x.id === 'chapa')!.planta).toBe(3);
+    expect(s.find(x => x.id === 'barra')!.planta).toBe(3);
+    expect(s.find(x => x.id === 'chapa')!.planta).toBe(4);
     expect(new Set(s.map(sitio)).size).toBe(s.length);
   });
   it('con más repos de los que caben, siguen en la planta de debajo y el ocio baja con ellos', () => {

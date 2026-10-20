@@ -13,6 +13,7 @@ import { aspectoDe, firmaAspecto, type Aspecto } from '@shared/aspecto';
 import { PACKS } from '@shared/decorado';
 import { mercancia, type Adorno } from '@shared/mercader';
 import { modo } from '../ui/Mercader';
+import { verEntregable } from '../ui/Pasos';
 import { cliente } from '../red/cliente';
 import type { PasoId } from '@shared/pasos';
 import { vivo } from '../red/cliente';
@@ -431,7 +432,7 @@ async function exterior() {
 // ---------------------------------------------------------------- gente: Aurelia en la mesa de mapas y la Tabernera
 const gente: Personaje[] = [];
 // los que se pueden seleccionar con el ratón, con su ficha
-interface Npc { p: Personaje; nombre: string; mote: string; rol: string; paso?: PasoId; mercader?: boolean }
+interface Npc { p: Personaje; nombre: string; mote: string; rol: string; paso?: PasoId; sala?: string; mercader?: boolean }
 const npcs: Npc[] = [];
 let jugador: Personaje | undefined;
 const ficha = (p: Personaje, nombre: string, mote: string, rol: string, extra: Partial<Npc> = {}) => { npcs.push({ p, nombre, mote, rol, ...extra }); return p; };
@@ -464,6 +465,19 @@ async function personas() {
   const goblin = new Personaje('Goblin', aspectoDe({ tipo: 'Goblin' }));
   await goblin.cargar(); goblin.raiz.scale.multiplyScalar(0.62); goblin.raiz.position.set(4, 0, 1.4); goblin.raiz.rotation.y = -Math.PI / 2; scene.add(goblin.raiz);
   goblin.reproducir('Working_A', 0); gente.push(goblin); ficha(goblin, 'Grisko', 'Goblin recadero', 'Lleva y trae entre salas');
+  // La Barra, en el salón central: Bartolo tras su mostrador, para lo que no es del proceso
+  {
+    const madera = materialAcero('#5a3a22'), encimera = materialAcero('#8a5a34'), zocalo = materialAcero('#2a1a0e');
+    const tramo = (w: number, d: number, x: number, z: number) => { const g = new THREE.Group(); g.position.set(central.position.x + x, 0, central.position.z + z); scene.add(g); g.add(caja(w, 1.0, d, madera, 0, 0.5, 0, true), caja(w + 0.2, 0.1, d + 0.25, encimera, 0, 1.05, 0.05, true), caja(w, 0.12, d + 0.04, zocalo, 0, 0.06, 0, true)); return g; };
+    tramo(0.7, 4.2, 3.4, -0.6); tramo(2.2, 0.7, 4.45, 1.85);
+    const S = (r: string, x: number, y: number, z: number, c: Colocacion = {}) => colocar(scene, r, { pos: [central.position.x + x, y, central.position.z + z], sombra: true, ...c }).catch(() => null);
+    await Promise.all([S(R.dun('keg_decorated'), 5.2, 0, -2.6, { alto: 1.2 }), S(R.dun('barrel_large'), 5.3, 0, -1.2, { alto: 1.1 }), S(R.dun('bottle_A_labeled_brown'), 3.4, 1.1, -2, { alto: 0.35 }), S(R.dun('bottle_B_green'), 3.4, 1.1, -1.6, { alto: 0.32 }), S(R.mueble('mug_A'), 3.35, 1.1, 0.3, { alto: 0.18 }), S(R.dun('candle_triple'), 3.4, 1.1, 0.9, { alto: 0.35 }),
+      S(R.dun('stool_round'), 2.4, 0, -1.8, { alto: 0.7 }), S(R.dun('stool_round'), 2.4, 0, -0.4, { alto: 0.7 }), S(R.dun('stool_round'), 2.4, 0, 1.0, { alto: 0.7 })]);
+    luzEn(central, 3.4, 2.6, -0.6, '#ffb35c', 5, 8, 2.5);
+    const bartolo = new Personaje('Hiker', aspectoDe({ tipo: 'Hiker', tono: 30 }));
+    await bartolo.cargar(); bartolo.raiz.position.set(central.position.x + 4.4, 0, central.position.z - 0.6); bartolo.raiz.rotation.y = -Math.PI / 2; scene.add(bartolo.raiz);
+    bartolo.reproducir('Idle_A', 0); gente.push(bartolo); ficha(bartolo, 'Bartolo', 'El Tabernero', 'La Barra · cualquier encargo fuera del proceso', { sala: 'barra' });
+  }
   // Gorgo, el buhonero, con su fardo en el salón central: vende adornos por el oro de los pasos
   const gorgo = new Personaje('Goblin_B', aspectoDe({ tipo: 'Goblin_B' }));
   await gorgo.cargar(); gorgo.raiz.scale.multiplyScalar(0.7); gorgo.raiz.position.set(-3.2, 0, 13.5); gorgo.raiz.rotation.y = 0.6; scene.add(gorgo.raiz);
@@ -488,6 +502,7 @@ const SALAS = [
   { id: 'salon' as const, grupo: salon, tecla: '6' },
   { id: 'mensajero' as const, grupo: mensajero, tecla: '7' },
   { id: 'libro' as const, grupo: libro, tecla: '8' },
+  { id: 'barra' as const, grupo: central, tecla: '4' },
 ];
 type SalaIso = (typeof SALAS)[number];
 const salaEn = (x: number, z: number) => SALAS.find(sl => Math.abs(x - sl.grupo.position.x) < L / 2 && Math.abs(z - sl.grupo.position.z) < L / 2) ?? null;
@@ -507,8 +522,10 @@ function enfocar(sl: SalaIso | null) {
 const capa = document.createElement('div'); capa.className = 'capa-taberna'; document.body.appendChild(capa);
 const titulo = document.createElement('div'); titulo.className = 'titulo-sala'; document.body.appendChild(titulo);
 const fichaNpc = document.createElement('div'); fichaNpc.className = 'ficha-npc'; document.body.appendChild(fichaNpc);
+// lo que se lee de cada sala: las de los pasos, su paso; La Barra, lo suyo
+const infoSala = (id: string) => id === 'barra' ? { numero: '☕', sala: 'La Barra', etapa: 'Bartolo, para cualquier encargo fuera del proceso', comando: '' } : PASOS[id as PasoId];
 const carteles = SALAS.map(sl => {
-  const p = PASOS[sl.id];
+  const p = infoSala(sl.id);
   const c = document.createElement('button'); c.className = 'cartel-sala';
   c.innerHTML = `<b>${p.numero}</b><span>${p.sala}</span>`;
   c.onclick = () => { if (EN_JUEGO && camObjetivo.distanceTo(new THREE.Vector3(sl.grupo.position.x, 0.6, sl.grupo.position.z + 0.6)) < 1) abrirPanel(sl.id); else enfocar(sl); }; capa.appendChild(c);
@@ -516,8 +533,8 @@ const carteles = SALAS.map(sl => {
 });
 let salaRaton: SalaIso | null = null, salaJugador: SalaIso | null = null;
 function ponerTitulo(sl: SalaIso | null) {
-  const p = sl && PASOS[sl.id];
-  titulo.innerHTML = p ? `<small>PASO ${p.numero}</small><h1>${p.sala}</h1><p>${p.etapa}${p.comando ? ` · <code>${p.comando}</code>` : ''}</p>` : '';
+  const p = sl && infoSala(sl.id);
+  titulo.innerHTML = p ? `<small>${sl!.id === 'barra' ? 'SALÓN CENTRAL' : `PASO ${p.numero}`}</small><h1>${p.sala}</h1><p>${p.etapa}${p.comando ? ` · <code>${p.comando}</code>` : ''}</p>` : '';
   titulo.classList.toggle('visible', !!p);
 }
 // selección: anillo dorado a los pies y la ficha
@@ -534,11 +551,11 @@ function pintarFicha() {
   const puede = EN_JUEGO && n && (hab || n.mercader);
   const est = hab ? juego.get().habitantes.find(x => x.id === hab.id) : null;
   fichaNpc.innerHTML = n ? `<h2>${escapar(hab?.nombre ?? n.nombre)}</h2><em>«${escapar(hab?.mote || n.mote)}»</em>${est && est.estado !== 'ocioso' ? `<span class="estado-npc">${TEXTO_ESTADO[est.estado] ?? est.estado}${est.detalle ? ': ' + escapar(est.detalle).slice(0, 80) : ''}</span>` : ''}<p>${n.rol}</p>`
-    + (puede ? `<button class="activo" data-a="hablar">${n.mercader ? 'Ver lo que trae' : 'Hablar'} <small style="color:#ffcf7a">E</small></button>${n.paso ? '<button class="activo" data-a="panel">Historias <small style="color:#ffcf7a">Enter</small></button>' : ''}` : '<button disabled>Hablar</button>')
+    + (puede ? `<button class="activo" data-a="hablar">${n.mercader ? 'Ver lo que trae' : 'Hablar'} <small style="color:#ffcf7a">E</small></button>${n.paso || n.sala ? '<button class="activo" data-a="panel">'+(n.sala ? 'Su sala' : 'Historias')+' <small style="color:#ffcf7a">Enter</small></button>' : ''}` : '<button disabled>Hablar</button>')
     + '<small>Esc para soltar</small>' : '';
   fichaNpc.classList.toggle('visible', !!n);
   fichaNpc.querySelector('[data-a=hablar]')?.addEventListener('click', () => n && hablarCon(n));
-  fichaNpc.querySelector('[data-a=panel]')?.addEventListener('click', () => n?.paso && abrirPanel(n.paso));
+  fichaNpc.querySelector('[data-a=panel]')?.addEventListener('click', () => { const id = n?.paso ?? n?.sala; if (id) abrirPanel(id); });
 }
 const TEXTO_ESTADO: Record<string, string> = { pensando: '… pensando', trabajando: '⚙ trabajando', esperando: '? te espera', terminado: '✓ ha terminado', error: '✕ avería' };
 const escapar = (t: string) => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } as any)[c]);
@@ -549,7 +566,7 @@ addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === 'Escape' && (elegido || camDist !== GENERAL.dist)) { seleccionar(null); enfocar(null); if (EN_JUEGO) e.stopImmediatePropagation(); return; }
   if (EN_JUEGO && elegido && e.code === 'KeyE') { hablarCon(elegido); e.preventDefault(); return; }
-  if (EN_JUEGO && elegido?.paso && e.code === 'Enter') { abrirPanel(elegido.paso); e.preventDefault(); return; }
+  if (EN_JUEGO && (elegido?.paso || elegido?.sala) && e.code === 'Enter') { abrirPanel((elegido.paso ?? elegido.sala)!); e.preventDefault(); return; }
   if (e.key === '+' || e.code === 'Equal' || e.code === 'NumpadAdd') { zoom(0.85); return; }
   if (e.key === '-' || e.code === 'Minus' || e.code === 'NumpadSubtract') { zoom(1.18); return; }
   const sl = SALAS.find(x => x.tecla === e.key); if (sl) enfocar(sl);
@@ -606,7 +623,8 @@ lienzo.addEventListener('mousemove', ev => {
   const p = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3());
   salaRaton = p ? salaEn(p.x, p.z) : null;
   if (EN_JUEGO && p && arrastrar(p)) { lienzo.style.cursor = 'crosshair'; return; }
-  lienzo.style.cursor = npcBajoRaton() ? 'pointer' : 'default';
+  const en = EN_JUEGO ? entregableBajoRaton() : null; lienzo.title = en ? `${en.nombre} · clic para verlo` : '';
+  lienzo.style.cursor = npcBajoRaton() || en ? 'pointer' : 'default';
 });
 // la rueda acerca y aleja la cámara (y + / − con el teclado)
 function zoom(f: number) { camDist = THREE.MathUtils.clamp(camDist * f, 12, 140); }
@@ -614,7 +632,7 @@ lienzo.addEventListener('wheel', ev => { ev.preventDefault(); zoom(Math.exp(ev.d
 lienzo.addEventListener('mouseleave', () => { salaRaton = null; });
 lienzo.addEventListener('click', ev => {
   apuntar(ev);
-  if (EN_JUEGO) { const p0 = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (p0 && soltar(p0)) return; }
+  if (EN_JUEGO) { const p0 = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (p0 && soltar(p0)) return; const en = entregableBajoRaton(); if (en) { verEntregable(en); return; } }
   const n = npcBajoRaton(); if (n) { if (n === elegido && ev.detail >= 2 && EN_JUEGO) hablarCon(n); else seleccionar(n); return; }
   const p = rayo.ray.intersectPlane(SUELO_Y, new THREE.Vector3()); if (!p) return;
   // dentro de la taberna (las salas y el salón central): la Tabernera va andando hasta ahí
@@ -679,8 +697,8 @@ if (!(window as any).__noLoop) listo.then(() => motor.alCambiarPrimerPlano(true)
 // barra de progreso mientras trabaja. Los adornos comprados al buhonero se ponen en su sala.
 type HabVivo = { id: string; nombre: string; mote: string; tipo: string; bio: string; salaId: string };
 function habitanteDe(n: Npc): HabVivo | undefined {
-  if (!n.paso) return undefined;
-  return ((vivo.get().estado?.habitantes ?? []) as HabVivo[]).find(h => h.salaId === n.paso);
+  const sala = n.sala ?? n.paso; if (!sala) return undefined;
+  return ((vivo.get().estado?.habitantes ?? []) as HabVivo[]).find(h => h.salaId === sala);
 }
 const sesionDe = (hid: string) => Object.values(vivo.get().sesiones).filter((s: any) => s.habitanteId === hid && s.estado !== 'cerrada')
   .sort((a: any, b: any) => urg(a) - urg(b) || b.actualizada - a.actualizada)[0] as any;
@@ -714,7 +732,7 @@ function hablarCon(n: Npc) {
   if (n.mercader) { juego.set({ panel: 'sala', panelDatos: { salaId: salaJugador?.id ?? 'mapas', vista: 'mercader' } }); return; }
   const h = habitanteDe(n); if (!h) return;
   retrato?.destruir(); retrato = new Retrato(n.p); (window as any).__retrato = retrato.canvas;
-  const sl = SALAS.find(x => x.id === n.paso); if (sl) enfocar(sl);
+  const sl = SALAS.find(x => x.id === (n.paso ?? n.sala)); if (sl) enfocar(sl);
   etiquetas.raiz.style.display = 'none';
   juego.set({ hablandoCon: h.id, indicacion: null });
 }
@@ -726,7 +744,7 @@ function alFotograma(t: number) {
   fichaNpc.style.visibility = juego.get().hablandoCon || juego.get().panel ? 'hidden' : '';
   if (juego.get().hablandoCon) return;
   if (etiquetas.raiz.style.display === 'none') etiquetas.raiz.style.display = '';
-  const items = npcs.filter(n => n.paso).map(n => {
+  const items = npcs.filter(n => n.paso || n.sala).map(n => {
     const h = habitanteDe(n); const s = h && sesionDe(h.id); const [estado, detalle] = estadoDe(s);
     const pos = n.p.raiz.position.clone(); pos.y += 1.75 * n.p.raiz.scale.y;
     return { k: n, pos, alto: 0, nombre: h?.nombre ?? n.nombre, estado, detalle: n === elegido && estado !== 'ocioso' ? detalle.slice(0, 50) : '', cerca: n === elegido, prompt: n === elegido ? 'Hablar' : '', progreso: progresoDe(s) };
@@ -773,7 +791,7 @@ function ponerAspectos() {
   for (const n of npcs) { const h: any = habitanteDe(n); if (h?.aspecto) vestir(n.p, aspectoDe(h)); }
 }
 function conectar() {
-  publicar(); ponerAdornos(); ponerAspectos(); vivo.suscribir(() => { ponerAdornos(); ponerAspectos(); });
+  publicar(); ponerAdornos(); ponerAspectos(); ponerEntregables(); vivo.suscribir(() => { ponerAdornos(); ponerAspectos(); ponerEntregables(); });
   // el probador enseña lo que se está eligiendo sobre el propio personaje, sin guardar
   addEventListener('refugio:probar', (ev: any) => {
     const { quien, aspecto } = ev.detail ?? {}; if (!aspecto) return;
@@ -786,7 +804,7 @@ function conectar() {
     const { salaId, habitanteId, hablar } = ev.detail ?? {};
     const sl = SALAS.find(x => x.id === salaId); if (sl) { enfocar(sl); jugador?.irA(new THREE.Vector3(sl.grupo.position.x + 1.5, 0, sl.grupo.position.z + 2.5)); }
     const hab = ((vivo.get().estado?.habitantes ?? []) as HabVivo[]).find(h => h.id === habitanteId);
-    const n = hab && npcs.find(x => x.paso === hab.salaId);
+    const n = hab && npcs.find(x => (x.paso ?? x.sala) === hab.salaId);
     if (n) { seleccionar(n); if (hablar) hablarCon(n); }
   });
 }
@@ -822,3 +840,76 @@ function soltar(_p: THREE.Vector3): boolean {
   return true;
 }
 modo.suscribir(() => { if (!enDecorar()) { aro.visible = false; destino = null; firmaAdornos = ''; ponerAdornos(); } });   // sin colocar, vuelve a su sitio
+
+// ---------------------------------------------------------------- la mesa de entregas de cada sala
+// Lo que deja cada aventurero se ve en su sala, en una mesita junto a la entrada: el prototipo es un plato, el plan un
+// pergamino, el handoff una carta, el registro un libro… (los tres últimos). Un clic lo abre en el visor del juego.
+type EntVista = { ruta: string; nombre: string; tipo: string; paso: string; fecha: number };
+// el hueco de la mesa en cada sala se busca solo: el punto libre de muebles más cercano a la entrada (delante y al centro)
+const huecos = new Map<string, [number, number]>();
+function huecoLibre(sl: SalaIso): [number, number] {
+  const ya = huecos.get(sl.id); if (ya) return ya;
+  const cajas: THREE.Box3[] = [];
+  const zona = new THREE.Box3(new THREE.Vector3(sl.grupo.position.x - L / 2, -1, sl.grupo.position.z - L / 2), new THREE.Vector3(sl.grupo.position.x + L / 2, 10, sl.grupo.position.z + L / 2));
+  scene.traverse((o: any) => {
+    if (!o.isMesh || !o.visible) return;
+    const b = new THREE.Box3().setFromObject(o);
+    if (b.isEmpty() || b.max.y - b.min.y < 0.08 || b.max.x - b.min.x > L * 0.9 || b.max.z - b.min.z > L * 0.9) return;   // suelos, alfombras y prado
+    if (b.intersectsBox(zona)) cajas.push(b);
+  });
+  for (const n of npcs) { const v = n.p.raiz.position; cajas.push(new THREE.Box3(new THREE.Vector3(v.x - 0.4, 0, v.z - 0.4), new THREE.Vector3(v.x + 0.4, 2, v.z + 0.4))); }
+  let mejor: [number, number] = [0, 3.5], coste = Infinity;
+  for (let lz = 4.4; lz >= -1; lz -= 0.4) for (let lx = -4.4; lx <= 4.41; lx += 0.4) {
+    const x = sl.grupo.position.x + lx, z = sl.grupo.position.z + lz, r = 0.85;
+    if (cajas.some(b => x + r > b.min.x && x - r < b.max.x && z + r > b.min.z && z - r < b.max.z)) continue;
+    const c = Math.abs(lx) * 0.6 + (4.4 - lz);
+    if (c < coste) { coste = c; mejor = [lx, lz]; }
+  }
+  huecos.set(sl.id, mejor); return mejor;
+}
+function modeloDe(e: EntVista) {
+  if (e.tipo === 'html') return R.cocina('food_dinner');
+  if (e.tipo === 'imagen') return R.herr('blueprint');
+  if (e.paso === 'mapas') return R.herr('map_rolled');
+  if (e.paso === 'mensajero') return R.herr('journal_closed');
+  if (e.paso === 'libro') return R.mueble('book_set');
+  return R.herr('journal_open');
+}
+const mesasEnt = new Map<string, THREE.Group>();
+const objEnt: { o: THREE.Object3D; e: EntVista }[] = [];
+let firmaEnt = '';
+function ponerEntregables() {
+  const hs: any[] = vivo.get().estado?.historias ?? [];
+  const todos: EntVista[] = hs.flatMap(h => (h.entregables ?? []) as EntVista[]);
+  const f = JSON.stringify(todos.map(e => [e.ruta, e.paso, e.fecha]));
+  if (f === firmaEnt) return; firmaEnt = f;
+  for (const g of mesasEnt.values()) g.removeFromParent(); mesasEnt.clear(); objEnt.length = 0;
+  for (const sl of SALAS) {
+    const lista = todos.filter(e => e.paso === sl.id).sort((a, b) => b.fecha - a.fecha).slice(0, 3);
+    if (!lista.length) continue;
+    const [mx, mz] = huecoLibre(sl);
+    const g = new THREE.Group(); g.position.set(sl.grupo.position.x + mx, 0, sl.grupo.position.z + mz); scene.add(g); mesasEnt.set(sl.id, g);
+    colocar(g, R.mueble('table_small'), { pos: [0, 0, 0], alto: 0.8, sombra: true }).then(async mesa => {
+      mesa.updateMatrixWorld(true);
+      const tope = new THREE.Box3().setFromObject(mesa).max.y;
+      lista.forEach((e, i) => {
+        const nuevo = Date.now() - e.fecha < 30 * 60_000;   // lo de la última media hora brilla
+        colocar(g, modeloDe(e), { pos: [(i - (lista.length - 1) / 2) * 0.45, tope, 0], ancho: e.tipo === 'html' ? 0.5 : 0.4, rot: i * 0.5, sombra: true }).then(o => {
+          objEnt.push({ o, e });
+          if (nuevo) { const l = new THREE.PointLight('#ffd27a', 1.4, 2.2, 1.6); l.position.set(o.position.x, tope + 0.5, 0); g.add(l); }
+          motor.renderer.shadowMap.needsUpdate = true;
+        }).catch(() => null);
+      });
+    }).catch(() => null);
+  }
+}
+function entregableBajoRaton(): EntVista | null {
+  if (!objEnt.length) return null;
+  const hits = rayo.intersectObjects(objEnt.map(x => x.o), true);
+  if (!hits.length) return null;
+  let o: THREE.Object3D | null = hits[0].object;
+  while (o) { const x = objEnt.find(y => y.o === o); if (x) return x.e; o = o.parent; }
+  return null;
+}
+// QA: lo que hay en las mesas de entregas y mirar a un punto
+Object.assign(window as any, { __entregas: objEnt, __mirar: (x: number, z: number, dist = 20) => { camObjetivo.set(x, 0.6, z); camMirada.copy(camObjetivo); camDist = camDistAhora = dist; colocarCamara(); } });

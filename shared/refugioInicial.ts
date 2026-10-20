@@ -18,6 +18,8 @@ export const SALAS_INICIALES: SalaInicial[] = distribuir<Omit<SalaInicial, 'plan
   { id: 'camara', tipo: 'camara', nombre: 'Cofre del Tesoro', variante: 'acorazada' },
   { id: 'puente', tipo: 'puente', nombre: 'Sótano del Mago', variante: 'puente' },
   ...PASOS_IDS.map(p => ({ id: p, tipo: 'repo' as const, paso: p, nombre: PASOS[p].sala, variante: 'taller', estilo: 'archivo', decorado: PASOS[p].decorado })),
+  // la barra, en el salón central: el tabernero, para cualquier encargo fuera del proceso (sin skill de UX)
+  { id: 'barra', tipo: 'coordinacion', nombre: 'La Barra', variante: 'taller', estilo: 'archivo' },
   // barbería y ropería: aquí se cambia el aspecto del Supervisor y de cualquier habitante
   { id: 'chapa', tipo: 'chapa', nombre: 'Sastre y Barbero', variante: 'neutro' },
 ]);
@@ -47,6 +49,7 @@ export const ASPECTO_FITO: Aspecto = { especie: 'humano', piezas: { cara: 'cara.
 // una sala, un habitante (lleva varios trabajos a la vez, cada uno en su pestaña).
 // Quien comparte modelo con otro habitante lleva otro tono de ropa y pelo: el reparto no tiene gemelos
 export const HABITANTES_INICIALES: HabitanteInicial[] = tonosParaRepetidos([
+  H('bartolo', 'Bartolo', 'El Tabernero', 'Hiker', 'barra', 'Atiende la barra desde que la taberna era una cueva. Lo mismo te sirve un consejo que te ordena una carpeta: para todo lo que no es del proceso.', 100),
   H('nestor', 'Néstor', 'El Archimago', 'Mage', 'puente', 'Trazó los planos de la taberna con tiza de luna cuando aún era una cueva. Perdió un ojo leyendo un grimorio minificado; con el otro ve la taberna entera en sus conjuros.', 85),
   H('hanzo', 'Hanzo', 'Guardasellos', 'Knight', 'camara', 'Caballero del Cofre del Tesoro. Guarda el oro, las llaves y los sellos, y pide santo y seña hasta para darte los buenos días.', 95),
   H('guardian', 'Guardián', 'Portero', 'Barbarian', 'puerta', 'Vigila la puerta de la posada. Apunta en el libro de huéspedes a quien entra.', 80),

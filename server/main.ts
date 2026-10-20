@@ -337,7 +337,7 @@ async function accion(nombre: string, d: Record<string, any> = {}): Promise<unkn
       if (sesiones.lista().some(s => e.salas.find(x => x.id === s.salaId)?.paso && ['arrancando', 'trabajando', 'esperando'].includes(s.estado))) throw new Error('Hay alguien trabajando en un paso. Espera a que termine o páralo antes de cambiar de proyecto.');
       almacen.cambiar(x => { x.proyecto = { ruta, nombre: String(d.nombre || '').trim().slice(0, 60) || path.basename(ruta) }; });
       const info = await infoRepo(ruta);
-      for (const s of almacen.estado.salas) if (s.paso) repos[s.id] = info;
+      for (const s of almacen.estado.salas) if (s.paso || s.id === 'barra') repos[s.id] = info;
       difundir({ t: 'estado', estado: almacen.estado as any }); difundir({ t: 'repos', repos });
       return almacen.estado.proyecto;
     }
@@ -408,7 +408,7 @@ async function accion(nombre: string, d: Record<string, any> = {}): Promise<unkn
     case 'retirarSala': {
       const sr = e.salas.find(s => s.id === d.salaId);
       if (!sr) throw new Error('Esa sala no existe.');
-      if ((sr.tipo !== 'repo' && sr.tipo !== 'coordinacion') || sr.paso) throw new Error('Las salas de servicio y las de los pasos no se retiran.');
+      if ((sr.tipo !== 'repo' && sr.tipo !== 'coordinacion') || sr.paso || sr.id === 'barra') throw new Error('Las salas de servicio y las de los pasos no se retiran.');
       // primero se comprueba (nada se corta) y luego se cierran las conversaciones terminadas de la sala
       if (sesiones.lista().some(s => s.salaId === d.salaId && ['arrancando', 'trabajando', 'esperando'].includes(s.estado))) throw new Error('Hay alguien trabajando en esa sala. Párale antes de retirarla.');
       for (const ses of sesiones.lista()) if (ses.salaId === d.salaId) sesiones.cerrar(ses.id);
