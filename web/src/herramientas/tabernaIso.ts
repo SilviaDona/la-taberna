@@ -906,7 +906,9 @@ function moverEtiquetasEntrega() {
 let firmaEnt = '';
 function ponerEntregables() {
   const hs: any[] = vivo.get().estado?.historias ?? [];
-  const todos: EntVista[] = hs.flatMap(h => ((h.entregables ?? []) as EntVista[]).map(e => ({ ...e, historia: h.id })));
+  const sueltos: Record<string, any[]> = vivo.get().estado?.sueltos ?? {};
+  const todos: EntVista[] = [...hs.flatMap(h => ((h.entregables ?? []) as EntVista[]).map(e => ({ ...e, historia: h.id }))),
+    ...Object.entries(sueltos).flatMap(([sala, l]) => l.map(e => ({ ...e, paso: sala as PasoId, historia: '' })))];
   const f = JSON.stringify(todos.map(e => [e.ruta, e.paso, e.fecha]));
   if (f === firmaEnt) return; firmaEnt = f;
   for (const g of mesasEnt.values()) g.removeFromParent(); mesasEnt.clear(); for (const x of objEnt) x.etq.remove(); objEnt.length = 0;

@@ -5,11 +5,11 @@ import path from 'node:path';
 
 const SALTAR = new Set(['.git', 'node_modules', '.claude', 'dist', 'build', '.next', '.cache', '__pycache__', '.venv']);
 
-/** Archivos (rutas relativas, con /) cambiados en `raiz` desde `desde` (ms). Como mucho 4 niveles y 60 archivos. */
+/** Archivos (rutas relativas, con /) cambiados en `raiz` desde `desde` (ms). Como mucho 6 niveles y 60 archivos. */
 export function buscarCambios(raiz: string, desde: number, max = 60): string[] {
   const res: { rel: string; t: number }[] = [];
   const andar = (dir: string, nivel: number) => {
-    if (nivel > 4 || res.length > 500) return;
+    if (nivel > 6 || res.length > 500) return;
     let ents; try { ents = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of ents) {
       if (e.name.startsWith('.') && e.name !== '.') { if (SALTAR.has(e.name) || e.isDirectory()) continue; }
@@ -27,4 +27,43 @@ export function buscarCambios(raiz: string, desde: number, max = 60): string[] {
 export function carpetaComun(rutas: string[]): string | undefined {
   const tops = new Set(rutas.filter(r => r.includes('/')).map(r => r.split('/')[0]));
   return tops.size === 1 ? [...tops][0] : undefined;
+}
+
+// ---------------------------------------------------------------- apuntarlos
+import { esPaso, tipoEntregable, type Historia, type PasoId } from '../shared/pasos.ts';
+export interface Suelto { ruta: string; nombre: string; tipo: string; fecha: number }
+/** Apunta lo nuevo de un turno: en la historia que se trabajaba o, si no se dijo (una conversación suelta con el
+ *  aventurero), en la última historia que está en ese paso; si no hay ninguna (o es La Barra), en lo suelto de la sala.
+ *  Devuelve la historia en la que ha quedado (si alguna). */
+export function apuntar(e: { historias: Historia[]; sueltos?: Record<string, Suelto[]> }, salaId: string, historiaId: string | undefined, rutas: string[], ahora = Date.now()): Historia | undefined {
+  if (!rutas.length) return undefined;
+  const paso = esPaso(salaId) ? (salaId as PasoId) : undefined;
+  const h = (historiaId && e.historias.find(x => x.id === historiaId)) || (paso ? e.historias.filter(x => x.paso === paso).sort((a, b) => b.actualizada - a.actualizada)[0] : undefined);
+  if (h && paso) {
+    if (!h.carpeta) { const c = carpetaComun(rutas); if (c) h.carpeta = c; }
+    for (const ruta of rutas) {
+      const previo = h.entregables.find(y => y.ruta === ruta);
+      if (previo) { previo.fecha = ahora; previo.paso = paso; }
+      else h.entregables.push({ ruta, nombre: ruta.split('/').pop() || ruta, paso, tipo: tipoEntregable(ruta), fecha: ahora });
+    }
+    h.entregables = h.entregables.slice(-200); h.actualizada = ahora;
+    return h;
+  }
+  const lista = ((e.sueltos ??= {})[salaId] ??= []);
+  for (const ruta of rutas) {
+    const previo = lista.find(y => y.ruta === ruta);
+    if (previo) previo.fecha = ahora; else lista.push({ ruta, nombre: ruta.split('/').pop() || ruta, tipo: tipoEntregable(ruta), fecha: ahora });
+  }
+  e.sueltos[salaId] = lista.slice(-50);
+  return undefined;
+}
+export function sanearSueltos(v: unknown): Record<string, Suelto[]> {
+  const out: Record<string, Suelto[]> = {};
+  if (!v || typeof v !== 'object') return out;
+  for (const [k, l] of Object.entries(v as Record<string, unknown>)) {
+    if (!Array.isArray(l) || k.length > 40) continue;
+    out[k] = l.filter((x: any) => x && typeof x.ruta === 'string' && !x.ruta.split(/[\\/]/).includes('..')).slice(-50)
+      .map((x: any) => ({ ruta: x.ruta.slice(0, 400), nombre: String(x.nombre || x.ruta).slice(0, 120), tipo: tipoEntregable(x.ruta), fecha: Number.isFinite(x.fecha) ? x.fecha : Date.now() }));
+  }
+  return out;
 }

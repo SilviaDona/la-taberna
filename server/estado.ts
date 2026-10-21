@@ -12,6 +12,7 @@ import { FUENTES } from './integraciones/adaptadores.ts';
 import { sanearDecorado, type Decorado } from '../shared/decorado.ts';
 import { rutaEjemplo } from './ejemplos.ts';
 import { carpetaApp } from './plataforma.ts';
+import { sanearSueltos, type Suelto } from './entregables.ts';
 import { sanearAdornos, conAdornos, type Adorno } from '../shared/mercader.ts';
 import { esPaso, sanearHistorias, sanearProyecto, PASOS, PASOS_IDS, type PasoId, type Historia, type Proyecto } from '../shared/pasos.ts';
 import { esClonDeEjemplo } from './ejemplos.ts';
@@ -56,6 +57,7 @@ export interface EstadoRefugio {
   ajustes: Record<string, unknown>;
   proyecto?: Proyecto;          // la carpeta del proyecto en la que trabajan las salas de los pasos
   historias: Historia[];        // las historias de usuario que recorren los pasos
+  sueltos?: Record<string, Suelto[]>;   // lo que han dejado en una sala sin historia (conversaciones sueltas, La Barra)
 }
 
 
@@ -188,6 +190,6 @@ export function sanear(e: any): EstadoRefugio {
     salas, habitantes, jugador, integraciones,
     notificacionesVistas: (arr(e.notificacionesVistas) ?? []).filter((x: unknown) => typeof x === 'string').slice(-3000),
     ajustes: e.ajustes && typeof e.ajustes === 'object' ? e.ajustes : {},
-    proyecto: sanearProyecto(e.proyecto), historias: sanearHistorias(e.historias),
+    proyecto: sanearProyecto(e.proyecto), historias: sanearHistorias(e.historias), sueltos: sanearSueltos(e.sueltos),
   };
 }

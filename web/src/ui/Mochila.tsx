@@ -22,15 +22,18 @@ export function recoger(e: Llevado) { SFX.exitoCorto(); mochila.set({ e, aviso: 
 export function dejar() { SFX.tick(); mochila.set({ e: null, confirmar: null }); }
 
 /** A quién hay que llevar lo que se lleva (el paso siguiente al suyo) */
-export function destinoDe(e: Llevado): PasoId | 'hecha' { return siguiente(e.paso); }
+export function destinoDe(e: Llevado): PasoId | 'hecha' | null { return PASOS[e.paso] ? siguiente(e.paso) : null; }
 
 /** Entregar al aventurero de la sala `a`: si es el del paso siguiente, se pide la puerta de calidad y se pasa */
 export function entregar(a: string): boolean {
   const e = mochila.get().e; if (!e) return false;
+  if (!PASOS[e.paso]) { avisar('Esto es de La Barra: no va a ningún paso. Puedes verlo o dejarlo.'); return true; }
   const dest = destinoDe(e);
-  const h = historia(e.historia);
-  if (!h) { avisar('Esa historia ya no está.'); dejar(); return true; }
-  if (dest === 'hecha') { avisar('Este ya es el final del proceso: no hay a quién llevárselo.'); return true; }
+  // lo que se generó en una conversación suelta va con la historia que esté en su paso
+  const h = historia(e.historia) ?? ((vivo.get().estado?.historias ?? []) as Historia[]).filter(x => x.paso === e.paso).sort((a, b) => b.actualizada - a.actualizada)[0];
+  if (h && !e.historia) { e.historia = h.id; mochila.set({ e: { ...e } }); }
+  if (!h) { avisar(`No hay ninguna historia en ${PASOS[e.paso].sala}: crea o mueve una allí para llevarle esto.`); return true; }
+  if (!dest || dest === 'hecha') { avisar('Este ya es el final del proceso: no hay a quién llevárselo.'); return true; }
   if (a !== dest) { SFX.noPermitido(); avisar(`Esto no es para ${PASOS[a as PasoId]?.aventurero.nombre ?? 'él'}: llévaselo a ${PASOS[dest].aventurero.nombre}, en ${PASOS[dest].sala}.`); return true; }
   if (h.paso === dest) { empezarEn(dest, h); return true; }   // ya estaba pasada: solo le pone a trabajar
   if (h.paso !== e.paso) { avisar(`La historia está en ${h.paso === 'hecha' ? 'cerrada' : PASOS[h.paso].sala}: esto ya no le toca.`); return true; }
@@ -69,7 +72,7 @@ export function Mochila() {
   return (
     <div className="mochila interactivo">
       {e && <><span className="icono">{ICONO[e.tipo] ?? '📦'}</span> Llevas <b>{e.nombre}</b>
-        <span className="tenue"> · {dest && dest !== 'hecha' ? <>llévaselo a <b>{PASOS[dest].aventurero.nombre}</b> ({PASOS[dest].sala}) y pulsa E</> : 'último paso'}</span>
+        <span className="tenue"> · {dest && dest !== 'hecha' && PASOS[dest] ? <>llévaselo a <b>{PASOS[dest].aventurero.nombre}</b> ({PASOS[dest].sala}) y pulsa E</> : 'último paso'}</span>
         <button onClick={() => verEntregable(e)}>Ver</button><button onClick={dejar}>Dejar</button></>}
       {aviso && <div className="aviso-consola">{aviso}</div>}
     </div>

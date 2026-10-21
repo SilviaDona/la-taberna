@@ -32,7 +32,7 @@ import { PALETA_ESTILO } from '../shared/sectores.ts';
 import { sanearAspecto, TIPOS_DE_SERIE, COSTE_ASPECTO } from '../shared/aspecto.ts';
 import { abrirCarpeta, abrirEnEditor, abrirTerminalEn, revelar } from './plataforma.ts';
 import { accionHistoria, esPaso, tipoEntregable, PASOS } from '../shared/pasos.ts';
-import { buscarCambios, carpetaComun } from './entregables.ts';
+import { buscarCambios, apuntar } from './entregables.ts';
 import { MERCANCIAS, mercancia, existencias, precioVenta, conAdornos, SUELO_ADORNOS } from '../shared/mercader.ts';
 import { abrirAdjunto as abrirEntregable, realDentro } from './abrir.ts';
 import { mkdir } from 'node:fs';
@@ -155,32 +155,25 @@ sesiones.on('turno', r => {
     difundir({ t: 'aviso', nivel: 'info', texto: `${quien} ha terminado: +${p.chatarra} de oro${p.pieza ? ` y ha encontrado ${p.pieza.nombre} (${p.pieza.rareza})` : ''}.` });
   }
   const h = almacen.estado.habitantes.find(x => x.id === r.habitanteId); if (h && r.claudeId) { h.ultimaSesion = r.claudeId; almacen.guardar(); }
-  if (r.estado === 'terminada' && r.historia) apuntarEntregables(r);
+  if (r.estado === 'terminada') apuntarEntregables(r);
 });
 
 // lo que ha dejado un aventurero en la carpeta del proyecto: se apunta en la historia y se avisa con ✔ (y «Ver»)
 const inicioTurno = new Map<string, number>();
-sesiones.on('sesion', (r: any) => { if (r?.historia && r.estado === 'trabajando' && !inicioTurno.has(r.id)) inicioTurno.set(r.id, Date.now()); });
-function apuntarEntregables(r: { id: string; historia?: string; paso?: string; habitanteId: string; creada: number; titulo: string }) {
-  const raiz = almacen.estado.proyecto?.ruta; const paso = r.paso;
+sesiones.on('sesion', (r: any) => { if (r && (r.estado === 'trabajando' || r.estado === 'arrancando') && !inicioTurno.has(r.id)) inicioTurno.set(r.id, Date.now()); });
+function apuntarEntregables(r: { id: string; historia?: string; salaId: string; habitanteId: string; creada: number; titulo: string }) {
+  // cualquier turno en una sala de los pasos o en La Barra: también las conversaciones sueltas con el aventurero
   const desde = inicioTurno.get(r.id) ?? r.creada; inicioTurno.delete(r.id);
-  if (!raiz || !esPaso(paso)) return;
+  const sala = almacen.estado.salas.find(x => x.id === r.salaId);
+  const raiz = almacen.estado.proyecto?.ruta;
+  if (!raiz || !sala || !(sala.paso || sala.id === 'barra')) return;
   const rutas = buscarCambios(raiz, desde);
-  let titulo = r.titulo;
-  almacen.cambiar(x => {
-    const hi = x.historias.find(y => y.id === r.historia); if (!hi) return;
-    titulo = hi.titulo;
-    if (!hi.carpeta) { const c = carpetaComun(rutas); if (c) hi.carpeta = c; }
-    for (const ruta of rutas) {
-      const previo = hi.entregables.find(y => y.ruta === ruta);
-      if (previo) { previo.fecha = Date.now(); previo.paso = paso; }
-      else hi.entregables.push({ ruta, nombre: ruta.split('/').pop() || ruta, paso, tipo: tipoEntregable(ruta), fecha: Date.now() });
-    }
-    hi.entregables = hi.entregables.slice(-200); hi.actualizada = Date.now();
-  });
-  const quien = almacen.estado.habitantes.find(x => x.id === r.habitanteId)?.nombre ?? PASOS[paso].aventurero.nombre;
+  if (!rutas.length) return;
+  let h: { id: string; titulo: string } | undefined;
+  almacen.cambiar(x => { h = apuntar(x, sala.id, r.historia, rutas); });
+  const quien = almacen.estado.habitantes.find(x => x.id === r.habitanteId)?.nombre ?? 'Alguien';
   difundir({ t: 'estado', estado: almacen.estado as any });
-  difundir({ t: 'hecho', historia: r.historia!, paso, quien, titulo, oro: 0, entregables: rutas.map(ruta => ({ ruta, nombre: ruta.split('/').pop() || ruta, tipo: tipoEntregable(ruta) })) });
+  difundir({ t: 'hecho', historia: h?.id ?? '', paso: sala.id, quien, titulo: h?.titulo ?? sala.nombre, oro: 0, entregables: rutas.map(ruta => ({ ruta, nombre: ruta.split('/').pop() || ruta, tipo: tipoEntregable(ruta) })) });
 }
 
 // las conversaciones abiertas, en disco: si el refugio entero se cae, `./shelter superficie` las retoma fuera
